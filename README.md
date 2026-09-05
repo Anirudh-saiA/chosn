@@ -7,6 +7,8 @@ payments, or holds inventory.
 This is the Day 3 infrastructure skeleton: repo, CI/CD, environments, and
 the Day 2 design tokens wired into real components. No feature code yet.
 
+**Staging:** https://chosn-web-gamma.vercel.app
+
 - [Day 1 — Foundation Spec](docs/chosn-foundation-spec.html)
 - [Day 2 — Design Tokens](docs/chosn-design-tokens.html)
 
@@ -113,13 +115,31 @@ placeholders only.
 ## CI/CD
 
 `.github/workflows/ci.yml`, on every PR: lint → typecheck → test → a
-Vercel preview deploy. On merge to `main`: an automatic staging deploy,
-then a production deploy gated on manual approval.
+Vercel preview deploy. On merge to `main`: a production deploy gated on
+manual approval.
 
-That approval gate is a **repo setting**, not something YAML alone can
-express: in **Settings → Environments → production**, add at least one
-required reviewer. Until that's set, `deploy-production` runs
-unattended — the workflow file assumes the setting is on.
+Deploys use Vercel's own CLI (`npm install -g vercel@latest`), not the
+`amondnet/vercel-action` marketplace action — that action pins a
+years-old Vercel CLI version that no longer talks to Vercel's current
+API correctly (`Error! Could not retrieve Project Settings`, even with
+correct credentials). Installing the CLI fresh each run keeps it
+current for free.
+
+There's no separate staging domain today — Hobby plan, one Vercel
+project, one real URL. If a real staging subdomain gets added later,
+that's a `vercel alias set` step in `deploy-production`, not a whole
+second environment tier.
+
+The approval gate on production is a **repo setting**, not something
+YAML alone can express: in **Settings → Environments → production**,
+add at least one required reviewer. Until that's set,
+`deploy-production` runs unattended — the workflow file assumes the
+setting is on.
+
+**Also turn off Vercel's own automatic Git deployments** (Project →
+Settings → Git) if you haven't — otherwise Vercel deploys straight to
+production on every push to `main` on its own, bypassing this approval
+gate entirely.
 
 ## Deployment checklist — this is the part that needs your accounts
 
