@@ -7,7 +7,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: chosn_dev
     ports:
-      - '5432:5432'
+      # Host port 55432 — this machine has native Windows PostgreSQL
+      # services (v13 and v18) already occupying both 5432 and 5433.
+      # Container-internal port is untouched, so DATABASE_URL below
+      # just points at 55432.
+      - '55432:5432'
     volumes:
       - chosn-postgres:/var/lib/postgresql/data
 
@@ -15,7 +19,10 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      # Host port 6380, not 6379 — this machine already has another
+      # project's Redis bound to 6379. Container-internal port is
+      # untouched, so REDIS_URL below just points at 6380.
+      - '6380:6379'
 
 volumes:
   chosn-postgres:

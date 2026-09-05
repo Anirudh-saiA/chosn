@@ -76,7 +76,7 @@ Prerequisites: Node 22, Docker (for Postgres/Redis).
 cp apps/web/.env.example apps/web/.env.local
 cp apps/api/.env.example apps/api/.env
 
-docker compose up -d      # Postgres on :5432, Redis on :6379
+docker compose up -d      # Postgres on :55432, Redis on :6380
 npm install
 npm run dev                # runs web (:3000) and api (:4000) together
 ```
