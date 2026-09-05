@@ -8,6 +8,7 @@ This is the Day 3 infrastructure skeleton: repo, CI/CD, environments, and
 the Day 2 design tokens wired into real components. No feature code yet.
 
 **Staging:** https://chosn-web-gamma.vercel.app
+**API:** https://chosnapi-production.up.railway.app ([/health](https://chosnapi-production.up.railway.app/health))
 
 - [Day 1 — Foundation Spec](docs/chosn-foundation-spec.html)
 - [Day 2 — Design Tokens](docs/chosn-design-tokens.html)
@@ -141,35 +142,54 @@ Settings → Git) if you haven't — otherwise Vercel deploys straight to
 production on every push to `main` on its own, bypassing this approval
 gate entirely.
 
-## Deployment checklist — this is the part that needs your accounts
+## Deployment status
 
-Everything above is real, working code, verified to install and
-typecheck (see below) — but this environment has no GitHub, Vercel,
-Railway, Sentry, or PostHog credentials, so nothing has actually been
-pushed or deployed. To get from here to a live staging URL:
+Repo is on GitHub (public — required for GitHub's free-tier Environment
+approval gate to work at all), frontend on Vercel, backend + Postgres +
+Redis on Railway, all wired together and verified live.
 
-1. `git init && git add -A && git commit -m "chosn: infra skeleton"`,
-   push to a new GitHub repo.
-2. **Vercel** → import the repo, set the project root to `apps/web`, add
-   its env vars from the table above. Generate a token
-   (`vercel.com/account/tokens`) and add `VERCEL_TOKEN`,
-   `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` as GitHub Actions secrets.
-3. **Railway** → new project from the same repo, root `apps/api`; add its
-   Postgres and Redis plugins (this provisions the staging DB/cache —
-   Railway wires `DATABASE_URL`/`REDIS_URL` in automatically). Railway's
-   own GitHub integration auto-deploys `apps/api` on push to `main` —
-   no Actions job needed for it.
-4. **Sentry** → create a Next.js project and a Node project, drop each
-   DSN into the matching env var.
-5. **PostHog** → create a project, drop the key into
-   `NEXT_PUBLIC_POSTHOG_KEY`.
-6. Set the `production` environment's required reviewer in GitHub repo
-   settings (see CI/CD above).
-7. Push to `main` — staging deploys automatically; production waits for
-   your approval in the Actions tab.
+**Railway specifics, since a few things didn't work on the first try:**
+- The `apps/api` service builds from the **repo root** with
+  `npm run build --workspace=@chosn/api` / `npm run start --workspace=@chosn/api`
+  as its build/start commands (Root Directory left unset) — Railway's
+  Nixpacks detected this correctly on its own for an npm-workspaces repo.
+- **Redis is a plain `redis:7-alpine` Docker image service, not
+  Railway's official Redis plugin.** The plugin auto-attaches a
+  persistent volume on creation, and the Hobby plan allows only one
+  volume per project — Postgres already uses it. A cache doesn't need
+  durability, so a volume-free Docker deploy sidesteps the limit
+  entirely. `REDIS_URL` is set by hand to
+  `redis://redis.railway.internal:6379` (Railway's private-networking
+  DNS convention: `<service-name>.railway.internal`) rather than
+  referenced from a plugin variable, since a plain Docker service
+  doesn't publish one.
+- `DATABASE_URL` *is* referenced from the Postgres plugin's own
+  variable (the reference-picker in the Variables tab), which stays in
+  sync automatically if it ever changes.
+- Both Postgres and the api service scale to zero when idle on the free
+  plan ("Sleeping") and wake on the next request — a `/health` hit
+  right after a period of inactivity can read `"error"` on its first
+  try purely from the cold-start race, not a real failure. Retrying a
+  few seconds later is the correct response, not a fix.
 
-## Verified today
+**Vercel specifics:**
+- Deploys use `vercel pull` / `vercel build` / `vercel deploy --prebuilt`
+  run from the **repo root**, not `apps/web` — `chosn-web`'s Root
+  Directory is configured as `apps/web` on Vercel's side, and the CLI
+  applies that itself; `cd`-ing into `apps/web` first doubles the path.
+- `NEXT_PUBLIC_API_URL` on Vercel points at the Railway URL above, not
+  `localhost`.
+- Sentry and PostHog are still genuinely unconfigured (no DSN/key set
+  anywhere) — the no-op guards mean nothing breaks, they just don't
+  report anything yet. Setting them up is a "when needed," not a
+  blocker.
 
-`npm install`, `npm run typecheck`, and `npm run lint` all pass against
-this skeleton — see the session log for the exact run. No live URL exists
-yet; that's step 1–3 above, not a code problem.
+## Verified
+
+`npm install`, `npm run typecheck`, `npm run lint`, `npm run test`, and
+a real `next build` all pass locally. CI (`.github/workflows/ci.yml`)
+runs the same checks plus a Vercel preview deploy on every PR, and a
+production deploy gated on manual approval (GitHub Environment
+"Production," required reviewers on) on merge to `main`. The API's
+`/health` endpoint reports both Postgres and Redis reachable from the
+live Railway deployment.
