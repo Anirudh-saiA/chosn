@@ -22,9 +22,20 @@
 
   /* Was specified in the Day 2 doc, never carried into the shipped
      app CSS until now — every interactive element needs a visible
-     keyboard-focus state. */
+     keyboard-focus state. Color is a variable, not a flat value:
+     `text` (near-white) is unreadable against Chalk's light ground —
+     any `.bg-chalk` section repoints it to `text-chalk` for every
+     focusable element inside. */
+  :root {
+    --focus-outline-color: theme('colors.text');
+  }
+
+  .bg-chalk {
+    --focus-outline-color: theme('colors.text-chalk');
+  }
+
   :focus-visible {
-    outline: 2px solid theme('colors.text');
+    outline: 2px solid var(--focus-outline-color);
     outline-offset: 2px;
   }
 }
