@@ -31,14 +31,17 @@ jobs:
   # rather than a third-party action — amondnet/vercel-action pins a
   # multi-year-old CLI version that no longer talks to Vercel's current
   # API correctly.
+  #
+  # Runs from the repo root, not apps/web — the chosn-web project has
+  # its own Root Directory set to apps/web on Vercel's side, and the
+  # CLI expects to be invoked from the repo root so it can apply that
+  # setting itself. cd'ing into apps/web first doubles the path into
+  # apps/web/apps/web, which doesn't exist.
   preview:
     name: Deploy preview
     if: github.event_name == 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g vercel@latest
@@ -65,9 +68,6 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     environment: production
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g vercel@latest
