@@ -26,55 +26,54 @@ jobs:
 
   # Every PR gets a Vercel preview URL. Requires VERCEL_TOKEN,
   # VERCEL_ORG_ID, VERCEL_PROJECT_ID as repo secrets — see README.md.
+  #
+  # Deploys via Vercel's own CLI (installed fresh, always current)
+  # rather than a third-party action — amondnet/vercel-action pins a
+  # multi-year-old CLI version that no longer talks to Vercel's current
+  # API correctly.
   preview:
     name: Deploy preview
     if: github.event_name == 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: apps/web
+      - run: npm install -g vercel@latest
+      - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
-  # main deploys to staging automatically, every time.
-  deploy-staging:
-    name: Deploy staging
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: verify
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod --env NEXT_PUBLIC_ENV=staging'
-          alias-domains: staging.chosn.app
-          working-directory: apps/web
-
-  # Production only runs after staging succeeds, and only after a human
-  # approves it. The pause itself isn't expressible in this file — it
-  # comes from GitHub's own Environment protection rule; see README.md
-  # for the one-time repo setting that makes `environment: production`
-  # actually gate on a reviewer.
+  # main deploys straight to the live production URL, but only after a
+  # human approves it — see the `production` GitHub Environment's
+  # required-reviewer setting in README.md.
+  #
+  # No separate staging domain exists yet (Hobby plan, single Vercel
+  # project, one real URL) — an earlier version of this job tried to
+  # alias a `staging.chosn.app` domain that was never actually
+  # registered on the project. Once a real staging domain exists, add
+  # a `vercel alias set` step here rather than reintroducing a second
+  # environment tier that has nothing to point at.
   deploy-production:
     name: Deploy production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: deploy-staging
+    needs: verify
     runs-on: ubuntu-latest
     environment: production
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: apps/web
+      - run: npm install -g vercel@latest
+      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
