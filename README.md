@@ -7,6 +7,8 @@ payments, or holds inventory.
 This is the Day 3 infrastructure skeleton: repo, CI/CD, environments, and
 the Day 2 design tokens wired into real components. No feature code yet.
 
+**Staging:** https://chosn-web-gamma.vercel.app
+
 - [Day 1 — Foundation Spec](docs/chosn-foundation-spec.html)
 - [Day 2 — Design Tokens](docs/chosn-design-tokens.html)
 
