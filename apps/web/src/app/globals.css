@@ -19,6 +19,14 @@
   ::selection {
     @apply bg-signal/20;
   }
+
+  /* Was specified in the Day 2 doc, never carried into the shipped
+     app CSS until now — every interactive element needs a visible
+     keyboard-focus state. */
+  :focus-visible {
+    outline: 2px solid theme('colors.text');
+    outline-offset: 2px;
+  }
 }
 
 @keyframes ticker-scroll {

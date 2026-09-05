@@ -10,6 +10,7 @@ const colors = {
   // Surfaces
   vault: '#0F1613',
   'vault-raised': '#182420',
+  'vault-recessed': '#0A0F0C', // one step darker than vault — terminal/ticker readouts
   chalk: '#EFF1EA',
   'chalk-recessed': '#E4E6DC',
 
