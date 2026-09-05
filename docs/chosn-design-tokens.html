@@ -1,0 +1,455 @@
+<title>CHOSN Design Tokens</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,400;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --vault:#0F1613;
+    --vault-raised:#182420;
+    --vault-line: rgba(239,241,234,.14);
+    --vault-line-strong: rgba(239,241,234,.24);
+    --chalk:#EFF1EA;
+    --chalk-recessed:#E4E6DC;
+    --chalk-line: rgba(15,22,19,.16);
+    --text:#EDEFE7;
+    --text-soft:#9CA69C;
+    --text-faint:#6C766B;
+    --text-chalk:#141B16;
+    --text-chalk-soft:#57604F;
+    --signal:#22CC85;
+    --signal-soft: rgba(34,204,133,.14);
+    --brass:#C6963C;
+    --rust:#C4643B;
+    --rust-soft: rgba(196,100,59,.14);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--vault);
+    color:var(--text);
+    font-family:'Archivo', system-ui, sans-serif;
+    font-size:15.5px;
+    line-height:1.6;
+  }
+  h1,h2,h3,h4{ font-family:'Zilla Slab', Georgia, serif; font-weight:600; text-wrap:balance; margin:0; }
+  .mono, .num, code, pre{ font-family:'JetBrains Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  a{ color:inherit; }
+  ::selection{ background:var(--signal-soft); }
+  :focus-visible{ outline:2px solid var(--signal); outline-offset:2px; }
+
+  .shell{ display:grid; grid-template-columns:220px minmax(0,1fr); max-width:1180px; margin:0 auto; gap:44px; }
+  @media (max-width:900px){ .shell{ grid-template-columns:1fr; } .toc{ display:none; } }
+
+  .toc{ position:sticky; top:0; align-self:start; padding:40px 0 40px 28px; height:100vh; overflow-y:auto; }
+  .toc-brand{ font-size:1.35rem; margin-bottom:2px; }
+  .toc-brand span{ color:var(--brass); }
+  .toc-sub{ font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin:6px 0 26px; }
+  .toc nav{ display:flex; flex-direction:column; gap:2px; }
+  .toc nav a{ text-decoration:none; color:var(--text-soft); font-size:.83rem; padding:7px 10px; border-left:2px solid transparent; }
+  .toc nav a:hover{ color:var(--text); border-left-color:var(--signal); background:var(--vault-raised); }
+  .toc nav a .n{ font-family:'JetBrains Mono',monospace; color:var(--text-faint); margin-right:8px; font-size:.72rem; }
+
+  .doc{ padding:40px 28px 110px 0; min-width:0; }
+  header.hero{ padding-bottom:26px; margin-bottom:34px; border-bottom:1px solid var(--vault-line-strong); }
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:var(--signal); display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .eyebrow::before{ content:""; width:6px; height:6px; background:var(--signal); display:inline-block; }
+  h1.title{ font-size:2.6rem; line-height:1.05; margin-bottom:10px; }
+  .dek{ color:var(--text-soft); font-size:1rem; max-width:64ch; margin:0 0 16px; }
+  .meta-row{ display:flex; gap:20px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--text-faint); }
+  .meta-row b{ color:var(--text-soft); font-weight:500; }
+
+  section.block{ margin-bottom:68px; scroll-margin-top:24px; }
+  .sec-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.09em; margin-bottom:6px; }
+  h2.sec-title{ font-size:1.8rem; margin-bottom:14px; }
+  .sec-intro{ color:var(--text-soft); max-width:70ch; margin:0 0 22px; }
+  h3.sub{ font-family:'Archivo',sans-serif; font-size:.95rem; font-weight:600; margin:28px 0 6px; }
+
+  .panel{ border:1px solid var(--vault-line); background:var(--vault-raised); }
+  .table-wrap{ overflow-x:auto; border:1px solid var(--vault-line); background:var(--vault-raised); }
+  table{ border-collapse:collapse; width:100%; min-width:600px; font-size:.84rem; }
+  thead th{ text-align:left; font-family:'JetBrains Mono',monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); font-weight:500; padding:10px 14px; border-bottom:1px solid var(--vault-line-strong); white-space:nowrap; }
+  tbody td{ padding:11px 14px; border-bottom:1px solid var(--vault-line); vertical-align:top; color:var(--text-soft); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td:first-child{ color:var(--text); font-weight:500; }
+  tbody tr:hover{ background:rgba(255,255,255,.02); }
+
+  /* ---- color swatches ---- */
+  .swatch-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1px; background:var(--vault-line); border:1px solid var(--vault-line); }
+  .swatch{ background:var(--vault-raised); padding:18px; }
+  .swatch .chip{ height:52px; margin-bottom:12px; border:1px solid var(--vault-line-strong); }
+  .swatch h4{ font-family:'Archivo',sans-serif; font-size:.9rem; font-weight:600; margin-bottom:2px; }
+  .swatch .hex{ font-family:'JetBrains Mono',monospace; font-size:.76rem; color:var(--text-faint); margin-bottom:8px; }
+  .swatch p{ margin:0; font-size:.8rem; color:var(--text-soft); }
+
+  .surface-pair{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--vault-line); border:1px solid var(--vault-line); margin-top:20px; }
+  .surface{ padding:24px; }
+  .surface.dark{ background:var(--vault); }
+  .surface.light{ background:var(--chalk); color:var(--text-chalk); }
+  .surface .tag{ font-family:'JetBrains Mono',monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; display:block; }
+  .surface.dark .tag{ color:var(--text-faint); }
+  .surface.light .tag{ color:var(--text-chalk-soft); }
+  .surface h3{ font-size:1.3rem; margin-bottom:6px; }
+  .surface .row{ display:flex; align-items:baseline; gap:10px; margin-top:14px; }
+  .surface .price{ font-family:'JetBrains Mono',monospace; font-weight:500; font-size:1.6rem; }
+  .surface .delta{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:.85rem; color:var(--signal); }
+  .surface.light .delta{ color:#1B9A67; }
+
+  /* ---- callouts ---- */
+  .callout{ border-left:3px solid var(--brass); background:rgba(198,150,60,.08); padding:14px 18px; margin:20px 0; font-size:.87rem; }
+  .callout .lbl{ display:block; font-family:'JetBrains Mono',monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); margin-bottom:5px; }
+  .callout b{ color:var(--text); }
+
+  /* ---- typography specimens ---- */
+  .specimen{ border:1px solid var(--vault-line); background:var(--vault-raised); padding:26px 24px; margin-bottom:16px; }
+  .specimen .face-label{ font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; display:flex; justify-content:space-between; }
+  .spec-hero{ font-family:'Zilla Slab'; font-weight:700; font-size:2.6rem; line-height:1.05; letter-spacing:-.01em; margin-bottom:6px; }
+  .spec-section{ font-family:'Zilla Slab'; font-weight:600; font-size:1.7rem; margin-bottom:6px; }
+  .spec-body{ font-family:'Archivo'; font-size:1rem; line-height:1.65; color:var(--text-soft); max-width:56ch; }
+  .spec-data{ font-family:'JetBrains Mono'; font-weight:500; font-size:2.5rem; letter-spacing:-.01em; }
+  .spec-label{ font-family:'Archivo'; font-weight:600; font-size:.8rem; letter-spacing:.02em; }
+
+  /* ---- ASCII wireframes ---- */
+  .wire{ border:1px solid var(--vault-line); background:#0A0F0C; padding:18px 20px; overflow-x:auto; }
+  .wire pre{ margin:0; font-size:.72rem; line-height:1.5; color:var(--text-soft); white-space:pre; }
+  .wire-note{ font-size:.83rem; color:var(--text-soft); margin:10px 0 30px; max-width:70ch; }
+  .wire-note b{ color:var(--text); }
+
+  /* ---- principles ---- */
+  .principles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1px; background:var(--vault-line); border:1px solid var(--vault-line); }
+  .principle{ background:var(--vault-raised); padding:20px 22px; }
+  .principle .idx{ font-family:'JetBrains Mono',monospace; color:var(--signal); font-size:.8rem; margin-bottom:8px; display:block; }
+  .principle p{ margin:0; font-size:.86rem; color:var(--text-soft); }
+  .principle p b{ color:var(--text); }
+
+  /* ---- ticker ---- */
+  .ticker-shell{ border:1px solid var(--vault-line); background:#0A0F0C; overflow:hidden; padding:16px 0; }
+  .ticker-track{ display:flex; width:max-content; animation:ticker-scroll 26s linear infinite; }
+  .ticker-shell:hover .ticker-track{ animation-play-state:paused; }
+  @keyframes ticker-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  .tick{ display:flex; align-items:baseline; gap:10px; padding:0 28px; border-right:1px solid var(--vault-line); white-space:nowrap; font-family:'JetBrains Mono',monospace; font-size:.86rem; }
+  .tick .sku{ color:var(--text-faint); font-size:.72rem; }
+  .tick .p{ color:var(--text); font-weight:500; }
+  .tick .up{ color:var(--signal); font-weight:600; }
+  .tick .down{ color:var(--rust); font-weight:600; }
+  @media (prefers-reduced-motion: reduce){
+    .ticker-track{ animation:none; transform:none; }
+    .ticker-track .tick:nth-child(n+7){ display:none; }
+  }
+
+  /* ---- revision log ---- */
+  .revlog{ display:flex; flex-direction:column; gap:1px; background:var(--vault-line); border:1px solid var(--vault-line); }
+  .rev{ background:var(--vault-raised); padding:16px 20px; display:grid; grid-template-columns:170px 1fr; gap:16px; }
+  @media (max-width:640px){ .rev{ grid-template-columns:1fr; } }
+  .rev .check{ font-size:.78rem; color:var(--text-faint); }
+  .rev .verdict{ font-family:'JetBrains Mono',monospace; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; display:inline-block; margin-bottom:6px; }
+  .verdict.pass{ color:var(--signal); border:1px solid var(--signal); }
+  .verdict.revised{ color:var(--brass); border:1px solid var(--brass); }
+  .rev p{ margin:0; font-size:.86rem; color:var(--text-soft); }
+  .rev p b{ color:var(--text); }
+
+  /* ---- code block ---- */
+  .codeblock{ border:1px solid var(--vault-line); background:#0A0F0C; padding:20px 22px; overflow-x:auto; }
+  .codeblock pre{ margin:0; font-size:.78rem; line-height:1.6; color:#B9E8CE; white-space:pre; }
+  .codeblock .c1{ color:var(--text-faint); }
+  .codeblock .c2{ color:var(--brass); }
+
+  /* ---- sample copy ---- */
+  .copy-block{ border:1px solid var(--vault-line); background:var(--vault-raised); padding:26px 26px 30px; }
+  .copy-line{ margin-bottom:20px; }
+  .copy-line:last-child{ margin-bottom:0; }
+  .copy-line .k{ font-family:'JetBrains Mono',monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); display:block; margin-bottom:6px; }
+  .headline-sample{ font-family:'Zilla Slab'; font-weight:700; font-size:1.9rem; line-height:1.15; }
+  .subhead-sample{ font-family:'Archivo'; color:var(--text-soft); font-size:1rem; max-width:56ch; }
+  .btn-sample{ display:inline-block; font-family:'Archivo'; font-weight:600; font-size:.85rem; padding:11px 20px; border:1px solid var(--signal); color:var(--vault); background:var(--signal); margin-right:12px; }
+  .btn-sample.ghost{ background:transparent; color:var(--text); border-color:var(--vault-line-strong); }
+  .chip-sample{ display:inline-flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:.78rem; font-weight:600; padding:6px 12px; border:1px solid var(--signal); color:var(--signal); margin-right:10px; }
+  .chip-sample.wait{ border-color:var(--rust); color:var(--rust); }
+
+  footer.doc-footer{ border-top:1px solid var(--vault-line-strong); padding-top:22px; margin-top:10px; font-size:.8rem; color:var(--text-faint); display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  footer.doc-footer b{ color:var(--text-soft); }
+</style>
+
+<div class="shell">
+  <aside class="toc">
+    <p class="toc-brand">CH<span>O</span>SN</p>
+    <p class="toc-sub">Design Tokens · Day 2</p>
+    <nav>
+      <a href="#color"><span class="n">01</span>Color</a>
+      <a href="#type"><span class="n">02</span>Typography</a>
+      <a href="#layout"><span class="n">03</span>Layout</a>
+      <a href="#principles"><span class="n">04</span>Principles</a>
+      <a href="#motion"><span class="n">05</span>Signature motion</a>
+      <a href="#critique"><span class="n">06</span>Self-critique</a>
+      <a href="#tokens"><span class="n">07</span>Token reference</a>
+      <a href="#copy"><span class="n">08</span>Sample copy</a>
+    </nav>
+  </aside>
+
+  <div class="doc">
+    <header class="hero">
+      <p class="eyebrow">Day 2 of 70 — Design System Lock</p>
+      <h1 class="title">CHOSN Design Tokens</h1>
+      <p class="dek">CHOSN reads as a trading terminal for sneakers, not a storefront: a dark data surface for price comparison, a light editorial surface for news, one reserved signal color for buy/positive movement, and every price treated as the most important thing on its page. Locked below, ready for a Tailwind config and a motion implementation tomorrow.</p>
+      <div class="meta-row">
+        <span><b>Status</b> Locked for build</span>
+        <span><b>Follows</b> Day 1 — Foundation Spec</span>
+        <span><b>Date</b> 2026-09-06</span>
+      </div>
+    </header>
+
+    <!-- ============ 01 COLOR ============ -->
+    <section class="block" id="color">
+      <p class="sec-eyebrow">Section 01</p>
+      <h2 class="sec-title">Color</h2>
+      <p class="sec-intro">Two surfaces, not one: <b style="color:var(--text)">Vault</b> for anywhere prices and market data live, <b style="color:var(--text)">Chalk</b> for anywhere CHOSN is writing, not comparing. One accent — <b style="color:var(--signal)">Signal</b> — is spent exclusively on buy/positive movement. It never decorates a button, a logo, or a nav item.</p>
+
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#0F1613"></div><h4>Vault</h4><div class="hex">#0F1613</div><p>Primary dark surface — price comparison, market intelligence, terminal UI.</p></div>
+        <div class="swatch"><div class="chip" style="background:#EFF1EA"></div><h4>Chalk</h4><div class="hex">#EFF1EA</div><p>Primary light surface — news, landing copy sections, editorial pages.</p></div>
+        <div class="swatch"><div class="chip" style="background:#6B7268"></div><h4>Moss</h4><div class="hex">#6B7268</div><p>Neutral gray-green ramp — hairline borders, dividers, secondary text on both surfaces.</p></div>
+        <div class="swatch"><div class="chip" style="background:#22CC85"></div><h4>Signal</h4><div class="hex">#22CC85</div><p>Reserved: buy signals, positive trend deltas, verified badges. Earned, not decorative.</p></div>
+        <div class="swatch"><div class="chip" style="background:#C6963C"></div><h4>Brass</h4><div class="hex">#C6963C</div><p>Brand mark only — wordmark, section dividers, SKU tag chips. Never semantic.</p></div>
+        <div class="swatch"><div class="chip" style="background:#C4643B"></div><h4>Rust</h4><div class="hex">#C4643B</div><p>Reserved: wait signals, negative trend deltas. Pairs with Signal, never appears alone as brand color.</p></div>
+      </div>
+
+      <div class="callout">
+        <span class="lbl">Deliberately not</span>
+        Warm cream + terracotta, and near-black + a single neon pop, are the two defaults every AI-generated startup page reaches for. Vault carries a green undertone tied specifically to authentication and market-signal meaning, not decoration — and the color that actually identifies CHOSN as a brand is Brass, not Signal. A generic "green fintech app" spends green on its logo; CHOSN doesn't.
+      </div>
+
+      <h3 class="sub">Surface pairing in use</h3>
+      <div class="surface-pair">
+        <div class="surface dark">
+          <span class="tag">Data surface — Vault</span>
+          <h3>Nike Dunk Low "Panda"</h3>
+          <div class="row"><span class="price num">₹9,499</span><span class="delta">▼ 6.0%</span></div>
+        </div>
+        <div class="surface light">
+          <span class="tag">Editorial surface — Chalk</span>
+          <h3>New Balance 990v6 restocks nationwide</h3>
+          <div class="row"><span class="price num">Full sizes back</span><span class="delta">Today, 10:00 IST</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 02 TYPE ============ -->
+    <section class="block" id="type">
+      <p class="sec-eyebrow">Section 02</p>
+      <h2 class="sec-title">Typography</h2>
+      <p class="sec-intro">Three faces, three jobs, never blended: <b style="color:var(--text)">Zilla Slab</b> carries display — its stamped, certificate-like letterforms read like an authentication tag, not a magazine mast. <b style="color:var(--text)">Archivo</b> is the technical grotesk for UI and body. <b style="color:var(--text)">JetBrains Mono</b> is reserved entirely for numbers — a price never sets in the body face.</p>
+
+      <div class="specimen">
+        <div class="face-label"><span>Display — Zilla Slab 700</span><span>hero headline · 64px / 2.6rem shown</span></div>
+        <div class="spec-hero">Every sneaker price,<br>tracked in real time.</div>
+      </div>
+      <div class="specimen">
+        <div class="face-label"><span>Display — Zilla Slab 600</span><span>section headline · 36px / 1.7rem shown</span></div>
+        <div class="spec-section">Nike Dunk Low "Panda"</div>
+      </div>
+      <div class="specimen">
+        <div class="face-label"><span>Body — Archivo 400</span><span>16px, 65ch max width</span></div>
+        <div class="spec-body">CHOSN compares 3,000+ listings across India's retailers and global resale, so you know before you click buy. We never hold your payment or your shoe — we just send you to whoever has the best price, right now.</div>
+      </div>
+      <div class="specimen">
+        <div class="face-label"><span>Data — JetBrains Mono 500</span><span>price hero figure · 44px / 2.5rem shown</span></div>
+        <div class="spec-data num">₹9,499</div>
+      </div>
+      <div class="specimen">
+        <div class="face-label"><span>UI label — Archivo 600</span><span>13px, sentence case, +0.02em tracking — never all-caps</span></div>
+        <div class="spec-label">Compare a price · Best available · 90-day average</div>
+      </div>
+
+      <h3 class="sub">Type scale</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Token</th><th>Face</th><th>Weight</th><th>Size</th><th>Line height</th><th>Tracking</th></tr></thead>
+          <tbody>
+            <tr><td>display-hero</td><td>Zilla Slab</td><td>700</td><td class="num">64px / 4rem</td><td class="num">1.03</td><td class="num">-0.01em</td></tr>
+            <tr><td>display-section</td><td>Zilla Slab</td><td>600</td><td class="num">36px / 2.25rem</td><td class="num">1.1</td><td class="num">-0.005em</td></tr>
+            <tr><td>body</td><td>Archivo</td><td>400</td><td class="num">16px / 1rem</td><td class="num">1.65</td><td class="num">0</td></tr>
+            <tr><td>data-hero</td><td>JetBrains Mono</td><td>500</td><td class="num">44px / 2.75rem</td><td class="num">1.0</td><td class="num">-0.01em</td></tr>
+            <tr><td>data-inline</td><td>JetBrains Mono</td><td>500</td><td class="num">15px / 0.9375rem</td><td class="num">1.3</td><td class="num">0</td></tr>
+            <tr><td>data-delta</td><td>JetBrains Mono</td><td>600</td><td class="num">14px / 0.875rem</td><td class="num">1.2</td><td class="num">0</td></tr>
+            <tr><td>ui-label</td><td>Archivo</td><td>600</td><td class="num">13px / 0.8125rem</td><td class="num">1.2</td><td class="num">+0.02em</td></tr>
+            <tr><td>meta</td><td>Archivo</td><td>500</td><td class="num">12px / 0.75rem</td><td class="num">1.4</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="wire-note"><b>data-hero is set larger than display-section on purpose</b> — on the price comparison page, the current price must outrank its own section headline. A number that reads as body text with extra size isn't hero content; this is the Pass 2 fix in §06.</p>
+    </section>
+
+    <!-- ============ 03 LAYOUT ============ -->
+    <section class="block" id="layout">
+      <p class="sec-eyebrow">Section 03</p>
+      <h2 class="sec-title">Layout</h2>
+      <p class="sec-intro">Alignment follows function: text reads left-aligned and ragged everywhere: numeric columns right-align to tabular-nums, the way any real price table does — magnitudes have to compare visually down a column, which centered or left-aligned numbers never allow.</p>
+
+      <h3 class="sub">Landing hero — asymmetric</h3>
+      <div class="wire"><pre>┌──────────────────────────────────────────────────────────┐
+│ CHOSN          Compare   News   Sign in              [≡]  │
+├──────────────────────────────┬─────────────────────────────┤
+│                                │  ┌─────────────────────┐   │
+│ Every sneaker price,          │  │ NIKE DUNK LOW PANDA   │   │
+│ tracked in real time.         │  │ DD1391-100            │   │
+│                                │  │                        │   │
+│ CHOSN compares 3,000+         │  │ ₹9,499      ▲ 2.1%    │   │
+│ listings across India's       │  │ ──────╱╲──────────    │   │  ← live ticker, §05
+│ retailers and global          │  │ best price · Flipkart  │   │
+│ resale, so you know           │  │                        │   │
+│ before you click buy.         │  └─────────────────────┘   │
+│                                │                              │
+│ [Compare a price]  Join →     │                              │
+└────────────────────────────────┴────────────────────────────┘</pre></div>
+      <p class="wire-note">A centered headline-over-button block is the one pattern every SaaS landing page shares. Putting a real, moving data object in the other half of the fold — instead of a screenshot or an illustration — proves CHOSN is a data product in the first frame, before a word of copy is read. Left-aligned text, ragged right; the ticker card right-anchors to the grid edge.</p>
+
+      <h3 class="sub">Price comparison — dense terminal, not cards</h3>
+      <div class="wire"><pre>┌──────────────────────────────────────────────────────────┐
+│ Nike Dunk Low "Panda"     DD1391-100          Men's UK 9   │
+├──────────────────────────────────────────────────────────┤
+│ CURRENT     BEST       30D AVG    90D AVG     TREND        │
+│ ₹9,499      ₹9,499     ₹9,810     ₹10,120     ▼ 6.0%       │
+│                                                 BUY ●       │
+├──────────────────────────────────────────────────────────┤
+│ RETAILER          PRICE      SHIP     TOTAL      STOCK     │
+│ Flipkart            ₹9,499    free     ₹9,499     ●  →     │
+│ Culture Circle      ₹9,650    ₹150     ₹9,800     ●  →     │
+│ StockX              ₹10,220   ₹400     ₹10,620    ●  →     │
+│ Myntra               ₹10,499   free     ₹10,499    ○  →     │
+└──────────────────────────────────────────────────────────┘</pre></div>
+      <p class="wire-note">A card grid would break the one thing this page has to do: let a user scan eight retailers in one eye-sweep. Cards force scrolling and hide the comparison inside repetition; a dense table with right-aligned tabular numbers is what Skyscanner, and every real trading terminal, already learned works.</p>
+
+      <h3 class="sub">News / magazine — editorial grid, mixed density</h3>
+      <div class="wire"><pre>┌──────────────────────────────────────────────────────────┐
+│ ┌──────────────────────────────┐  ┌──────────────────────┐ │
+│ │ FEATURE — full image + head    │  │ ↳ Jordan 4 restock    │ │
+│ │ New Balance 990v6 restocks     │  │ ↳ Yeezy price drop    │ │
+│ │ nationwide — full sizes back   │  │ ↳ Adidas Samba OG     │ │
+│ │                                 │  │ ↳ Asics Gel-1130      │ │
+│ └──────────────────────────────┘  └──────────────────────┘ │
+│ ┌───────────────┐ ┌───────────────┐    UPCOMING DROPS →    │
+│ │ secondary story │ │ secondary story │  Sat · Travis Scott  │
+│ └───────────────┘ └───────────────┘    x Fragment            │
+└──────────────────────────────────────────────────────────┘</pre></div>
+      <p class="wire-note">One large feature, a dense text-only wire list beside it, two secondary stories below — deliberately uneven, the way a real news desk prioritizes, not a uniform grid of identical SaaS cards. The list column carries no images on purpose: it reads like a ticker for stories, matching the terminal's own information density.</p>
+    </section>
+
+    <!-- ============ 04 PRINCIPLES ============ -->
+    <section class="block" id="principles">
+      <p class="sec-eyebrow">Section 04</p>
+      <h2 class="sec-title">Principles</h2>
+      <p class="sec-intro">Four rules that hold for every screen built after today, not just the three in the brief.</p>
+      <div class="principles">
+        <div class="principle"><span class="idx">01</span><p><b>Numbers outrank the sentence around them.</b> Any price, percentage, SKU, or timestamp sets in JetBrains Mono at a weight and size that reads as the important thing on the line, even mid-paragraph.</p></div>
+        <div class="principle"><span class="idx">02</span><p><b>Zero radius, hairline border, no shadow — ever.</b> Depth comes from Vault vs Vault-raised surface contrast, never from a drop shadow. One language, no exceptions, including on chips and buttons.</p></div>
+        <div class="principle"><span class="idx">03</span><p><b>Motion is the ticker, or it's feedback.</b> Nothing fades, slides, or reveals on scroll. A landing section below the fold, or a news list item, appears exactly as it will sit — instantly, at rest.</p></div>
+        <div class="principle"><span class="idx">04</span><p><b>Signal is earned; Brass is the brand.</b> Green only marks an actual positive number or a verified badge. Gold marks CHOSN itself — wordmark, dividers, SKU tags — and carries no meaning about price.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 05 MOTION ============ -->
+    <section class="block" id="motion">
+      <p class="sec-eyebrow">Section 05</p>
+      <h2 class="sec-title">Signature motion — the hero ticker</h2>
+      <p class="sec-intro">The one non-user-triggered sequence on the entire site: a continuous, ambient price ticker in the landing hero's right panel — not a stacked combination of scroll reveals, tilts, and fades. Below is the real thing, running.</p>
+
+      <div class="ticker-shell">
+        <div class="ticker-track">
+          <div class="tick"><span class="sku">DD1391-100</span><span class="p">₹9,499</span><span class="up">▲ 2.1%</span></div>
+          <div class="tick"><span class="sku">CT8532-201</span><span class="p">₹18,750</span><span class="down">▼ 3.4%</span></div>
+          <div class="tick"><span class="sku">FZ5897-100</span><span class="p">₹12,999</span><span class="up">▲ 0.8%</span></div>
+          <div class="tick"><span class="sku">HQ1234-002</span><span class="p">₹7,200</span><span class="down">▼ 1.2%</span></div>
+          <div class="tick"><span class="sku">GX9876-500</span><span class="p">₹22,400</span><span class="up">▲ 5.6%</span></div>
+          <div class="tick"><span class="sku">DD1391-100</span><span class="p">₹9,499</span><span class="up">▲ 2.1%</span></div>
+          <div class="tick"><span class="sku">CT8532-201</span><span class="p">₹18,750</span><span class="down">▼ 3.4%</span></div>
+          <div class="tick"><span class="sku">FZ5897-100</span><span class="p">₹12,999</span><span class="up">▲ 0.8%</span></div>
+          <div class="tick"><span class="sku">HQ1234-002</span><span class="p">₹7,200</span><span class="down">▼ 1.2%</span></div>
+          <div class="tick"><span class="sku">GX9876-500</span><span class="p">₹22,400</span><span class="up">▲ 5.6%</span></div>
+        </div>
+      </div>
+      <p class="wire-note">Hover to pause — try it. Each row colors independently off its own sign; the ticker itself never carries a fixed color. Reduced-motion visitors get this exact same content frozen, not a blank space.</p>
+
+      <div class="codeblock">
+<pre><span class="c1">/* Engineer handoff — CSS-only, no JS required */</span>
+<span class="c2">.ticker-track</span> {
+  display: flex; width: max-content;
+  animation: ticker-scroll 26s linear infinite;
+}
+<span class="c2">.ticker-shell:hover .ticker-track</span> { animation-play-state: paused; }
+
+<span class="c1">@keyframes ticker-scroll</span> {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }  <span class="c1">/* track = content ×2, seamless wrap */</span>
+}
+
+<span class="c1">@media (prefers-reduced-motion: reduce) {</span>
+  .ticker-track { animation: none; transform: none; }
+  .ticker-track .tick:nth-child(n+7) { display: none; }  <span class="c1">/* static top movers only */</span>
+<span class="c1">}</span></pre>
+      </div>
+      <p class="wire-note" style="margin-top:14px;"><b>Trigger:</b> page load, runs continuously. <b>Pause:</b> hover (direct feedback, allowed). <b>Reduced motion:</b> no transform at all — same real rows, first six, static. Nothing else on the landing page animates without a user action.</p>
+    </section>
+
+    <!-- ============ 06 CRITIQUE ============ -->
+    <section class="block" id="critique">
+      <p class="sec-eyebrow">Section 06</p>
+      <h2 class="sec-title">Pass 2 — self-critique</h2>
+      <p class="sec-intro">What Pass 1 got checked against, and what actually moved.</p>
+      <div class="revlog">
+        <div class="rev"><div class="check"><span class="verdict revised">Revised</span><br>Generic-if-logo-swapped?</div><p><b>Display face changed from Fraunces to Zilla Slab.</b> Fraunces is currently one of the most common "distinctive serif" defaults regardless of configuration. Zilla Slab's stamped, certificate-like letterforms reference sneaker authentication tags and box labels directly — a reason grounded in CHOSN's own content, not just a different popular pick.</p></div>
+        <div class="rev"><div class="check"><span class="verdict pass">Pass</span><br>Motion scattered on scroll?</div><p>Held from Pass 1, tightened in writing: Principle 03 now explicitly states landing sections and news list items render at rest with no entrance animation — closing the loophole where "just the hero" quietly grows into fade-ups everywhere else.</p></div>
+        <div class="rev"><div class="check"><span class="verdict pass">Pass</span><br>One radius/shadow language?</div><p>Zero radius, hairline border, no shadow, no exceptions — including chips and buttons, which is where most systems quietly cave and round "just this once." Confirmed with no revision needed.</p></div>
+        <div class="rev"><div class="check"><span class="verdict revised">Revised</span><br>Does price data read as hero content?</div><p><b>data-hero bumped from 40px to 44px</b> — larger than display-section (36px). In Pass 1 the price figure was sized close to a section headline; now it's larger than the section headline sitting right next to it on the comparison page, which is the actual test of "hero content."</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 07 TOKENS ============ -->
+    <section class="block" id="tokens">
+      <p class="sec-eyebrow">Section 07</p>
+      <h2 class="sec-title">Token reference</h2>
+      <p class="sec-intro">Drop-in shape for tomorrow's Tailwind config.</p>
+      <div class="codeblock">
+<pre><span class="c1">// tailwind.config.js — theme.extend</span>
+{
+  <span class="c2">colors</span>: {
+    vault:        <span class="c1">'#0F1613'</span>,
+    'vault-raised': <span class="c1">'#182420'</span>,
+    chalk:        <span class="c1">'#EFF1EA'</span>,
+    'chalk-recessed': <span class="c1">'#E4E6DC'</span>,
+    moss:         <span class="c1">'#6B7268'</span>,
+    signal:       <span class="c1">'#22CC85'</span>,
+    brass:        <span class="c1">'#C6963C'</span>,
+    rust:         <span class="c1">'#C4643B'</span>,
+  },
+  <span class="c2">fontFamily</span>: {
+    display: [<span class="c1">'"Zilla Slab"'</span>, <span class="c1">'Georgia'</span>, <span class="c1">'serif'</span>],
+    sans:    [<span class="c1">'Archivo'</span>, <span class="c1">'system-ui'</span>, <span class="c1">'sans-serif'</span>],
+    mono:    [<span class="c1">'"JetBrains Mono"'</span>, <span class="c1">'ui-monospace'</span>, <span class="c1">'monospace'</span>],
+  },
+  <span class="c2">spacing</span>: { <span class="c1">// 4px base grid — dense tables need a tight unit</span>
+    1: <span class="c1">'4px'</span>, 2: <span class="c1">'8px'</span>, 3: <span class="c1">'12px'</span>, 4: <span class="c1">'16px'</span>,
+    6: <span class="c1">'24px'</span>, 8: <span class="c1">'32px'</span>, 12: <span class="c1">'48px'</span>, 16: <span class="c1">'64px'</span>, 24: <span class="c1">'96px'</span>,
+  },
+  <span class="c2">borderRadius</span>: { none: <span class="c1">'0px'</span>, DEFAULT: <span class="c1">'0px'</span>, chip: <span class="c1">'2px'</span> },
+  <span class="c2">boxShadow</span>: { none: <span class="c1">'none'</span> }, <span class="c1">// do not add others — border + surface tone only</span>
+}</pre>
+      </div>
+    </section>
+
+    <!-- ============ 08 COPY ============ -->
+    <section class="block" id="copy">
+      <p class="sec-eyebrow">Section 08</p>
+      <h2 class="sec-title">Sample copy</h2>
+      <p class="sec-intro">Real copy, set at scale — so the type scale above is judged against what CHOSN actually says, not lorem ipsum.</p>
+      <div class="copy-block">
+        <div class="copy-line"><span class="k">Hero headline</span><div class="headline-sample">Every sneaker price, tracked in real time.</div></div>
+        <div class="copy-line"><span class="k">Hero subhead</span><div class="subhead-sample">CHOSN compares 3,000+ listings across India's retailers and global resale, so you know before you click buy.</div></div>
+        <div class="copy-line"><span class="k">Primary CTA + scroll CTA</span><div><a class="btn-sample" href="#">Compare a price</a><a class="btn-sample ghost" href="#">Join the community</a></div></div>
+        <div class="copy-line"><span class="k">Price-signal labels</span><div><span class="chip-sample">Buy · 6% below its 90-day average</span><span class="chip-sample wait">Wait · near its 90-day high</span></div></div>
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      <span><b>CHOSN</b> — a trading terminal for sneakers, never a marketplace.</span>
+      <span>Design tokens for Phase 2 build — treat any deviation from this file as an amendment, logged, not a silent choice.</span>
+    </footer>
+  </div>
+</div>

@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Anything Tailwind's config can't express directly — lifted straight
+ * from the Day 2 design tokens doc, §05 "Signature motion."
+ */
+:root {
+  --ease-chosn: cubic-bezier(0.4, 0, 0.2, 1);
+  --ticker-duration: 26s;
+}
+
+@layer base {
+  body {
+    @apply bg-vault font-sans text-text;
+  }
+
+  ::selection {
+    @apply bg-signal/20;
+  }
+}
+
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Content inside .ticker-track must be duplicated ×2 for a seamless wrap. */
+.ticker-track {
+  animation: ticker-scroll var(--ticker-duration) linear infinite;
+}
+
+.ticker-shell:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+    transform: none;
+  }
+}

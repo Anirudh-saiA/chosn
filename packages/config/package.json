@@ -1,0 +1,9 @@
+{
+  "name": "@chosn/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tailwind-preset": "./tailwind-preset.js",
+    "./typescript/*": "./typescript/*"
+  }
+}
