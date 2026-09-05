@@ -8,10 +8,16 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: true,
-  widenClientFileUpload: true,
-  disableLogger: true,
-});
+// Sentry's build plugin needs a real auth token to create a release and
+// upload source maps — unlike the runtime SDK (sentry.*.config.ts),
+// it fails the build outright without one rather than no-op'ing
+// quietly. Only wrap the config once a token actually exists.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: true,
+      widenClientFileUpload: true,
+      disableLogger: true,
+    })
+  : nextConfig;
