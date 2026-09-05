@@ -8,16 +8,22 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-// Sentry's build plugin needs a real auth token to create a release and
-// upload source maps — unlike the runtime SDK (sentry.*.config.ts),
-// it fails the build outright without one rather than no-op'ing
-// quietly. Only wrap the config once a token actually exists.
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(nextConfig, {
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      silent: true,
-      widenClientFileUpload: true,
-      disableLogger: true,
-    })
-  : nextConfig;
+// Sentry's build plugin tries to create a release and upload source
+// maps via sentry-cli, and fails the build outright ('Project not
+// found') unless org/project/token resolve to a real Sentry project —
+// unlike the runtime SDK, which no-ops quietly without a DSN. We saw
+// this fail even with SENTRY_AUTH_TOKEN unset on our end, meaning
+// something (likely an auto-suggested Vercel↔Sentry integration) was
+// injecting one anyway — so this doesn't trust env vars at all. It's
+// hard-disabled until Sentry is actually being set up: flip both to
+// `false` at that point, once org/project/token point at a real
+// project.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  disableServerWebpackPlugin: true,
+  disableClientWebpackPlugin: true,
+});
