@@ -1,11 +1,15 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    // Imported dynamically, and only when a DSN exists, so the Sentry
+    // SDK stays out of the client bundle entirely while Sentry is
+    // unconfigured — it was ~90KB of parse-and-do-nothing on every page
+    // load. Set NEXT_PUBLIC_SENTRY_DSN and this wires itself back up.
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    void import('@sentry/nextjs').then((Sentry) => Sentry.captureException(error));
   }, [error]);
 
   return (

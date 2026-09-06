@@ -20,12 +20,12 @@ const colors = {
   // Reserved accents — see Day 2 principle 04. Never used decoratively.
   signal: '#22CC85', // buy signals, positive trend deltas, verified badges
   brass: '#C6963C', // CHOSN's actual brand color — wordmark, dividers, SKU chips
-  rust: '#C4643B', // wait signals, negative trend deltas
+  rust: '#CF6F46', // wait signals, negative trend deltas
 
   // Text
   text: '#EDEFE7',
   'text-soft': '#9CA69C',
-  'text-faint': '#6C766B',
+  'text-faint': '#848E83',
   'text-chalk': '#141B16',
   'text-chalk-soft': '#57604F',
 };
