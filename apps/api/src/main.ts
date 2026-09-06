@@ -3,13 +3,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
-import { runMigrations } from './db/migrate';
+import { ensurePricePartitions, runMigrations } from './db/migrate';
 
 async function bootstrap() {
   if (process.env.DATABASE_URL) {
     const migrationPool = new Pool({ connectionString: process.env.DATABASE_URL });
     try {
       await runMigrations(migrationPool);
+      await ensurePricePartitions(migrationPool);
     } catch (err) {
       // Don't crash boot over a migration hiccup — /health already
       // surfaces DB connectivity problems clearly.
