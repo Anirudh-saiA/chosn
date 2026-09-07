@@ -212,24 +212,89 @@ export const retailerProductMappings = pgTable(
 );
 
 /**
- * Computed cache powering Feature 2's summary block. Refreshed on write,
- * not read — rolling aggregates over PriceSnapshot don't scale to a page
- * load once history is months deep.
+ * Computed cache powering Feature 2's summary block (Day 9's Market
+ * Intelligence card). Refreshed hourly by MarketIntelligenceService, not
+ * read — rolling aggregates over PriceSnapshot don't scale to a page
+ * load once history is months deep, so this is the only table the price
+ * page ever queries for these numbers.
+ *
+ * Every monetary column is INR, via effective_price_inr() (price +
+ * shipping, currency-converted) — see 0004_market_intelligence.sql.
+ * current_price and best_available_price are deliberately allowed to
+ * differ: current_price is the freshest valid snapshot regardless of
+ * stock ("what does this cost right now"), best_available_price is the
+ * cheapest in-stock offer ("where would you actually buy it"). Both can
+ * be null if every retailer is stale or unmapped.
  */
 export const marketSummaries = pgTable('market_summaries', {
   sneakerVariantId: uuid('sneaker_variant_id')
     .primaryKey()
     .references(() => sneakerVariants.id, { onDelete: 'cascade' }),
   currentPrice: numeric('current_price', { precision: 12, scale: 2 }),
-  bestPrice: numeric('best_price', { precision: 12, scale: 2 }),
+  currentRetailerId: uuid('current_retailer_id').references(() => retailers.id, {
+    onDelete: 'set null',
+  }),
+  currentRetailerSlug: text('current_retailer_slug'),
+  bestAvailablePrice: numeric('best_available_price', { precision: 12, scale: 2 }),
   bestRetailerId: uuid('best_retailer_id').references(() => retailers.id, {
     onDelete: 'set null',
   }),
+  bestRetailerSlug: text('best_retailer_slug'),
   avg30d: numeric('avg_30d', { precision: 12, scale: 2 }),
   avg90d: numeric('avg_90d', { precision: 12, scale: 2 }),
   trendPct: numeric('trend_pct', { precision: 6, scale: 2 }),
+  /** 'good_time_to_buy' | 'neutral' | 'consider_waiting' | 'insufficient_data' */
   signal: text('signal'),
+  /** How many real daily_best_prices rows fed avg_30d / avg_90d. */
+  daysHistory30d: integer('days_history_30d').notNull().default(0),
+  daysHistory90d: integer('days_history_90d').notNull().default(0),
+  /** False until daysHistory30d clears MIN_DAYS_FOR_SIGNAL — see the service. */
+  sufficientData: boolean('sufficient_data').notNull().default(false),
+  currency: text('currency').notNull().default('INR'),
   computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One row per (variant, day): the cheapest available effective price a
+ * buyer could actually get that day, across all retailers — not an
+ * average of every offer. The hourly job upserts today's row; avg_30d /
+ * avg_90d are then a cheap AVG() over this table rather than a live
+ * aggregation over months of raw price_snapshots.
+ */
+export const dailyBestPrices = pgTable(
+  'daily_best_prices',
+  {
+    sneakerVariantId: uuid('sneaker_variant_id')
+      .notNull()
+      .references(() => sneakerVariants.id, { onDelete: 'cascade' }),
+    day: date('day').notNull(),
+    bestPriceInr: numeric('best_price_inr', { precision: 14, scale: 2 }).notNull(),
+    bestRetailerId: uuid('best_retailer_id').references(() => retailers.id, {
+      onDelete: 'set null',
+    }),
+    computedAt: timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // The physical PRIMARY KEY (sneaker_variant_id, day) is declared in
+    // 0004_market_intelligence.sql — this mirrors it for Drizzle's typed
+    // query builder, which doesn't own this table's DDL (see file header).
+    uniq: uniqueIndex('daily_best_prices_variant_day_unique').on(t.sneakerVariantId, t.day),
+    variantDayIdx: index('daily_best_prices_variant_day_idx').on(t.sneakerVariantId, t.day.desc()),
+  }),
+);
+
+/**
+ * Static, manually-maintained conversion rates to INR — see
+ * effective_price_inr() in 0004_market_intelligence.sql for why
+ * conversion happens at read time and never by rewriting price_snapshots.
+ * No live FX feed is wired up; a currency with no row here is excluded
+ * from ranking rather than compared to INR as if the numbers matched.
+ */
+export const fxRates = pgTable('fx_rates', {
+  currency: text('currency').primaryKey(),
+  rateToInr: numeric('rate_to_inr', { precision: 14, scale: 6 }).notNull(),
+  source: text('source').notNull().default('static'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** Day 5's table, brought under Drizzle rather than left hand-rolled. */

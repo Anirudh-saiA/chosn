@@ -11,7 +11,9 @@
     "test": "echo \"no tests yet\" && exit 0",
     "fetch:once": "node dist/scripts/fetch-once.js",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "node dist/scripts/migrate.js"
+    "db:migrate": "node dist/scripts/migrate.js",
+    "mi:backfill": "node dist/scripts/backfill-daily-best-prices.js",
+    "mi:verify": "node dist/scripts/verify-market-intelligence.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
