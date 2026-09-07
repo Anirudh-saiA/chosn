@@ -15,23 +15,24 @@ import { MarketIntelligenceCacheService } from './market-intelligence-cache.serv
 /**
  * Buy/Neutral/Wait thresholds (Day 9 task 4).
  *
- * ASSUMPTION — FLAGGED FOR SIGN-OFF: these are the exact numbers the Day
- * 9 brief itself proposes, adopted as-is rather than re-derived, because
- * they directly become user-facing copy ("Good Time to Buy") and the
- * brief asks for explicit sign-off before that ships. Change these two
- * constants and every downstream number (already-computed market_summaries
- * rows included, once the next hourly refresh runs) follows.
+ * SIGNED OFF — widened from the Day 9 brief's own ±5% suggestion to ±8%
+ * per explicit review: at typical sneaker price points, ±5% sits close
+ * enough to routine day-to-day noise that the signal would flip often
+ * and mean less each time. ±8% only fires on a move worth acting on.
+ * Change these two constants and every downstream number
+ * (already-computed market_summaries rows included, once the next
+ * hourly refresh runs) follows.
  *
- *   trend_pct <= -5%           -> "Good Time to Buy"
- *   -5% < trend_pct < +5%      -> "Neutral"
- *   trend_pct >= +5%           -> "Consider Waiting"
+ *   trend_pct <= -8%           -> "Good Time to Buy"
+ *   -8% < trend_pct < +8%      -> "Neutral"
+ *   trend_pct >= +8%           -> "Consider Waiting"
  *
  * trend_pct = (current_best - avg_30d) / avg_30d — today's best available
  * price against the 30-day rolling average of daily best prices.
  */
 export const SIGNAL_THRESHOLDS = {
-  buyAtOrBelow: -0.05,
-  waitAtOrAbove: 0.05,
+  buyAtOrBelow: -0.08,
+  waitAtOrAbove: 0.08,
 } as const;
 
 /**
@@ -41,7 +42,8 @@ export const SIGNAL_THRESHOLDS = {
  * Day 1's transparency principle means saying "gathering data" beats
  * quietly presenting an unreliable one.
  *
- * ASSUMPTION — FLAGGED FOR SIGN-OFF alongside the thresholds above.
+ * SIGNED OFF at 7 days — long enough to smooth single-day noise, short
+ * enough that a newly-added variant isn't silent for two weeks.
  */
 export const MIN_DAYS_FOR_SIGNAL = 7;
 

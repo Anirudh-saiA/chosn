@@ -54,22 +54,23 @@ contributing an increasingly wrong one.
 
 ## Buy / Neutral / Wait thresholds
 
-**ASSUMPTION — FLAGGED FOR SIGN-OFF.** These are the exact numbers the
-Day 9 brief itself proposes, adopted as-is because they become
-user-facing copy directly. Change them in
+**SIGNED OFF.** Widened from the Day 9 brief's own ±5% suggestion to
+±8% on explicit review — at typical sneaker price points, ±5% sits
+close enough to routine day-to-day noise that the signal would flip
+often and mean less each time. Change them in
 `market-intelligence.service.ts` (`SIGNAL_THRESHOLDS`) and every
 downstream number follows on the next hourly refresh.
 
 | `trendPct` | Signal | Suggested copy |
 |---|---|---|
-| ≤ -5% | `good_time_to_buy` | "Good Time to Buy" |
-| -5% to +5% | `neutral` | "Neutral" |
-| ≥ +5% | `consider_waiting` | "Consider Waiting" |
+| ≤ -8% | `good_time_to_buy` | "Good Time to Buy" |
+| -8% to +8% | `neutral` | "Neutral" |
+| ≥ +8% | `consider_waiting` | "Consider Waiting" |
 | *(fewer than 7 days of history)* | `insufficient_data` | "Gathering price history" |
 
-`MIN_DAYS_FOR_SIGNAL = 7` is a second assumption bundled with the same
-sign-off request: fewer real days than that and a "trend" is noise, not
-a claim CHOSN should put a buy/wait label on.
+`MIN_DAYS_FOR_SIGNAL = 7` is signed off separately, unchanged from the
+brief: long enough to smooth single-day noise, short enough that a
+newly-added variant isn't silent for two weeks.
 
 ## Caching
 
