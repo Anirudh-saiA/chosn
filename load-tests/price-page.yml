@@ -1,0 +1,42 @@
+config:
+  # Overridden per run with --target (local build, staging, or prod) --
+  # this default is local only, never used to hit anything real by accident.
+  target: "http://localhost:3001"
+  phases:
+    - duration: 15
+      arrivalRate: 5
+      name: warm-up
+    - duration: 30
+      arrivalRate: 5
+      rampTo: 50
+      name: ramp to ~50 concurrent-equivalent
+    - duration: 30
+      arrivalRate: 50
+      name: sustain at brief's stated v1 target (50-100 concurrent)
+  ensure:
+    p95: 300
+    maxErrorRate: 1
+
+# Day 11 task 6: the price comparison page (Day 10). Five real
+# launch-catalog variants, weighted evenly, so the test isn't just
+# hammering one page's ISR cache in isolation — it's what a real spread
+# of traffic across the catalog looks like.
+scenarios:
+  - name: price comparison page
+    weight: 1
+    flow:
+      - get:
+          url: "/sneakers/DD1391-100/8"
+      - think: 1
+  - name: price comparison page (AF1)
+    weight: 1
+    flow:
+      - get:
+          url: "/sneakers/CW2288-111/9"
+      - think: 1
+  - name: price comparison page (Samba)
+    weight: 1
+    flow:
+      - get:
+          url: "/sneakers/B75806/8"
+      - think: 1

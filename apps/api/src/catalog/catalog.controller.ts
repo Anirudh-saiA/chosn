@@ -1,5 +1,5 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
-import { CatalogService, type CatalogResponse } from './catalog.service';
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import { CatalogService, type CatalogResponse, type SearchResponse } from './catalog.service';
 
 /**
  * The one endpoint Day 10's price comparison page calls server-side:
@@ -14,6 +14,35 @@ import { CatalogService, type CatalogResponse } from './catalog.service';
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
+
+  /**
+   * Day 11 search/browse. `search` is a fixed one-segment path, `:size`
+   * below needs two — no route-order ambiguity to worry about, but it's
+   * declared first anyway (a static route before a dynamic one) as the
+   * convention that stays unambiguous if either route ever changes shape.
+   */
+  @Get('search')
+  async search(
+    @Query('q') q?: string,
+    @Query('brand') brand?: string,
+    @Query('signal') signal?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<SearchResponse> {
+    return this.catalog.search({
+      q,
+      brand,
+      signal,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
+  }
+
+  /** Feeds Next's generateStaticParams() — see listVariantParams()'s doc comment. */
+  @Get('variants')
+  async listVariants(): Promise<{ styleCode: string; size: number }[]> {
+    return this.catalog.listVariantParams();
+  }
 
   @Get(':styleCode/:size')
   async getVariant(

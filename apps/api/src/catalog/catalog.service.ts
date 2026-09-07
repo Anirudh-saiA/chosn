@@ -1,7 +1,11 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { MarketIntelligenceService, type MarketIntelligenceSummary } from '../pricing/market-intelligence.service';
+import {
+  MarketIntelligenceService,
+  type MarketIntelligenceSummary,
+  type Signal,
+} from '../pricing/market-intelligence.service';
 
 export interface CatalogOffer {
   retailerSlug: string;
@@ -48,6 +52,37 @@ export interface CatalogResponse {
   siblingSizes: SiblingSize[];
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligenceSummary | null;
+}
+
+export interface SearchParams {
+  q?: string;
+  brand?: string;
+  signal?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SearchResultItem {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  silhouette: string | null;
+  primaryImageUrl: string | null;
+  /** The variant a card's "click through" navigates to — see search()'s doc comment. */
+  defaultSize: number;
+  defaultSizeSystem: string;
+  currentPrice: number | null;
+  bestAvailablePrice: number | null;
+  signal: Signal | null;
+  currency: string;
+}
+
+export interface SearchResponse {
+  results: SearchResultItem[];
+  total: number;
+  /** Every brand in the catalog, unfiltered — populates the filter UI regardless of the current query. */
+  brands: string[];
 }
 
 interface VariantRow {
@@ -184,4 +219,152 @@ export class CatalogService {
       };
     });
   }
+
+  /**
+   * Search + browse (Day 11 task 1-3). One indexed query, not one per
+   * card: joins sneakers -> its lowest-size variant -> that variant's
+   * precomputed market_summaries row, so a whole grid's worth of prices
+   * comes back in a single round trip rather than N Redis/Postgres
+   * reads for N cards — still no live aggregation (market_summaries is
+   * exactly the precomputed table Day 9 built for this), just read
+   * efficiently rather than one-card-at-a-time.
+   *
+   * "Default size" = each sneaker's lowest listed size. There's no real
+   * popularity signal to rank by yet at this catalog size — a documented,
+   * deterministic choice rather than an arbitrary one, easy to swap for
+   * an actual "most-ordered size" once that data exists.
+   *
+   * Filtering is a SQL WHERE clause (brand, signal, full-text query),
+   * never a client-side filter of the whole catalog — task 3.
+   */
+  async search(params: SearchParams): Promise<SearchResponse> {
+    const limit = Math.min(Math.max(params.limit ?? 24, 1), 100);
+    const offset = Math.max(params.offset ?? 0, 0);
+    const tsQuery = params.q ? buildPrefixTsQuery(params.q) : null;
+
+    const conditions = [];
+    if (tsQuery) conditions.push(sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`);
+    if (params.brand) conditions.push(sql`s.brand = ${params.brand}`);
+    if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
+    const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
+
+    const rankExpr = tsQuery
+      ? sql`ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))`
+      : sql`0`;
+    // Unqualified column names, deliberately — the outer SELECT reads
+    // FROM matched (the CTE), where `s` is out of scope; `s.brand` here
+    // threw "missing FROM-clause entry for table s" until caught by
+    // actually running the query rather than trusting it by inspection.
+    const orderBy = tsQuery ? sql`rank DESC, brand ASC, model ASC` : sql`brand ASC, model ASC`;
+
+    const [{ rows }, { rows: brandRows }] = await Promise.all([
+      this.db.execute(sql`
+        WITH default_variant AS (
+          SELECT DISTINCT ON (sneaker_id) sneaker_id, id AS variant_id, size, size_system
+          FROM sneaker_variants
+          ORDER BY sneaker_id, size ASC
+        ),
+        matched AS (
+          SELECT s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
+                 dv.size, dv.size_system,
+                 ms.current_price, ms.best_available_price, ms.signal, ms.currency,
+                 ${rankExpr} AS rank
+          FROM sneakers s
+          JOIN default_variant dv ON dv.sneaker_id = s.id
+          LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
+          ${where}
+        )
+        SELECT *, count(*) OVER() AS total_count
+        FROM matched
+        ORDER BY ${orderBy}
+        LIMIT ${limit} OFFSET ${offset}
+      `),
+      this.db.execute(sql`SELECT DISTINCT brand FROM sneakers ORDER BY brand`),
+    ]);
+
+    const results = (rows as unknown as SearchRow[]).map((r) => ({
+      styleCode: r.style_code,
+      brand: r.brand,
+      model: r.model,
+      colorway: r.colorway,
+      silhouette: r.silhouette,
+      primaryImageUrl: r.primary_image_url,
+      defaultSize: Number(r.size),
+      defaultSizeSystem: r.size_system,
+      currentPrice: r.current_price !== null ? Number(r.current_price) : null,
+      bestAvailablePrice: r.best_available_price !== null ? Number(r.best_available_price) : null,
+      signal: (r.signal as Signal | null) ?? null,
+      currency: r.currency ?? 'INR',
+    }));
+
+    return {
+      results,
+      total: rows.length > 0 ? Number((rows[0] as unknown as SearchRow).total_count) : 0,
+      brands: (brandRows as unknown as { brand: string }[]).map((b) => b.brand),
+    };
+  }
+
+  /**
+   * Every (style_code, size) pair with at least one retailer mapping —
+   * feeds Next's generateStaticParams() so the price comparison page is
+   * pre-rendered and cached as a real static route per variant, instead
+   * of every request re-rendering on demand. Found via Day 11's load
+   * test: without this, the page built as a Dynamic (ƒ) route despite
+   * `revalidate = 300`, and concurrent requests queued through
+   * per-request React rendering on a single Node process — see
+   * load-tests/run-report.md for the before/after numbers.
+   */
+  async listVariantParams(): Promise<{ styleCode: string; size: number }[]> {
+    const { rows } = await this.db.execute(sql`
+      SELECT DISTINCT s.style_code, v.size
+      FROM sneaker_variants v
+      JOIN sneakers s ON s.id = v.sneaker_id
+      WHERE EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
+      ORDER BY s.style_code, v.size
+    `);
+    return (rows as unknown as { style_code: string; size: string }[]).map((r) => ({
+      styleCode: r.style_code,
+      size: Number(r.size),
+    }));
+  }
+}
+
+interface SearchRow {
+  style_code: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  silhouette: string | null;
+  primary_image_url: string | null;
+  size: string;
+  size_system: string;
+  current_price: string | null;
+  best_available_price: string | null;
+  signal: string | null;
+  currency: string | null;
+  total_count: string;
+}
+
+/**
+ * User input -> a safe prefix tsquery ("dun jo" -> "dun:* & jo:*"), so
+ * "query-as-you-type" (task 2) matches while the last word is still
+ * being typed. Tokens are stripped to word characters/hyphens before
+ * being joined into the tsquery string — not because string
+ * interpolation into `sql` is unsafe here (it still goes through as a
+ * bound parameter, same as any other value), but because an
+ * unsanitized token can contain tsquery's own operators (&, |, :, ()) and
+ * make to_tsquery() throw on malformed syntax. Returns null (skip the
+ * search filter entirely) rather than ever passing an empty/invalid
+ * query through, which fails open to "show everything" instead of a
+ * confusing empty result.
+ */
+function buildPrefixTsQuery(q: string): string | null {
+  const tokens = q
+    .trim()
+    .split(/\s+/)
+    .map((t) => t.replace(/[^\p{L}\p{N}-]/gu, ''))
+    .filter(Boolean)
+    .slice(0, 8);
+  if (tokens.length === 0) return null;
+  return tokens.map((t) => `${t}:*`).join(' & ');
 }
