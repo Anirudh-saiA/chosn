@@ -1,0 +1,39 @@
+name: Railway keep-alive
+
+# Free-tier Railway services can idle down after a stretch with no
+# inbound traffic. That's fine for a stateless web request — the next
+# hit just wakes it — but the price-fetch pipeline (Day 6/7) depends on
+# BullMQ's in-process scheduler staying alive continuously to fire six
+# retailers on their own 12h/24h/7d cadences. A sleeping container skips
+# those runs silently; nothing crashes, prices just stop updating.
+#
+# This ping is cheap insurance: hitting a lightweight health endpoint
+# often enough that the container never idles out, so the scheduler
+# never stops. It does not replace /health/fetch monitoring — it just
+# keeps the process it depends on running.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: railway-keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    name: Ping API health endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /health
+        run: |
+          url="https://chosnapi-production.up.railway.app/health"
+          status=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 20 "$url" || echo "curl_failed")
+          echo "HTTP status: $status"
+          cat /tmp/body 2>/dev/null || true
+          echo
+          if [ "$status" != "200" ]; then
+            echo "::warning::Health check did not return 200 (got: $status). Railway may be asleep, redeploying, or down."
+            exit 1
+          fi
