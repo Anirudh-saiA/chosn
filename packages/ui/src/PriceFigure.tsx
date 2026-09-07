@@ -15,6 +15,16 @@ export interface PriceFigureProps {
  * figures. Day 2 §06's fix: `hero` (2.75rem) outsizes display-section
  * (2.25rem) on purpose, so a price reads as more important than the
  * headline sitting next to it.
+ *
+ * BUGFIX (Day 10): color used to follow the arithmetic sign directly
+ * (deltaPct > 0 -> signal green, < 0 -> rust red) — correct for a stock
+ * price, backwards for a shopping price, where a fall is the good news.
+ * It shipped inverted: HowItWorks.tsx already passes deltaPct={-6.0}
+ * next to a green "Buy" Badge, which under the old mapping rendered as
+ * a red ▼ beside a green buy signal — a live, contradictory pairing.
+ * Fixed so color always matches Badge's buy/wait meaning (a price fall
+ * is signal-green, a rise is rust-red); the arrow keeps tracking the
+ * literal numeric direction, so ▼ still means "the number went down."
  */
 export function PriceFigure({ value, deltaPct, size = 'inline', className }: PriceFigureProps) {
   const isUp = typeof deltaPct === 'number' && deltaPct > 0;
@@ -34,8 +44,8 @@ export function PriceFigure({ value, deltaPct, size = 'inline', className }: Pri
         <span
           className={cx(
             'text-data-delta font-semibold',
-            isUp && 'text-signal',
-            isDown && 'text-rust',
+            isDown && 'text-signal',
+            isUp && 'text-rust',
             !isUp && !isDown && 'text-text-soft',
           )}
         >
