@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import posthog from 'posthog-js';
 import { Input, buttonVariantClass, cx } from '@chosn/ui';
+import { capture } from '@/lib/analytics';
 
 // Mirrors apps/api/src/waitlist/dto/join-waitlist.dto.ts ALLOWED_INTERESTS —
 // keep the two lists in sync; a mismatch here just means a chip the API
@@ -32,7 +32,7 @@ export function WaitlistForm() {
     if (status === 'submitting') return;
 
     setStatus('submitting');
-    posthog.capture('waitlist_signup_started');
+    capture('waitlist_signup_started');
 
     try {
       const res = await fetch(`${API_URL}/waitlist`, {
@@ -43,7 +43,7 @@ export function WaitlistForm() {
 
       if (res.ok) {
         setStatus('joined');
-        posthog.capture('waitlist_signup_completed', { interests });
+        capture('waitlist_signup_completed', { interests });
         return;
       }
 
@@ -55,24 +55,24 @@ export function WaitlistForm() {
       if (res.status === 409) {
         setStatus('already-joined');
         setErrorMessage(message ?? "You're already on the list.");
-        posthog.capture('waitlist_signup_failed', { reason: 'duplicate' });
+        capture('waitlist_signup_failed', { reason: 'duplicate' });
         return;
       }
 
       if (res.status === 429) {
         setStatus('error');
         setErrorMessage(message ?? 'Too many attempts — try again in a bit.');
-        posthog.capture('waitlist_signup_failed', { reason: 'rate_limited' });
+        capture('waitlist_signup_failed', { reason: 'rate_limited' });
         return;
       }
 
       setStatus('error');
       setErrorMessage(message ?? "That email looks invalid — double-check and try again.");
-      posthog.capture('waitlist_signup_failed', { reason: 'validation', status: res.status });
+      capture('waitlist_signup_failed', { reason: 'validation', status: res.status });
     } catch {
       setStatus('error');
       setErrorMessage('Something went wrong on our end — try again in a moment.');
-      posthog.capture('waitlist_signup_failed', { reason: 'network' });
+      capture('waitlist_signup_failed', { reason: 'network' });
     }
   }
 
