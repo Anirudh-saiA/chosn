@@ -120,11 +120,27 @@ export async function fetchSearch(query: SearchQuery, init?: RequestInit): Promi
  * finding, see load-tests/run-report.md). No `next: { revalidate }`
  * here deliberately: this runs once during `next build`, not per
  * request, so there's no request-time cache to configure.
+ *
+ * Must never throw. generateStaticParams() has no error boundary of
+ * its own — an uncaught rejection here fails `next build` outright, not
+ * just this one page, and returning zero paths is always a safe
+ * fallback: dynamicParams defaults to true, so every variant still
+ * renders correctly on its first real request, on demand, exactly like
+ * before this optimization existed. The `!res.ok` check alone wasn't
+ * enough — a connection failure (wrong/missing NEXT_PUBLIC_API_URL at
+ * build time, the API briefly unreachable) rejects the fetch() promise
+ * itself rather than resolving with a bad status, and that rejection
+ * was propagating uncaught until this failed a real Vercel build.
  */
 export async function fetchAllVariantParams(): Promise<{ styleCode: string; size: number }[]> {
-  const res = await fetch(`${API_URL}/catalog/variants`);
-  if (!res.ok) return []; // build must not fail if the API is briefly unreachable
-  return res.json() as Promise<{ styleCode: string; size: number }[]>;
+  try {
+    const res = await fetch(`${API_URL}/catalog/variants`);
+    if (!res.ok) return [];
+    return (await res.json()) as { styleCode: string; size: number }[];
+  } catch (err) {
+    console.warn(`generateStaticParams: could not reach ${API_URL}/catalog/variants — building with zero pre-rendered variants (they still work on demand). ${(err as Error).message}`);
+    return [];
+  }
 }
 
 /**
