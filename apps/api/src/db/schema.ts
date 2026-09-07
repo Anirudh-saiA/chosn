@@ -266,3 +266,65 @@ export const priceSnapshotsRelations = relations(priceSnapshots, ({ one }) => ({
     references: [retailers.id],
   }),
 }));
+
+// ------------------------------------------------- day 7: manual + health
+
+/**
+ * Hand-entered prices for Tier 2 boutiques (Day 1 §01). Append-only like
+ * price_snapshots: a correction is a new row, so there's always an audit
+ * trail of who priced what and when. ManualPriceAdapter reads the newest
+ * row per (retailer, variant) and refuses to serve a stale one.
+ */
+export const manualPriceEntries = pgTable(
+  'manual_price_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    retailerId: uuid('retailer_id')
+      .notNull()
+      .references(() => retailers.id, { onDelete: 'cascade' }),
+    sneakerVariantId: uuid('sneaker_variant_id')
+      .notNull()
+      .references(() => sneakerVariants.id, { onDelete: 'cascade' }),
+    price: numeric('price', { precision: 12, scale: 2 }),
+    shippingCost: numeric('shipping_cost', { precision: 12, scale: 2 }),
+    currency: text('currency').notNull().default('INR'),
+    condition: conditionEnum('condition').notNull().default('new'),
+    inStock: boolean('in_stock').notNull().default(true),
+    listingUrl: text('listing_url').notNull(),
+    /** Who checked the shop — accountability for a manual process. */
+    recordedBy: text('recorded_by').notNull(),
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
+    notes: text('notes'),
+  },
+  (t) => ({
+    lookupIdx: index('manual_price_entries_lookup_idx').on(
+      t.retailerId,
+      t.sneakerVariantId,
+      t.recordedAt.desc(),
+    ),
+  }),
+);
+
+/**
+ * Terminal fetch failures, one row per dead-lettered job.
+ *
+ * The dead-letter queue already holds these, but Redis is a cache we're
+ * willing to lose and BullMQ trims old jobs. Failure history is what the
+ * health summary counts, so it belongs somewhere durable and queryable.
+ */
+export const fetchFailures = pgTable(
+  'fetch_failures',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    retailerSlug: text('retailer_slug').notNull(),
+    styleCode: text('style_code'),
+    size: numeric('size', { precision: 4, scale: 1 }),
+    reason: text('reason').notNull(),
+    attempts: integer('attempts').notNull().default(1),
+    failedAt: timestamp('failed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // The health summary asks "failures per retailer in the last 24h".
+    recentIdx: index('fetch_failures_recent_idx').on(t.retailerSlug, t.failedAt.desc()),
+  }),
+);

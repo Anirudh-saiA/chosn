@@ -3,25 +3,33 @@ import { redisProvider } from '../common/redis.provider';
 import { pgPoolProvider } from '../db/db.provider';
 import { drizzleProvider } from '../db/drizzle.provider';
 import { PriceFetchService } from '../queue/price-fetch.service';
-import { FlipkartAdapter } from '../retailers/flipkart/flipkart.adapter';
+import {
+  RETAILER_ADAPTER_CLASSES,
+  retailerAdaptersProvider,
+} from '../retailers/adapter.registry';
+import { FetchHealthController } from './fetch-health.controller';
+import { FetchHealthService } from './fetch-health.service';
 import { PriceSnapshotService } from './price-snapshot.service';
 
 /**
- * The price pipeline: adapters, queues, and the snapshot writer.
+ * The price pipeline: adapters, queues, the snapshot writer, and health.
  *
- * Adapters 2–10 are added to the providers list and to the map in
- * PriceFetchService's constructor — no other wiring changes, which is
- * the point of settling the adapter interface on the first one.
+ * Adding retailer 7, 8, 9 is now: write the adapter, add it to
+ * RETAILER_ADAPTER_CLASSES and the registry's inject list, insert a
+ * retailers row. Nothing in this module or PriceFetchService changes.
  */
 @Module({
+  controllers: [FetchHealthController],
   providers: [
     pgPoolProvider,
     redisProvider,
     drizzleProvider,
+    ...RETAILER_ADAPTER_CLASSES,
+    retailerAdaptersProvider,
     PriceSnapshotService,
-    FlipkartAdapter,
+    FetchHealthService,
     PriceFetchService,
   ],
-  exports: [PriceFetchService, PriceSnapshotService, drizzleProvider],
+  exports: [PriceFetchService, PriceSnapshotService, FetchHealthService, drizzleProvider],
 })
 export class PricingModule {}

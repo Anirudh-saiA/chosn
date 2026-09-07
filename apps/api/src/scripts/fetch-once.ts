@@ -16,7 +16,7 @@ import { PriceFetchService } from '../queue/price-fetch.service';
 import { bullConnection, priceQueueName } from '../queue/queue.config';
 
 async function main() {
-  const retailerSlug = process.argv[2] ?? 'flipkart';
+  const arg = process.argv[2] ?? 'flipkart';
   const logger = new Logger('fetch-once');
 
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -25,6 +25,9 @@ async function main() {
 
   try {
     const fetcher = app.get(PriceFetchService);
+    const slugs = arg === 'all' ? fetcher.activeSlugs() : [arg];
+
+    for (const retailerSlug of slugs) {
 
     const queued = await fetcher.enqueueAll(retailerSlug);
     logger.log(`queued ${queued} job(s) for ${retailerSlug}`);
@@ -44,8 +47,9 @@ async function main() {
     }
 
     const final = await queue.getJobCounts('completed', 'failed');
-    logger.log(`completed=${final.completed ?? 0} failed=${final.failed ?? 0}`);
-    await queue.close();
+      logger.log(`${retailerSlug}: completed=${final.completed ?? 0} failed=${final.failed ?? 0}`);
+      await queue.close();
+    }
   } finally {
     await app.close();
   }
