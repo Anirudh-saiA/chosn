@@ -1,4 +1,4 @@
-import { cx } from '@chosn/ui';
+import { PriceFigure } from '@chosn/ui';
 
 const TICKER_ROWS = [
   { sku: 'DD1391-100', price: '₹9,499', deltaPct: 2.1 },
@@ -26,26 +26,21 @@ export function PriceTicker() {
     <div>
       <div className="ticker-shell overflow-hidden border border-moss/25 bg-vault-recessed">
         <div className="ticker-track flex w-max py-4">
-          {rows.map((row, i) => {
-            const isUp = row.deltaPct > 0;
-            return (
-              <div
-                key={`${row.sku}-${i}`}
-                className="flex items-baseline gap-2.5 whitespace-nowrap border-r border-moss/20 px-7 font-mono"
-              >
-                <span className="text-meta text-text-faint">{row.sku}</span>
-                <span className="text-data-inline font-medium text-text">{row.price}</span>
-                <span
-                  className={cx(
-                    'text-data-delta font-semibold',
-                    isUp ? 'text-signal' : 'text-rust',
-                  )}
-                >
-                  {isUp ? '▲' : '▼'} {Math.abs(row.deltaPct).toFixed(1)}%
-                </span>
-              </div>
-            );
-          })}
+          {rows.map((row, i) => (
+            <div
+              key={`${row.sku}-${i}`}
+              className="flex items-baseline gap-2.5 whitespace-nowrap border-r border-moss/20 px-7 font-mono"
+            >
+              <span className="text-meta text-text-faint">{row.sku}</span>
+              {/* PriceFigure, not a hand-rolled copy — this ticker used to
+                  reimplement the up/down color logic itself, with the
+                  arithmetic-sign mapping backwards for a shopping price
+                  (see PriceFigure.tsx's bugfix note). Routing through the
+                  one shared component means that class of bug can't
+                  recur here independently of it. */}
+              <PriceFigure value={row.price} deltaPct={row.deltaPct} />
+            </div>
+          ))}
         </div>
       </div>
       <p className="mt-3 text-meta text-text-faint">
