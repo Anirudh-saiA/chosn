@@ -9,9 +9,10 @@ import * as Sentry from '@sentry/node';
 import { Queue, UnrecoverableError, Worker, type Job } from 'bullmq';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { retailerProductMappings, retailers, sneakerVariants, sneakers } from '../db/schema';
+import { fetchFailures, retailerProductMappings, retailers, sneakerVariants, sneakers } from '../db/schema';
 import { PriceSnapshotService } from '../pricing/price-snapshot.service';
-import { FlipkartAdapter } from '../retailers/flipkart/flipkart.adapter';
+import { RETAILER_ADAPTERS } from '../retailers/adapter.registry';
+import { ManualPriceAdapter } from '../retailers/manual/manual-price.adapter';
 import {
   PermanentFetchError,
   type FetchTarget,
@@ -37,12 +38,19 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
+    @Inject(RETAILER_ADAPTERS) registry: RetailerAdapter[],
     private readonly snapshots: PriceSnapshotService,
-    flipkart: FlipkartAdapter,
+    private readonly manual: ManualPriceAdapter,
   ) {
-    // Adapters 2–10 join this map and nothing else changes — the queue,
-    // worker, retry and dead-letter wiring below is all slug-driven.
-    this.adapters.set(flipkart.slug, flipkart);
+    for (const adapter of registry) this.adapters.set(adapter.slug, adapter);
+  }
+
+  /**
+   * Slug first, then integration_type. Hand-priced boutiques all share
+   * ManualPriceAdapter rather than each needing its own class.
+   */
+  private adapterFor(slug: string, integrationType: string): RetailerAdapter | undefined {
+    return this.adapters.get(slug) ?? (integrationType === 'manual' ? this.manual : undefined);
   }
 
   async onModuleInit(): Promise<void> {
@@ -56,12 +64,16 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
     this.deadLetter = new Queue<DeadLetterJobData>(DEAD_LETTER_QUEUE, { connection });
 
     const active = await this.db
-      .select({ slug: retailers.slug, name: retailers.name })
+      .select({
+        slug: retailers.slug,
+        name: retailers.name,
+        integrationType: retailers.integrationType,
+      })
       .from(retailers);
 
     for (const retailer of active) {
-      const adapter = this.adapters.get(retailer.slug);
-      if (!adapter) continue; // no adapter built yet — Days 7+
+      const adapter = this.adapterFor(retailer.slug, retailer.integrationType);
+      if (!adapter) continue; // no adapter built for this source yet
 
       const name = priceQueueName(retailer.slug);
       this.queues.set(retailer.slug, new Queue<PriceFetchJobData>(name, { connection }));
@@ -94,6 +106,11 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
     await Promise.all(this.workers.map((w) => w.close()));
     await Promise.all([...this.queues.values()].map((q) => q.close()));
     await this.deadLetter?.close();
+  }
+
+  /** Slugs that actually have a queue and worker running. */
+  activeSlugs(): string[] {
+    return [...this.queues.keys()];
   }
 
   /**
@@ -192,7 +209,10 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
     }
 
     const { retailerSlug, target } = job.data;
-    const adapter = this.adapters.get(retailerSlug);
+    // A job only ever reaches a queue that had an adapter at startup, so
+    // the manual fallback here mirrors the resolution in onModuleInit
+    // rather than introducing a second, different rule.
+    const adapter = this.adapters.get(retailerSlug) ?? this.manual;
     if (!adapter) throw new UnrecoverableError(`No adapter for "${retailerSlug}"`);
 
     try {
@@ -245,6 +265,23 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
     };
 
     await this.deadLetter?.add('dead-letter', payload, { removeOnComplete: false });
+
+    // Also recorded in Postgres. The dead-letter queue holds the job so it
+    // can be retried, but Redis is a cache we're willing to lose and
+    // BullMQ trims old jobs — the 24h failure counts in the health summary
+    // need somewhere durable to count from.
+    try {
+      await this.db.insert(fetchFailures).values({
+        retailerSlug: payload.retailerSlug,
+        styleCode: payload.target?.styleCode ?? null,
+        size: payload.target?.size?.toString() ?? null,
+        reason: err.message.slice(0, 500),
+        attempts: job.attemptsMade,
+      });
+    } catch (writeErr) {
+      // Never let bookkeeping failure mask the original fetch failure.
+      this.logger.warn(`could not record fetch failure: ${(writeErr as Error).message}`);
+    }
 
     Sentry.captureException(err, {
       tags: { retailer: payload.retailerSlug, queue: job.queueName },
