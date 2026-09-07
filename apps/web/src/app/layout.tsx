@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Archivo, JetBrains_Mono, Zilla_Slab } from 'next/font/google';
-import { PostHogProvider } from '@/lib/posthog-provider';
+import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
 // next/font self-hosts these at build time from Google's font files —
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body>
-        <PostHogProvider>{children}</PostHogProvider>
+        <MonitoringProvider>{children}</MonitoringProvider>
       </body>
     </html>
   );
