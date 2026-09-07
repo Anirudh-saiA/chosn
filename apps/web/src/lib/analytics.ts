@@ -1,19 +1,16 @@
 /**
- * Lazily-loaded analytics and error monitoring.
+ * Lazily-loaded analytics.
  *
- * Both PostHog and Sentry used to sit in the initial page chunk — Sentry
- * via withSentryConfig injecting sentry.client.config.ts into every page,
- * PostHog via a direct top-level import. Together they accounted for most
- * of a 510ms total blocking time on the deployed landing page: ~117KB of
- * JavaScript parsed and executed before the page could respond to input,
- * on a page whose own code is about 2KB.
+ * PostHog used to sit in the initial page chunk, imported at the top level
+ * by both the provider and WaitlistForm. It doesn't need to run before
+ * hydration — analytics only has to be ready before the first event is
+ * *sent* — so it now loads once the browser is idle, and events raised in
+ * the meantime are buffered here and flushed on init.
  *
- * Neither needs to run before hydration. Analytics only has to be ready
- * before the first event is *sent*, and events raised in the meantime are
- * buffered here and flushed on init, so nothing is lost. The tradeoff is
- * that Sentry cannot catch an exception thrown in the first moment or so
- * after load — acceptable on a landing page, and worth revisiting if this
- * pattern is ever reused on something more stateful.
+ * Sentry used to load here too and was removed entirely: it reported
+ * nowhere, since no NEXT_PUBLIC_SENTRY_DSN was ever configured, while
+ * still costing ~111KB per visit. Server-side tracking is unaffected —
+ * apps/api still runs @sentry/node.
  */
 
 type PostHogModule = typeof import('posthog-js');
@@ -38,7 +35,7 @@ function whenIdle(fn: () => void): void {
 }
 
 /**
- * Loads whichever of PostHog and Sentry are configured. Safe to call more
+ * Loads PostHog if it is configured. Safe to call more
  * than once — only the first call does anything.
  */
 export function startMonitoring(): void {
@@ -60,13 +57,6 @@ export function startMonitoring(): void {
       });
     } else {
       pending.length = 0; // nothing will ever send these
-    }
-
-    const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
-    if (sentryDsn) {
-      void import('@sentry/nextjs').then((Sentry) => {
-        Sentry.init({ dsn: sentryDsn, enabled: true, tracesSampleRate: 0.1 });
-      });
     }
   });
 }
