@@ -72,7 +72,76 @@ export interface CatalogResponse {
   marketIntelligence: MarketIntelligence | null;
 }
 
+export interface SearchResultItem {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  silhouette: string | null;
+  primaryImageUrl: string | null;
+  defaultSize: number;
+  defaultSizeSystem: string;
+  currentPrice: number | null;
+  bestAvailablePrice: number | null;
+  signal: Signal | null;
+  currency: string;
+}
+
+export interface SearchResponse {
+  results: SearchResultItem[];
+  total: number;
+  brands: string[];
+}
+
+export interface SearchQuery {
+  q?: string;
+  brand?: string;
+  signal?: string;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+/** Server-side search/browse (Day 11) — query params drive the filter, same endpoint either way. */
+export async function fetchSearch(query: SearchQuery, init?: RequestInit): Promise<SearchResponse> {
+  const params = new URLSearchParams();
+  if (query.q) params.set('q', query.q);
+  if (query.brand) params.set('brand', query.brand);
+  if (query.signal) params.set('signal', query.signal);
+
+  const res = await fetch(`${API_URL}/catalog/search?${params.toString()}`, init);
+  if (!res.ok) throw new Error(`search fetch failed: ${res.status}`);
+  return res.json() as Promise<SearchResponse>;
+}
+
+/**
+ * Build-time only — feeds generateStaticParams() on the price
+ * comparison page so every launch-catalog variant is pre-rendered
+ * instead of every request re-rendering on demand (Day 11's load test
+ * finding, see load-tests/run-report.md). No `next: { revalidate }`
+ * here deliberately: this runs once during `next build`, not per
+ * request, so there's no request-time cache to configure.
+ *
+ * Must never throw. generateStaticParams() has no error boundary of
+ * its own — an uncaught rejection here fails `next build` outright, not
+ * just this one page, and returning zero paths is always a safe
+ * fallback: dynamicParams defaults to true, so every variant still
+ * renders correctly on its first real request, on demand, exactly like
+ * before this optimization existed. The `!res.ok` check alone wasn't
+ * enough — a connection failure (wrong/missing NEXT_PUBLIC_API_URL at
+ * build time, the API briefly unreachable) rejects the fetch() promise
+ * itself rather than resolving with a bad status, and that rejection
+ * was propagating uncaught until this failed a real Vercel build.
+ */
+export async function fetchAllVariantParams(): Promise<{ styleCode: string; size: number }[]> {
+  try {
+    const res = await fetch(`${API_URL}/catalog/variants`);
+    if (!res.ok) return [];
+    return (await res.json()) as { styleCode: string; size: number }[];
+  } catch (err) {
+    console.warn(`generateStaticParams: could not reach ${API_URL}/catalog/variants — building with zero pre-rendered variants (they still work on demand). ${(err as Error).message}`);
+    return [];
+  }
+}
 
 /**
  * Fetches one variant's full page data. Used both server-side (page.tsx,

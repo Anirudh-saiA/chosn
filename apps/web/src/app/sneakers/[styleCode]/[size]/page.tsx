@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Masthead } from '@/components/Masthead';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
-import { fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
+import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
 
 interface PageProps {
   params: Promise<{ styleCode: string; size: string }>;
@@ -44,6 +44,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // — route segment config has to be statically analyzable at build time.
 // Keep this in sync with REVALIDATE_SECONDS if that value ever changes.
 export const revalidate = 300;
+
+/**
+ * Pre-renders every launch-catalog variant at build time — without
+ * this, the page built as a Dynamic (ƒ) route (visible in `next build`'s
+ * own output) despite `revalidate` being set, and every request paid
+ * for a fresh React render even when the underlying data was cache-hit.
+ * Day 11's load test caught it: p95 response time under 50 req/s
+ * concurrent load was ~2.7s for a page that serves in ~20ms standalone
+ * — see load-tests/run-report.md for the before/after numbers.
+ *
+ * A variant added after a deploy still works — `dynamicParams` defaults
+ * to true, so an unlisted param renders (and caches) on its first
+ * request rather than 404ing. This only changes which variants are
+ * warm on day one, never which variants are reachable.
+ */
+export async function generateStaticParams() {
+  const variants = await fetchAllVariantParams();
+  return variants.map((v) => ({ styleCode: v.styleCode, size: formatSize(v.size) }));
+}
 
 export default async function SneakerPricePage({ params }: PageProps) {
   const { styleCode, size } = await params;

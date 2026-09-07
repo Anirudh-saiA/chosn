@@ -1,0 +1,48 @@
+config:
+  target: "http://localhost:4001"
+  phases:
+    - duration: 15
+      arrivalRate: 5
+      name: warm-up
+    - duration: 30
+      arrivalRate: 5
+      rampTo: 50
+      name: ramp to ~50 concurrent-equivalent
+    - duration: 30
+      arrivalRate: 50
+      name: sustain at brief's stated v1 target (50-100 concurrent)
+  ensure:
+    p95: 200
+    maxErrorRate: 1
+
+# Day 11 task 6: the search endpoint under concurrent load. A mix of
+# real query shapes -- prefix-typed (query-as-you-type mid-word),
+# whole-word, brand filter, signal filter, and a plain browse-all --
+# rather than one query repeated, so the GIN index and the filter
+# WHERE-clause paths both get exercised.
+scenarios:
+  - name: prefix search (mid-type)
+    weight: 3
+    flow:
+      - get:
+          url: "/catalog/search?q=nik"
+  - name: whole-word search
+    weight: 2
+    flow:
+      - get:
+          url: "/catalog/search?q=dunk"
+  - name: brand filter
+    weight: 2
+    flow:
+      - get:
+          url: "/catalog/search?brand=Nike"
+  - name: signal filter
+    weight: 1
+    flow:
+      - get:
+          url: "/catalog/search?signal=good_time_to_buy"
+  - name: browse all (no filters)
+    weight: 2
+    flow:
+      - get:
+          url: "/catalog/search"

@@ -82,6 +82,14 @@ export const sneakers = pgTable(
     galleryImageRefs: text('gallery_image_refs').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    // search_vector (tsvector, GENERATED ALWAYS ... STORED) also exists
+    // physically — see 0005_sneaker_search.sql. Not modeled here:
+    // CatalogService only ever reaches it through `@@ to_tsquery(...)`
+    // in raw sql`` calls, never Drizzle's typed select/insert builder,
+    // and drizzle-orm has no first-class tsvector column type to
+    // declare it as. Same convention as price_snapshots' partitioning —
+    // Drizzle owns the typed query layer, the migration owns physical
+    // columns nothing here needs to read back as a JS value.
   },
   (t) => ({
     styleCodeIdx: uniqueIndex('sneakers_style_code_key').on(t.styleCode),

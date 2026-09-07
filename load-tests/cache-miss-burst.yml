@@ -1,0 +1,22 @@
+config:
+  target: "http://localhost:4001"
+  phases:
+    # No warm-up phase, deliberately -- the scenario this models is
+    # "many users hit a page right as its cache expires," not a
+    # gradual ramp. The Redis key for this exact variant is flushed
+    # immediately before this run (see load-tests/README.md), so every
+    # VU in this burst is a genuine cache miss racing the same
+    # cache-aside fallback (MarketIntelligenceService.getCached ->
+    # Postgres -> re-warm) at once.
+    - duration: 10
+      arrivalRate: 100
+      name: concurrent burst on a single cold key
+  ensure:
+    p95: 300
+    maxErrorRate: 1
+
+scenarios:
+  - name: same variant, cold cache, all at once
+    flow:
+      - get:
+          url: "/catalog/DD1391-100/8"
