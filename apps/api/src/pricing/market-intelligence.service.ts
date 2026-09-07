@@ -144,6 +144,21 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
   }
 
   /**
+   * Cache-aside read: the one call every consumer (the standalone
+   * endpoint, Day 10's catalog page) should use instead of composing
+   * cache + get() themselves — one place owns "check cache, fall back to
+   * Postgres, warm the cache on a miss" so it can't drift between callers.
+   */
+  async getCached(sneakerVariantId: string): Promise<MarketIntelligenceSummary | null> {
+    const cached = await this.cache.get(sneakerVariantId);
+    if (cached) return cached;
+
+    const row = await this.get(sneakerVariantId);
+    if (row) await this.cache.set(sneakerVariantId, row);
+    return row;
+  }
+
+  /**
    * The hourly job. For every variant with at least one retailer mapping:
    * finds today's best available price, upserts it into
    * daily_best_prices, reads the 30/90-day window back out, computes
