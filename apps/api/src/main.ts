@@ -1,6 +1,7 @@
 import './instrument';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
 import { ensurePricePartitions, runMigrations } from './db/migrate';
@@ -25,6 +26,16 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
+  // Nest has no default WebSocket transport of its own — without this,
+  // @WebSocketGateway falls back to trying Socket.io, which isn't
+  // installed (this app uses plain `ws` — see DropLiveGateway's own
+  // comment on why). No origin restriction on the ws upgrade itself:
+  // DropLiveGateway only ever broadcasts public drop-status events, and
+  // accepts no messages back from a client, so there's nothing an
+  // arbitrary origin could read or do beyond what /catalog already
+  // serves unauthenticated — unlike the REST endpoints in this app,
+  // which stay behind the enableCors origin check above.
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.getHttpAdapter().getInstance().set('trust proxy', 1); // Railway/Vercel sit behind a proxy
 
   const port = process.env.PORT ?? 4000;

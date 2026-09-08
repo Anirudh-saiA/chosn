@@ -7,10 +7,15 @@ import { DRIZZLE, type Db } from '../db/drizzle.provider';
  * fetch health) — consumer names are just a slug written into
  * drop_consumer_failures on failure. Listed explicitly here so a
  * healthy consumer that has never failed still reports 0 rather than
- * being silently absent from the summary. Add a name here when Day 14
- * adds the WebSocket/push consumers.
+ * being silently absent from the summary.
+ *
+ * The WebSocket gateway (Day 14) is deliberately not listed here: a
+ * failed send to one already-closing socket isn't a meaningful
+ * durable-tracking failure the way a lost push notification or a
+ * missed auto-post is — see DropLiveGateway's own comment. It logs,
+ * it just doesn't write to drop_consumer_failures.
  */
-const KNOWN_CONSUMERS = ['news-feed-auto-post'] as const;
+const KNOWN_CONSUMERS = ['news-feed-auto-post', 'web-push'] as const;
 
 export interface DropSchedulerHealth {
   lastRunAt: string | null;
