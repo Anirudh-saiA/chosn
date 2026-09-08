@@ -16,16 +16,19 @@
  * (like Prisma) can't express in its schema DSL. Drizzle owns the typed
  * query layer; the migrations own the physical layout.
  */
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -59,6 +62,8 @@ export const retailerStatusEnum = pgEnum('retailer_status', [
 export const conditionEnum = pgEnum('condition', ['new', 'used']);
 export const priceTypeEnum = pgEnum('price_type', ['retail', 'resale', 'auction']);
 export const mappingConfidenceEnum = pgEnum('mapping_confidence', ['manual', 'verified', 'fuzzy']);
+export const dropStatusEnum = pgEnum('drop_status', ['upcoming', 'live', 'sold_out']);
+export const subscriptionScopeEnum = pgEnum('subscription_scope', ['brand', 'model', 'global']);
 
 // --------------------------------------------------------------- tables
 
@@ -401,3 +406,134 @@ export const fetchFailures = pgTable(
     recentIdx: index('fetch_failures_recent_idx').on(t.retailerSlug, t.failedAt.desc()),
   }),
 );
+
+// -------------------------------------------------- day 12: drops + news
+//
+// See apps/api/drizzle/0006_drops_and_news.sql and
+// apps/api/src/drops/README.md for the full reasoning — the schema
+// comments here mirror the physical DDL, not repeat its rationale.
+
+export const dropEvents = pgTable(
+  'drop_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sneakerId: uuid('sneaker_id')
+      .notNull()
+      .references(() => sneakers.id, { onDelete: 'cascade' }),
+    releaseDate: date('release_date').notNull(),
+    /** NULL = date confirmed, hour still TBA — a real, displayable state. */
+    releaseTime: time('release_time'),
+    /** IANA zone name — survives a DST transition, a stored offset doesn't. */
+    releaseTimezone: text('release_timezone').notNull().default('Asia/Kolkata'),
+    regions: regionEnum('regions').array().notNull().default([]),
+    retailPrice: numeric('retail_price', { precision: 12, scale: 2 }),
+    currency: text('currency').notNull().default('INR'),
+    status: dropStatusEnum('status').notNull().default('upcoming'),
+    /** Official "where to try to buy at retail" links — never the resale/affiliate offers. */
+    purchaseLinks: jsonb('purchase_links').notNull().default([]),
+    /** NULL = standard FCFS release; present = raffle/draw metadata only. */
+    raffleInfo: jsonb('raffle_info'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sneakerIdx: index('drop_events_sneaker_idx').on(t.sneakerId),
+    statusIdx: index('drop_events_status_idx').on(t.status),
+    // The partial "which upcoming drops are due" index lives only in the
+    // SQL migration — Drizzle's builder has no `.where()` on `index()`
+    // that can express a partial index, so it isn't re-declared here.
+  }),
+);
+
+export const newsItems = pgTable(
+  'news_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    dropEventId: uuid('drop_event_id').references(() => dropEvents.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    source: text('source').notNull(),
+    /** Set only when body is sourced from a licensed feed — NULL for CHOSN originals. */
+    sourceUrl: text('source_url'),
+    /** The only flag that should trigger an instant push — see drops/README.md. */
+    isBreaking: boolean('is_breaking').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    dropEventIdx: index('news_items_drop_event_idx').on(t.dropEventId),
+    publishedIdx: index('news_items_published_idx').on(t.publishedAt.desc()),
+  }),
+);
+
+/**
+ * A bare identity anchor, not an account system — no password, no
+ * session. CHOSN has no auth yet; this is the honest shape of what
+ * exists until real accounts do (see drops/README.md, flagged for
+ * sign-off).
+ */
+export const subscribers = pgTable('subscribers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const webPushSubscriptions = pgTable(
+  'web_push_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    subscriberId: uuid('subscriber_id')
+      .notNull()
+      .references(() => subscribers.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    subscriberIdx: index('web_push_subscriptions_subscriber_idx').on(t.subscriberId),
+  }),
+);
+
+export const notificationSubscriptions = pgTable(
+  'notification_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    subscriberId: uuid('subscriber_id')
+      .notNull()
+      .references(() => subscribers.id, { onDelete: 'cascade' }),
+    scopeType: subscriptionScopeEnum('scope_type').notNull(),
+    /** Brand name or style_code depending on scopeType; NULL when scopeType = 'global'. */
+    scopeValue: text('scope_value'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Expression-indexed unique constraint (COALESCE for the NULL/global
+    // case) lives only in the SQL migration — same reason as above.
+    scopeIdx: index('notification_subscriptions_scope_idx').on(t.scopeType, t.scopeValue),
+    scopeValueCheck: check(
+      'notification_subscriptions_scope_value_check',
+      sql`(scope_type = 'global' AND scope_value IS NULL) OR (scope_type <> 'global' AND scope_value IS NOT NULL)`,
+    ),
+  }),
+);
+
+export const dropEventsRelations = relations(dropEvents, ({ one, many }) => ({
+  sneaker: one(sneakers, {
+    fields: [dropEvents.sneakerId],
+    references: [sneakers.id],
+  }),
+  newsItems: many(newsItems),
+}));
+
+export const newsItemsRelations = relations(newsItems, ({ one }) => ({
+  dropEvent: one(dropEvents, {
+    fields: [newsItems.dropEventId],
+    references: [dropEvents.id],
+  }),
+}));
+
+export const subscribersRelations = relations(subscribers, ({ many }) => ({
+  pushSubscriptions: many(webPushSubscriptions),
+  notificationSubscriptions: many(notificationSubscriptions),
+}));
