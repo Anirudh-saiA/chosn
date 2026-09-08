@@ -28,6 +28,19 @@ const colors = {
   'text-faint': '#848E83',
   'text-chalk': '#141B16',
   'text-chalk-soft': '#57604F',
+
+  // Landing-page-only fashion-editorial fork — deliberately separate
+  // names from the ramp above (never `black`/`white`, which would
+  // read as generic overrides of the real system) so it's obvious at
+  // a glance which surface a class belongs to. Scoped to
+  // components/landing/ — nothing else in the app should reference
+  // these. `ember`: burnt amber, the one pick from the brief's three
+  // options — closest in spirit to the site's real brand color
+  // (`brass` above), so even this one-off fork isn't a totally
+  // unrelated color story.
+  ink: '#0A0A0A',
+  bone: '#F7F5F0',
+  ember: '#C1652F',
 };
 
 /** @type {import('tailwindcss').Config} */
@@ -50,6 +63,9 @@ module.exports = {
         display: ['var(--font-display)', 'Georgia', 'serif'], // Zilla Slab
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'], // Archivo
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'], // JetBrains Mono
+        // Landing-page-only — see the `ink`/`bone`/`ember` comment above.
+        editorial: ['var(--font-editorial)', 'Georgia', 'serif'], // Fraunces
+        grotesk: ['var(--font-grotesk)', 'system-ui', 'sans-serif'], // Instrument Sans
       },
       fontSize: {
         // Day 2 §02 type scale. Weight is applied per-component via
