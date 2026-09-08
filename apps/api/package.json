@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "node dist/scripts/migrate.js",
     "mi:backfill": "node dist/scripts/backfill-daily-best-prices.js",
-    "mi:verify": "node dist/scripts/verify-market-intelligence.js"
+    "mi:verify": "node dist/scripts/verify-market-intelligence.js",
+    "seed:test-drops": "node dist/scripts/seed-test-drops.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
