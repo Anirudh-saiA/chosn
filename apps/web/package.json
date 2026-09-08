@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@chosn/config": "*",
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.5.0",
     "@types/pg": "^8.23.1",
