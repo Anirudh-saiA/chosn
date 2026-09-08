@@ -1,14 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  listSubscriptions,
-  requestPushPermission,
-  subscribe,
-  unsubscribe,
-  type SubscriptionListItem,
-  type SubscriptionScope,
-} from '@/lib/notifications';
+import { useState } from 'react';
+import { requestPushPermission, subscribe, unsubscribe, type SubscriptionScope } from '@/lib/notifications';
+import { useSubscriptionsState } from './subscriptions-context';
 
 export interface NotifyToggleProps {
   brand: string;
@@ -33,24 +27,10 @@ type ToggleKey = 'model' | 'brand';
  * already 'granted' or 'denied' from an earlier visit).
  */
 export function NotifyToggle({ brand, styleCode, modelLabel }: NotifyToggleProps) {
-  const [subs, setSubs] = useState<SubscriptionListItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const { subs, loaded, addLocal, removeLocal } = useSubscriptionsState();
   const [pending, setPending] = useState<ToggleKey | null>(null);
   const [pushState, setPushState] = useState<PushState>('idle');
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    listSubscriptions().then((result) => {
-      if (!cancelled) {
-        setSubs(result);
-        setLoaded(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const isOn = (scopeType: SubscriptionScope, scopeValue: string) =>
     subs.some((s) => s.scopeType === scopeType && s.scopeValue === scopeValue);
@@ -68,19 +48,16 @@ export function NotifyToggle({ brand, styleCode, modelLabel }: NotifyToggleProps
     try {
       if (currentlyOn) {
         await unsubscribe(scopeType, scopeValue);
-        setSubs((prev) => prev.filter((s) => !(s.scopeType === scopeType && s.scopeValue === scopeValue)));
+        removeLocal(scopeType, scopeValue);
       } else {
         await subscribe(scopeType, scopeValue);
-        setSubs((prev) => [
-          ...prev,
-          {
-            id: `local-${scopeType}-${scopeValue}`,
-            scopeType,
-            scopeValue,
-            label: key === 'model' ? modelLabel : brand,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
+        addLocal({
+          id: `local-${scopeType}-${scopeValue}`,
+          scopeType,
+          scopeValue,
+          label: key === 'model' ? modelLabel : brand,
+          createdAt: new Date().toISOString(),
+        });
 
         if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
           setPushState('prompting');

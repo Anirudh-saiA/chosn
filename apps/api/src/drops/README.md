@@ -612,3 +612,94 @@ component's own comment, not just here.
   cost real — see the room-scoping section above.
 - A real end-to-end push test on an actual browser/device, to close the
   one gap this environment genuinely can't verify.
+
+---
+
+# Day 15 — read endpoints for the drops magazine
+
+The backend half of Day 15's frontend build
+(`apps/web/src/components/drops/README.md` has the full frontend
+story). Four new read endpoints, all public/unauthenticated (a drop's
+or article's content isn't sensitive):
+
+| Endpoint | Backs |
+|---|---|
+| `GET /drops?from=&to=&status=` | The calendar/list view. |
+| `GET /drops/:id` | The drop-detail page — sneaker info, official links, related news, and the default (lowest-size) variant to check for a Market Intelligence preview. |
+| `GET /news?limit=&offset=&dropEventId=` | The news feed. |
+| `GET /news/:id` | The article page. |
+
+`drops.service.ts` / `drops.controller.ts` grew a proper service layer
+today — the single `by-style-code` endpoint from Day 14 lived directly
+in the controller, which stopped being reasonable with four endpoints
+sharing row-shaping logic.
+
+## A third instance of the same class of Drizzle bug — this one was silent, not a crash
+
+Days 13 and 14 both hit "Drizzle's `sql` template doesn't bind a plain
+JS array as a single Postgres array-typed parameter" — both times as a
+loud, immediate error (`malformed array literal`). Day 15 found a
+related but meaner variant: **reading** a `region[]` column back
+through raw `db.execute(sql\`...\`)` returns the raw Postgres array-
+literal text (`"{india}"`, a string) instead of a parsed JS array —
+silently. No error, no crash, just a `string` where the type annotation
+claimed `string[]`, only visible by actually inspecting a real response
+body (`regions: "{india}"` where `["india"]` was expected) rather than
+from the type system, which trusted the annotation.
+
+Root cause, confirmed by testing the *same column* through both Drizzle
+code paths directly against Postgres: Drizzle's **typed query builder**
+(`.select({ regions: dropEvents.regions })`) correctly returns a real
+array, because Drizzle's own column definition knows how to (de)
+serialize a `region[]` column. Raw `execute()` bypasses that and falls
+back to whatever node-postgres's OID-based type parser gives back —
+and node-postgres has no built-in parser for a *custom enum* array type
+(unlike `text[]`/`int[]`, which it does parse automatically), so it
+returns the unparsed text.
+
+**This is not new to today** — Day 14's `by-style-code` endpoint has the
+exact same raw-`execute()` pattern and was returning the same malformed
+`regions` field in production since it shipped, silently, because
+nothing in the Day 14 frontend actually rendered `regions` from that
+specific endpoint. Fixed in both places with a small explicit parser
+(`pg-array.ts`'s `parsePgTextArray`), not by switching everything to
+the typed builder — several of these queries (multi-table joins,
+`CASE`-based ordering) don't map cleanly onto Drizzle's query builder
+the way the news-consumer's simpler lookups do.
+
+## Route ordering + a UUID guard
+
+`by-style-code/:styleCode` is declared before the bare `:id` route —
+they don't actually collide (different segment counts), but it's the
+same defensive convention `CatalogController`'s own comment already
+established: static-prefix routes before dynamic ones, so the ordering
+stays unambiguous if either route's shape ever changes. `:id` and
+`news/:id` both validate with `isUUID()` before touching the database —
+without it, a non-UUID id (or the literal string "by-style-code", if
+route matching ever did collide) would reach Postgres and come back as
+a raw `invalid input syntax for type uuid` 500 instead of a clean 404.
+
+## Verification
+
+- Every new endpoint called directly and checked against real seeded
+  data: `GET /drops` (full list, `regions` confirmed as real arrays
+  post-fix), `GET /drops/:id` for a live drop (real `purchaseLinks`,
+  real `defaultVariant`, `relatedNews` including both an auto-post and
+  a hand-seeded editorial piece), the same for an upcoming drop with no
+  coverage (`relatedNews: []`), a bad-uuid request (clean `404`, not a
+  Postgres error), `GET /news` (mixed sources, breaking flags, and
+  `dropSneaker` cross-link data all correct), and confirmed the Market
+  Intelligence data backing `LivePricePreview` is real (non-null
+  `currentPrice`/`bestAvailablePrice`) before claiming that section
+  would render.
+- Demo data: cleaned up the ~8 duplicate test `drop_events` that had
+  accumulated across Days 13–14's repeated scheduler tests (kept
+  exactly one genuinely-flipped live drop per test sneaker, each with
+  its real auto-posted `NewsItem` intact), then added
+  `seed-demo-drops.ts` — spreads the two remaining launch-catalog
+  sneakers across future dates (including into next month, so the
+  calendar view has more than one month worth showing) and adds two
+  hand-written editorial `NewsItem`s. Doesn't touch or duplicate
+  Day 13's `seed-test-drops.ts`, which is a different tool for a
+  different job (near-future scheduler timing tests, not browse demo
+  content).

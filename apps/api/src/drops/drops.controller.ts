@@ -1,10 +1,13 @@
-import { Controller, Get, Inject, Param } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
+import { DropsService, type DropDetail, type DropListItem, type DropStatus } from './drops.service';
+import { parsePgTextArray } from './pg-array';
 
 export interface DropEventSummary {
   id: string;
-  status: 'upcoming' | 'live' | 'sold_out';
+  status: DropStatus;
   releaseDate: string;
   releaseTime: string | null;
   releaseTimezone: string;
@@ -15,15 +18,35 @@ export interface DropEventSummary {
   raffleInfo: unknown;
 }
 
-/**
- * Read-only, public — a drop's own status is not sensitive. Backs the
- * "Drop status" section Day 14 adds to the existing price comparison
- * page (`/sneakers/[styleCode]/[size]`), which had no way to know a
- * DropEvent even existed for that sneaker until now.
- */
+const VALID_STATUSES: DropStatus[] = ['upcoming', 'live', 'sold_out'];
+
+/** Read-only, public — a drop's own status/detail is not sensitive. */
 @Controller('drops')
 export class DropsController {
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly drops: DropsService,
+  ) {}
+
+  /**
+   * Day 15's calendar/list view. `from`/`to` are `YYYY-MM-DD`; `status`
+   * is a comma-separated subset of upcoming/live/sold_out. All optional
+   * — omitting everything returns every drop (fine at this catalog's
+   * scale, see DropsService.list's own comment).
+   */
+  @Get()
+  async list(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('status') status?: string,
+  ): Promise<DropListItem[]> {
+    const statuses = status
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter((s): s is DropStatus => VALID_STATUSES.includes(s as DropStatus));
+
+    return this.drops.list({ from, to, statuses });
+  }
 
   /**
    * The most relevant drop for a sneaker: a 'live' row wins over
@@ -31,6 +54,12 @@ export class DropsController {
    * soonest/most recent release_date. Most sneakers have zero or one
    * drop_event today: this returns the single row worth showing
    * whenever more than one exists (e.g. a restock).
+   *
+   * Declared before `:id` below — a static-prefix route ahead of a
+   * dynamic one-segment route, the same defensive convention
+   * CatalogController's own comment describes. The two don't actually
+   * collide today (different segment counts), but this is the
+   * convention that stays unambiguous if either route's shape changes.
    */
   @Get('by-style-code/:styleCode')
   async byStyleCode(@Param('styleCode') styleCode: string): Promise<DropEventSummary | null> {
@@ -51,15 +80,31 @@ export class DropsController {
 
     return {
       id: String(row.id),
-      status: row.status as DropEventSummary['status'],
+      status: row.status as DropStatus,
       releaseDate: String(row.release_date),
       releaseTime: (row.release_time as string) ?? null,
       releaseTimezone: String(row.release_timezone),
-      regions: row.regions as string[],
+      regions: parsePgTextArray(row.regions as string | null),
       retailPrice: (row.retail_price as string) ?? null,
       currency: String(row.currency),
       purchaseLinks: row.purchase_links,
       raffleInfo: row.raffle_info,
     };
+  }
+
+  /** The drop-detail page (Day 15 task 3) — sneaker info, official links, related news, and the variant to check for a Market Intelligence preview once live. */
+  @Get(':id')
+  async getById(@Param('id') id: string): Promise<DropDetail> {
+    // A non-UUID id would otherwise reach the database and come back as
+    // a raw "invalid input syntax for type uuid" 500 — validated here
+    // instead so a malformed/garbage id 404s cleanly like a real
+    // not-found does, matching how CatalogController 404s a
+    // non-numeric size rather than letting Postgres reject it.
+    if (!isUUID(id)) {
+      throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    }
+    const drop = await this.drops.getById(id);
+    if (!drop) throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    return drop;
   }
 }
