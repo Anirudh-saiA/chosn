@@ -45,7 +45,10 @@ export async function slidingWindowRateLimit(
     const count = (results?.[1]?.[1] as number) ?? 0;
 
     if (count >= limit) {
-      const oldest = await redis.zrange(redisKey, 0, 0, 'WITHSCORES');
+      // ioredis v6 narrowed this overload's range-bound typing to
+      // string | Buffer (v5 also accepted number) — real break caught
+      // by tsc after the Dependabot #24 bump, not guessed.
+      const oldest = await redis.zrange(redisKey, '0', '0', 'WITHSCORES');
       const oldestTimestamp = oldest[1] ? Number(oldest[1]) : now;
       const retryAfterSeconds = Math.max(1, Math.ceil((oldestTimestamp + windowSeconds * 1000 - now) / 1000));
       return { allowed: false, retryAfterSeconds };
