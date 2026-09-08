@@ -102,7 +102,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // request; `session()` below only ever sees `token`, never `user`,
     // after the first call.
     async jwt({ token, user }) {
-      if (user?.id) token.sub = user.id; // sub is already the user id by default, kept explicit since revocation checks it below
+      if (user?.id) {
+        token.sub = user.id; // sub is already the user id by default, kept explicit since revocation checks it below
+
+        // Day 17 — fetched once here, at sign-in, not on every request:
+        // this token is only re-minted every `updateAge` (24h) under
+        // JWT strategy, so a role change takes up to that long to
+        // reach the *session* (UI-only convenience — the Admin nav
+        // link, redirecting a non-admin away from /admin/moderation).
+        // The actual security boundary is apps/api's AdminGuard, which
+        // re-checks role from Postgres on every single admin request —
+        // see that guard's own comment for why the two deliberately
+        // don't share a staleness window.
+        const [row] = await authDb
+          .select({ role: users.role, displayName: users.displayName, avatarSeed: users.avatarSeed })
+          .from(users)
+          .where(eq(users.id, user.id))
+          .limit(1);
+        if (row) {
+          token.role = row.role;
+          token.displayName = row.displayName;
+          token.avatarSeed = row.avatarSeed;
+        }
+      }
 
       if (token.sub) {
         // Checked on every request, not just sign-in — this is the
@@ -118,6 +140,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (session.user && token.sub) {
         (session.user as typeof session.user & { id: string }).id = token.sub;
+        (session.user as typeof session.user & { role?: string }).role = token.role as string | undefined;
+        (session.user as typeof session.user & { displayName?: string | null }).displayName = token.displayName as
+          | string
+          | null
+          | undefined;
+        (session.user as typeof session.user & { avatarSeed?: string }).avatarSeed = token.avatarSeed as
+          | string
+          | undefined;
       }
       // Minted fresh every call — see the session-strategy comment
       // above. 15 minutes: long enough to cover a normal burst of API

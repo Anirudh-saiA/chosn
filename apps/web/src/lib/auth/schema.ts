@@ -10,8 +10,12 @@
  * specifically, unlike every other table in this database, which
  * apps/web only ever reads through apps/api's REST endpoints.
  */
-import { relations } from 'drizzle-orm';
-import { index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import { index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+
+// Day 17 — mirrors apps/api/src/db/schema.ts's userRoleEnum; see that
+// file and docs/trust-and-safety/README.md for why role, not is_admin.
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,6 +29,19 @@ export const users = pgTable('users', {
   // totpEnabled and totp_secret_encrypted are read/written via raw SQL
   // in lib/auth/totp.ts, not through this typed table — same reasoning
   // as the API-side schema.ts omitting the encrypted column.
+  // Day 17 — read at sign-in (auth.ts's jwt callback) to populate the
+  // session; account/security's display-name and avatar-reroll actions
+  // write these directly.
+  role: userRoleEnum('role').notNull().default('user'),
+  displayName: text('display_name'),
+  // .default() here mirrors 0009_trust_safety.sql's physical column
+  // default so `authDb.insert(users).values({...})` in createAccount()
+  // below can omit it, same as every other defaulted column — without
+  // this Drizzle's own generated insert type wrongly demands it even
+  // though Postgres would fill it in regardless.
+  avatarSeed: text('avatar_seed')
+    .notNull()
+    .default(sql`gen_random_uuid()::text`),
 });
 
 export const accounts = pgTable(

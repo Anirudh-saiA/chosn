@@ -66,6 +66,21 @@ export const mappingConfidenceEnum = pgEnum('mapping_confidence', ['manual', 've
 export const dropStatusEnum = pgEnum('drop_status', ['upcoming', 'live', 'sold_out']);
 export const subscriptionScopeEnum = pgEnum('subscription_scope', ['brand', 'model', 'global']);
 
+// Day 17: trust & safety — see 0009_trust_safety.sql for the reasoning
+// behind each of these (role vs. is_admin, why reported_entity_id isn't
+// an FK, why blocks aren't soft-deletable).
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
+export const reportEntityTypeEnum = pgEnum('report_entity_type', ['user', 'post', 'comment', 'message']);
+export const reportReasonEnum = pgEnum('report_reason', [
+  'harassment',
+  'doxxing',
+  'scam',
+  'hate_speech',
+  'spam',
+  'other',
+]);
+export const reportStatusEnum = pgEnum('report_status', ['pending', 'reviewed', 'actioned', 'dismissed']);
+
 // --------------------------------------------------------------- tables
 
 export const sneakers = pgTable(
@@ -621,6 +636,12 @@ export const users = pgTable('users', {
   // Drizzle's typed builder has no way to express inline.
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  // Day 17
+  role: userRoleEnum('role').notNull().default('user'),
+  displayName: text('display_name'),
+  avatarSeed: text('avatar_seed')
+    .notNull()
+    .default(sql`gen_random_uuid()::text`),
 });
 
 export const accounts = pgTable(
@@ -673,8 +694,58 @@ export const verificationTokens = pgTable(
   }),
 );
 
+// -------------------------------------------------- day 17: trust & safety
+//
+// See apps/api/drizzle/0009_trust_safety.sql and
+// docs/trust-and-safety/README.md for the full reasoning.
+
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reporterUserId: uuid('reporter_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    reportedEntityType: reportEntityTypeEnum('reported_entity_type').notNull(),
+    /** Deliberately not an FK — see the migration's header comment. */
+    reportedEntityId: uuid('reported_entity_id').notNull(),
+    reason: reportReasonEnum('reason').notNull(),
+    details: text('details'),
+    status: reportStatusEnum('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
+  },
+  (t) => ({
+    pendingIdx: index('reports_pending_idx').on(t.createdAt).where(sql`${t.status} = 'pending'`),
+    entityIdx: index('reports_entity_idx').on(t.reportedEntityType, t.reportedEntityId),
+    reporterIdx: index('reports_reporter_idx').on(t.reporterUserId),
+  }),
+);
+
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    blockerUserId: uuid('blocker_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedUserId: uuid('blocked_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pairUniq: uniqueIndex('user_blocks_pair_unique').on(t.blockerUserId, t.blockedUserId),
+    blockedIdx: index('user_blocks_blocked_idx').on(t.blockedUserId),
+  }),
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   sessions: many(sessions),
   subscribers: many(subscribers),
+  reportsFiled: many(reports, { relationName: 'reporter' }),
+  blocksMade: many(userBlocks, { relationName: 'blocker' }),
 }));
