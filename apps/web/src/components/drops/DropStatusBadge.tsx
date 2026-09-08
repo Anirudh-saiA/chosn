@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDropLiveSocket } from './useDropLiveSocket';
+import { useIsDropLive } from './drop-live-context';
 
 export interface DropStatusBadgeProps {
   dropEventId: string;
@@ -16,9 +16,15 @@ export interface DropStatusBadgeProps {
  * prefers-reduced-motion by dropping the highlight fade entirely; the
  * state change itself (the label swapping) still communicates the
  * update either way.
+ *
+ * `useIsDropLive` (Day 15) reads a page-shared WebSocket connection when
+ * one's available (`DropLiveProvider`, used by the calendar and
+ * drop-detail pages so 20-30 drops on one page share a single socket)
+ * and transparently falls back to its own connection otherwise — this
+ * component doesn't need to know or care which mode it's in.
  */
 export function DropStatusBadge({ dropEventId, initialStatus }: DropStatusBadgeProps) {
-  const { isLive } = useDropLiveSocket(initialStatus === 'upcoming' ? dropEventId : null);
+  const isLive = useIsDropLive(initialStatus === 'upcoming' ? dropEventId : null);
   const [justFlipped, setJustFlipped] = useState(false);
 
   const status = isLive ? 'live' : initialStatus;

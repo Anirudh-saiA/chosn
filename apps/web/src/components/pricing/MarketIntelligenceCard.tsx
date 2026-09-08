@@ -1,3 +1,15 @@
+'use client';
+
+// Explicit as of Day 15: real build error caught rendering this from a
+// new Server Component caller (LivePricePreview, on the drop-detail
+// page) — this component was always client-rendered in practice (its
+// only caller before today, PriceComparisonView, is itself 'use
+// client', so the boundary was implicit and never mattered), but
+// TweenedPrice's `formatter` prop is a plain function, and a function
+// can't cross an *explicit* server->client boundary as a prop. Marking
+// this file 'use client' moves that boundary to here, where every prop
+// (`data`, `bestRetailerName`) is plain serializable data — `formatInr`
+// itself now just runs as ordinary client code, never serialized.
 import { Badge, Card } from '@chosn/ui';
 import { formatInr, SIGNAL_COPY, type MarketIntelligence } from '@/lib/catalog';
 import { TweenedPrice } from './TweenedPrice';

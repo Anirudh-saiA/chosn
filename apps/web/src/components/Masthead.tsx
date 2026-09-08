@@ -22,6 +22,21 @@ export function Masthead() {
           >
             Search sneakers
           </Link>
+          {/* Day 15 — the magazine, split into two real, complete pages
+              rather than one combined link, matching how the two are
+              actually separate routes (task 5's nav requirement). */}
+          <Link
+            href="/drops"
+            className="font-mono text-ui-label text-text-soft transition-colors duration-150 ease-chosn hover:text-text"
+          >
+            Drops
+          </Link>
+          <Link
+            href="/news"
+            className="font-mono text-ui-label text-text-soft transition-colors duration-150 ease-chosn hover:text-text"
+          >
+            News
+          </Link>
           {/* Day 14 — real once /notifications has something to manage
               (subscriptions are created from a sneaker page's "Notify me"
               toggle), same "no link to an incomplete page" rule as above. */}
