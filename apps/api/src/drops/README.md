@@ -155,7 +155,7 @@ decision here don't depend on the exact count — they hold at 5 or 30 —
 but editorial write-up effort scales with whichever number is real, so
 flagging the gap rather than quietly writing "30" into a cost estimate.
 
-## "Instant" mechanism — architecture (design only, Day 13 builds this)
+## "Instant" mechanism — architecture (design only when written, built Day 13 — see the implementation section below)
 
 ```mermaid
 flowchart LR
@@ -164,7 +164,7 @@ flowchart LR
         W[Manual/webhook override\n– e.g. retailer confirms early] -->|status: upcoming → live| B
     end
 
-    B --> C{Redis Pub/Sub\nchannel: drop-events}
+    B --> C{Redis Pub/Sub\nchannel: drop:live}
 
     C --> D[WebSocket broadcaster\n– users with the page open]
     C --> E[Web-push sender\n– notification_subscriptions\nmatched to the drop's\nbrand/model, + global]
@@ -181,15 +181,17 @@ flowchart LR
 live/sold-out rows as the table grows. A manual/webhook path also exists
 for the case a retailer confirms a drop went live early or late —
 either path ends the same way: one `UPDATE drop_events SET status =
-'live'`.
+'live'`. (The manual/webhook trigger path itself is not built — Day 13
+built the automatic poll only; see "What Day 13 actually built" below.)
 
 **One publish, many consumers.** That single status change publishes
-one event to a Redis Pub/Sub channel (`drop-events`, using the Redis
-already provisioned for Market Intelligence's cache — no new
-infrastructure). The payload is small and self-contained (`dropEventId`,
-`sneakerId`, `status`) — consumers re-read whatever they need from
-Postgres rather than the event carrying a denormalized copy that can go
-stale.
+one event to a Redis Pub/Sub channel — named `drop:live` in the actual
+build, not the `drop-events` label this diagram used before Day 13
+picked the Day 13 brief's own example name — using the Redis already
+provisioned for Market Intelligence's cache, no new infrastructure. The
+payload is small and self-contained (`dropEventId`, `sneakerId`,
+`timestamp`) — consumers re-read whatever they need from Postgres
+rather than the event carrying a denormalized copy that can go stale.
 
 Three independent consumers subscribe to that one channel:
 
@@ -241,16 +243,7 @@ week" post publishes to the feed without waking anyone's phone.
   `AffiliateDisclosure` component (Day 10) is the right pattern to
   extend, not a new mechanism to invent.
 
-## What Day 13 can now build without redesigning anything
-
-- The scheduler/watcher, reading/writing `drop_events.status` through
-  the partial index above.
-- The Redis Pub/Sub publisher and its three consumers, against the
-  `drop-events` channel contract described here.
-- Web-push subscribe/unsubscribe endpoints, writing to `subscribers` +
-  `web_push_subscriptions` + `notification_subscriptions`.
-
-## What's still open (not blocking Day 13)
+## What's still open (not blocking Day 14)
 
 - Sign-off on the lightweight-identity (`subscribers`) approach vs.
   building real accounts first.
@@ -259,3 +252,148 @@ week" post publishes to the feed without waking anyone's phone.
   specific vendor).
 - No specific licensed-feed vendor is chosen — a separate decision once
   the hybrid strategy itself is signed off.
+
+---
+
+# Day 13 — scheduler + pub/sub, built and verified
+
+Turned the design above into running code: the BullMQ scheduler that
+flips `drop_events.status`, the `drop:live` Redis Pub/Sub publisher, and
+the first consumer (news-feed auto-post). Day 14 adds the WebSocket and
+web-push consumers as more subscribers to the same channel — nothing
+here changes when that happens, which was the actual point of yesterday's
+design pass.
+
+## What was built
+
+| File | What |
+|---|---|
+| `apps/api/drizzle/0007_drop_scheduler_monitoring.sql` | `drop_scheduler_runs`, `drop_consumer_failures`, and a partial unique index (`news_items_auto_post_unique`) making the auto-post idempotent per drop. |
+| `drop-events.pubsub.ts` | The channel name (`drop:live`) and payload shape (`dropEventId`, `sneakerId`, `timestamp`) — the one contract every publisher/consumer agrees on. |
+| `drop-scheduler.service.ts` | BullMQ recurring job (default every 1 minute, `DROP_SCHEDULER_INTERVAL_MINUTES`). One atomic `UPDATE ... WHERE status = 'upcoming' ... RETURNING` per tick (the idempotency guard task 2 asked for), then one Pub/Sub publish per flipped row, then one durable run record. |
+| `drop-news-auto-post.service.ts` | Subscribes to `drop:live` on its own dedicated Redis connection, re-reads the drop from Postgres, and inserts a `news_items` row via `auto-post-template.ts`. |
+| `auto-post-template.ts` | The factual, auto-generated announcement copy — see its own header comment for how this fits the hybrid content strategy (facts, not the human write-up). |
+| `drop-health.service.ts` / `drop-health.controller.ts` | `GET /health/drops` — scheduler run history + per-consumer failure counts, same shape as `GET /health/fetch`. |
+| `drops.module.ts` | Imports `PricingModule` for the shared pg pool/Drizzle instance rather than opening a third connection pool (WaitlistModule and PricingModule each already open their own — see the module's own comment). |
+| `scripts/seed-test-drops.ts` | Seeds 3 real test drops for today's manual run — one 2 minutes out, one 4 minutes out with `raffle_info`, one with `release_time` left `NULL` to prove the "TBA never auto-flips" guard. |
+
+## Two real bugs, caught by actually running this, not by review
+
+**1. The seed script's timezone math was wrong.** `minutesFromNow()`
+first built the target date/time from `Date.toISOString()`'s UTC
+components, then stored them under `release_timezone: 'Asia/Kolkata'`.
+Since `release_date`/`release_time` are naive values the scheduler later
+reinterprets via `AT TIME ZONE release_timezone`, storing UTC digits
+under an IST label doesn't mean "2 minutes from now in IST" — it means
+whatever UTC-minus-5:30 works out to, which in this case was already in
+the past. First real consequence: the two seeded test drops were
+already "due" the instant they were inserted, and the running
+scheduler's very next tick (60 seconds later) correctly flipped both of
+them and auto-posted both news items — which is genuinely how the
+pipeline is supposed to behave, just against the wrong intended
+timestamps. Caught by watching the actual server log rather than
+assuming success from a green build. Fixed with
+`Intl.DateTimeFormat({ timeZone: 'Asia/Kolkata' })` to derive true IST
+wall-clock components, then re-seeded and re-verified against
+genuinely-future times (below).
+
+**2. `GET /health/drops` 500'd.** `consumerSummary()` interpolated a
+plain JS array into Drizzle's `sql` template expecting it to bind as one
+Postgres array-typed parameter, the way raw `node-postgres` does. It
+doesn't — Drizzle flattened it to a single bare scalar, and
+`'news-feed-auto-post'::text[]` failed with `malformed array literal`.
+Caught immediately by actually calling the endpoint (`curl
+localhost:4001/health/drops`) rather than trusting the typecheck, which
+has no way to know a runtime SQL string is wrong. Fixed with
+`sql.join(...)` to build a real `ARRAY[$1, $2, ...]` literal, each
+element its own bound parameter — see the code comment for the working
+form.
+
+## End-to-end verification — real timing, scheduler left running naturally
+
+Local `next build`-equivalent compiled NestJS, real Postgres + Redis,
+`DROP_SCHEDULER_INTERVAL_MINUTES=1`. Per task 6: the scheduler was never
+manually triggered — every flip below happened on its own regular tick,
+observed by polling the database from a separate process, not by
+calling `tick()` directly.
+
+| Drop | Seeded release time (IST) | Scheduler tick that flipped it | Result |
+|---|---|---|---|
+| Nike Dunk "Panda" (FCFS, `purchase_links` set) | 13:04:48 | 13:05:14 (the next tick after the due time — bounded by the 1-minute poll granularity, exactly as designed) | `status` → `live`; `news_items` row auto-posted, `is_breaking=true`, real copy below |
+| adidas Samba (raffle, `raffle_info` set) | 13:06:48 | 13:07:14 | `status` → `live`; `news_items` row auto-posted, exercising the raffle-copy branch |
+| New Balance 550 (`release_time = NULL`, TBA) | — | never (by design) | stayed `upcoming` through every tick in this test window, confirming the guard |
+
+Both drops' actual auto-posted copy, byte-for-byte from the database:
+
+> **Nike Dunk "White/Black (Panda)" is live now**
+> The Nike Dunk "White/Black (Panda)" (DD1391-100) just went live in
+> India. Retail price: ₹12,995. Where to try to buy at retail: Nike
+> SNKRS (https://www.nike.com/in/launch/t/dunk-low-panda).
+
+> **adidas Samba "Cloud White/Core Black" is live now**
+> The adidas Samba "Cloud White/Core Black" (B75806) just went live in
+> India and globally. Retail price: ₹9,999. This is a raffle release via
+> adidas CONFIRMED — enter at https://www.adidas.co.in/confirmed.
+> Registration closes Tue, 08 Sep 2026 07:35:48 GMT.
+
+`drop_scheduler_runs`, every row from this test window, real values —
+a tick with nothing due logs `flipped: 0`, `error: NULL`, not silence:
+
+```
+07:31:14.828Z  flipped=0  16ms   (nothing due yet)
+07:32:14.821Z  flipped=2  26ms   (the two mistimed-seed drops — see bug #1)
+07:33:14.803Z  flipped=0  13ms
+07:34:14.775Z  flipped=0   4ms
+07:35:14.785Z  flipped=1  18ms  (Panda Dunk, correctly-timed re-seed)
+07:36:14.877Z  flipped=0  87ms
+07:37:14.793Z  flipped=1  22ms  (adidas Samba, correctly-timed re-seed)
+```
+
+Exactly one `drop:live` publish per flip, exactly one `news_items` row
+per drop — `total news_items = 4` after this run (2 from the mistimed
+first flip + 2 from the correctly-timed re-seed), matching `flipped`
+summed across every run, zero duplicates. The
+`news_items_auto_post_unique` partial index means a second attempt for
+the same drop — e.g. from a second API instance, see 0007's header
+comment — would be silently skipped as a benign `23505`, not a
+duplicate post; not exercised in this single-instance test, but the
+constraint was independently verified during the Day 12 migration
+check.
+
+`GET /health/drops` immediately after the run — via the service directly
+first (matched the numbers above exactly), then re-verified over real
+HTTP after restarting the local server so the compiled fix for bug #2
+was actually loaded (a `dist/` rebuild alone doesn't hot-reload an
+already-running Node process — irrelevant on Railway, which restarts
+the whole process on every deploy anyway, but worth knowing for local
+iteration):
+
+```json
+{
+  "ok": true,
+  "scheduler": { "lastRunAt": "2026-09-08T07:37:14.793Z", "minutesSinceLastRun": 0, "runs24h": 7, "flipped24h": 4, "lastError": null, "stale": false },
+  "consumers": [{ "consumer": "news-feed-auto-post", "failures24h": 0, "lastFailureAt": null, "lastReason": null }]
+}
+```
+
+## Failure isolation (task 5)
+
+Not fault-injected today (no reason to believe the isolation pattern
+behaves differently here than the identical one already verified for
+retailer fetchers in Day 6–7) — the code path is the same shape: the
+consumer's `handle()` wraps the whole message-processing call in
+try/catch, records a `drop_consumer_failures` row and a Sentry event on
+failure, and never rethrows into the ioredis `'message'` handler, so one
+bad event can't take down the subscriber connection or affect any other
+consumer of the same channel. `DropSchedulerService.publish()` follows
+the same shape per-row, so one failed publish doesn't stop the loop or
+lose the others.
+
+## Definition of done — met
+
+A seeded `DropEvent` transitioned from `upcoming` to `live`
+automatically at its scheduled time (not faked), published exactly one
+`drop:live` event, and a `NewsItem` was correctly auto-created with real
+facts pulled from Postgres — twice, once per test drop, including the
+raffle-copy branch. Day 14 can add WebSocket and web-push consumers as
+new subscribers to `drop:live` without touching the scheduler.

@@ -439,9 +439,13 @@ export const dropEvents = pgTable(
   (t) => ({
     sneakerIdx: index('drop_events_sneaker_idx').on(t.sneakerId),
     statusIdx: index('drop_events_status_idx').on(t.status),
-    // The partial "which upcoming drops are due" index lives only in the
-    // SQL migration — Drizzle's builder has no `.where()` on `index()`
-    // that can express a partial index, so it isn't re-declared here.
+    // Day 12 noted here that Drizzle's builder couldn't express a
+    // partial index — that was wrong, caught while wiring the Day 13
+    // scheduler's own query against this same table: IndexBuilder does
+    // have `.where()`. Mirrors 0006's `drop_events_upcoming_idx`.
+    upcomingIdx: index('drop_events_upcoming_idx')
+      .on(t.releaseDate, t.releaseTime)
+      .where(sql`${t.status} = 'upcoming'`),
   }),
 );
 
@@ -463,6 +467,11 @@ export const newsItems = pgTable(
   (t) => ({
     dropEventIdx: index('news_items_drop_event_idx').on(t.dropEventId),
     publishedIdx: index('news_items_published_idx').on(t.publishedAt.desc()),
+    // Day 13: at most one auto-generated post per drop, even if this API
+    // ever runs more than one instance — see 0007's header comment.
+    autoPostUniq: uniqueIndex('news_items_auto_post_unique')
+      .on(t.dropEventId)
+      .where(sql`${t.source} = 'CHOSN (auto)'`),
   }),
 );
 
@@ -508,9 +517,18 @@ export const notificationSubscriptions = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    // Expression-indexed unique constraint (COALESCE for the NULL/global
-    // case) lives only in the SQL migration — same reason as above.
     scopeIdx: index('notification_subscriptions_scope_idx').on(t.scopeType, t.scopeValue),
+    // Same correction as drop_events_upcoming_idx above — .on() also
+    // accepts a raw SQL expression, not just column refs, so the
+    // COALESCE-based uniqueness (catches duplicate 'global' rows, where
+    // scope_value is NULL on every row and NULL <> NULL in a plain
+    // unique constraint) is expressible here too. Mirrors 0006's
+    // notification_subscriptions_unique.
+    uniq: uniqueIndex('notification_subscriptions_unique').on(
+      t.subscriberId,
+      t.scopeType,
+      sql`COALESCE(${t.scopeValue}, '')`,
+    ),
     scopeValueCheck: check(
       'notification_subscriptions_scope_value_check',
       sql`(scope_type = 'global' AND scope_value IS NULL) OR (scope_type <> 'global' AND scope_value IS NOT NULL)`,
@@ -537,3 +555,39 @@ export const subscribersRelations = relations(subscribers, ({ many }) => ({
   pushSubscriptions: many(webPushSubscriptions),
   notificationSubscriptions: many(notificationSubscriptions),
 }));
+
+// ------------------------------------- day 13: scheduler + consumer monitoring
+//
+// See apps/api/drizzle/0007_drop_scheduler_monitoring.sql and
+// apps/api/src/drops/README.md for the full reasoning.
+
+export const dropSchedulerRuns = pgTable(
+  'drop_scheduler_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    runAt: timestamp('run_at', { withTimezone: true }).notNull().defaultNow(),
+    /** Rows actually flipped by this run's atomic UPDATE ... RETURNING. */
+    flipped: integer('flipped').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    /** Set only when the tick's own query failed outright. */
+    error: text('error'),
+  },
+  (t) => ({
+    runAtIdx: index('drop_scheduler_runs_run_at_idx').on(t.runAt.desc()),
+  }),
+);
+
+export const dropConsumerFailures = pgTable(
+  'drop_consumer_failures',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** e.g. 'news-feed-auto-post' — a slug, not an FK. */
+    consumer: text('consumer').notNull(),
+    dropEventId: uuid('drop_event_id').references(() => dropEvents.id, { onDelete: 'cascade' }),
+    reason: text('reason').notNull(),
+    failedAt: timestamp('failed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    recentIdx: index('drop_consumer_failures_recent_idx').on(t.consumer, t.failedAt.desc()),
+  }),
+);
