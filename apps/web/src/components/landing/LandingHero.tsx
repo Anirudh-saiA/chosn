@@ -56,8 +56,15 @@ export function LandingHero() {
         style={{ rotateX, rotateY }}
         className="absolute inset-0"
       >
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-ink to-[#161616]">
-          <SneakerPlaceholder tone="bone" className="h-[45vh] w-auto max-w-[80vw] opacity-90 sm:h-[55vh]" />
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-ink to-[#161616]">
+          {/* A soft off-center glow behind the mark — the one bit of
+              depth standing in for what real photo lighting would give
+              this frame for free. */}
+          <div
+            aria-hidden
+            className="absolute -right-[10%] top-[15%] h-[70vh] w-[70vh] rounded-full bg-ember/10 blur-[120px]"
+          />
+          <SneakerPlaceholder tone="bone" className="relative h-[48vh] w-auto max-w-[80vw] sm:h-[58vh]" />
         </div>
       </motion.div>
 

@@ -63,7 +63,7 @@ export function StatementSection() {
           className="relative h-[50vh] overflow-hidden bg-ink lg:order-2 lg:h-[70vh]"
         >
           <div ref={imageInnerRef} className="flex h-[130%] w-full items-center justify-center">
-            <SneakerPlaceholder tone="bone" className="h-[40vh] w-auto max-w-[70%] rotate-[8deg]" />
+            <SneakerPlaceholder tone="bone" variant="profile" className="h-[28vh] w-auto max-w-[80%]" />
           </div>
         </div>
 
