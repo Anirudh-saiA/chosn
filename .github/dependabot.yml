@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Day 16 task 8. One entry at the workspace root: Dependabot's npm
+  # ecosystem understands npm workspaces natively from the root
+  # package.json (this repo's apps/*, packages/*), so a single entry
+  # here covers apps/api, apps/web, packages/ui, and packages/config —
+  # not four separate entries scanning the same lockfile four times.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 10
+    groups:
+      # Every @nestjs/* package moves together in practice (major
+      # versions are released as a set) — one PR to review instead of
+      # five that would each individually fail typecheck until the
+      # others land too.
+      nestjs:
+        patterns:
+          - '@nestjs/*'
+      # Same reasoning for the Auth.js pieces Day 16 just added —
+      # next-auth and @auth/drizzle-adapter are versioned together
+      # upstream.
+      auth:
+        patterns:
+          - 'next-auth'
+          - '@auth/*'
+    # Security-relevant, low-risk-to-auto-merge-review updates get
+    # flagged fastest; a major version bump of something like Next.js
+    # or Sentry needs a real look regardless of how Dependabot labels
+    # it, so majors aren't auto-grouped away from review here.
+    labels:
+      - 'dependencies'
+
+  # Keeps the CI workflow's own actions (actions/checkout, etc.)
+  # current — a stale pinned action version is exactly the kind of
+  # supply-chain surface this task is about, not just npm packages.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'

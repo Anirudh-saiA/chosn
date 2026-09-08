@@ -1,5 +1,6 @@
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { CatalogService, type CatalogResponse, type SearchResponse } from './catalog.service';
+import { SearchQueryDto } from './dto/search-query.dto';
 
 /**
  * The one endpoint Day 10's price comparison page calls server-side:
@@ -22,20 +23,8 @@ export class CatalogController {
    * convention that stays unambiguous if either route ever changes shape.
    */
   @Get('search')
-  async search(
-    @Query('q') q?: string,
-    @Query('brand') brand?: string,
-    @Query('signal') signal?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ): Promise<SearchResponse> {
-    return this.catalog.search({
-      q,
-      brand,
-      signal,
-      limit: limit ? Number(limit) : undefined,
-      offset: offset ? Number(offset) : undefined,
-    });
+  async search(@Query() query: SearchQueryDto): Promise<SearchResponse> {
+    return this.catalog.search(query);
   }
 
   /** Feeds Next's generateStaticParams() — see listVariantParams()'s doc comment. */

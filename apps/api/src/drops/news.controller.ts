@@ -1,5 +1,6 @@
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { isUUID } from 'class-validator';
+import { ListNewsQueryDto } from './dto/list-news-query.dto';
 import { NewsService, type NewsListItem, type NewsListResponse } from './news.service';
 
 /** Read-only, public — the news feed and article pages (Day 15). */
@@ -8,16 +9,8 @@ export class NewsController {
   constructor(private readonly news: NewsService) {}
 
   @Get()
-  async list(
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-    @Query('dropEventId') dropEventId?: string,
-  ): Promise<NewsListResponse> {
-    return this.news.list({
-      limit: limit ? Number(limit) : undefined,
-      offset: offset ? Number(offset) : undefined,
-      dropEventId,
-    });
+  async list(@Query() query: ListNewsQueryDto): Promise<NewsListResponse> {
+    return this.news.list(query);
   }
 
   @Get(':id')

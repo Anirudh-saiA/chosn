@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { RateLimit, RateLimitGuard } from '../../common/rate-limit.guard';
 import { IdentifyDto } from './dto/identify.dto';
+import { ListSubscriptionsQueryDto } from './dto/list-subscriptions-query.dto';
 import { PushSubscribeDto, PushUnsubscribeDto } from './dto/push-subscription.dto';
 import { SubscriptionDto } from './dto/subscription.dto';
 import { NotificationsService } from './notifications.service';
@@ -43,9 +44,9 @@ export class NotificationsController {
   }
 
   @Get('subscriptions')
-  async list(@Query('subscriberId') subscriberId: string) {
-    if (!subscriberId) return { subscriptions: [] };
-    return { subscriptions: await this.notifications.list(subscriberId) };
+  async list(@Query() query: ListSubscriptionsQueryDto) {
+    if (!query.subscriberId) return { subscriptions: [] };
+    return { subscriptions: await this.notifications.list(query.subscriberId) };
   }
 
   @Post('push-subscribe')

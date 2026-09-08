@@ -3,6 +3,7 @@ import { isUUID } from 'class-validator';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { DropsService, type DropDetail, type DropListItem, type DropStatus } from './drops.service';
+import { ListDropsQueryDto } from './dto/list-drops-query.dto';
 import { parsePgTextArray } from './pg-array';
 
 export interface DropEventSummary {
@@ -18,8 +19,6 @@ export interface DropEventSummary {
   raffleInfo: unknown;
 }
 
-const VALID_STATUSES: DropStatus[] = ['upcoming', 'live', 'sold_out'];
-
 /** Read-only, public — a drop's own status/detail is not sensitive. */
 @Controller('drops')
 export class DropsController {
@@ -33,19 +32,16 @@ export class DropsController {
    * is a comma-separated subset of upcoming/live/sold_out. All optional
    * — omitting everything returns every drop (fine at this catalog's
    * scale, see DropsService.list's own comment).
+   *
+   * Day 16 task 5 fix: `from`/`to` used to reach `DropsService.list()`'s
+   * raw SQL unvalidated — a malformed date string became a raw Postgres
+   * "invalid input syntax for type date" 500, the same class of bug as
+   * catalog/search's limit/offset (see that DTO's own comment).
+   * `ListDropsQueryDto` closes it with a clean 400 instead.
    */
   @Get()
-  async list(
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('status') status?: string,
-  ): Promise<DropListItem[]> {
-    const statuses = status
-      ?.split(',')
-      .map((s) => s.trim())
-      .filter((s): s is DropStatus => VALID_STATUSES.includes(s as DropStatus));
-
-    return this.drops.list({ from, to, statuses });
+  async list(@Query() query: ListDropsQueryDto): Promise<DropListItem[]> {
+    return this.drops.list({ from: query.from, to: query.to, statuses: query.status });
   }
 
   /**

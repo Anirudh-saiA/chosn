@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AuthNavStatus } from '@/components/auth/AuthNavStatus';
 
 /**
  * Day 4 kept this wordmark-only deliberately — "no nav links to /compare
@@ -46,6 +47,9 @@ export function Masthead() {
           >
             Notifications
           </Link>
+          {/* Day 16 — its own client component, deliberately not read
+              here; see AuthNavStatus's own comment on why. */}
+          <AuthNavStatus />
         </nav>
       </div>
     </header>
