@@ -397,3 +397,218 @@ automatically at its scheduled time (not faked), published exactly one
 facts pulled from Postgres — twice, once per test drop, including the
 raffle-copy branch. Day 14 can add WebSocket and web-push consumers as
 new subscribers to `drop:live` without touching the scheduler.
+
+---
+
+# Day 14 — WebSocket + web push, the "instant" promise made real
+
+Adds the two remaining `drop:live` consumers Day 13 designed room for
+(`DropLiveGateway`, `DropPushConsumer`), plus the subscription
+management REST API (`notifications/`) and frontend UI those two
+depend on. All three consumers of `drop:live` now run independently —
+DropNewsAutoPostService (Day 13), DropLiveGateway, DropPushConsumer —
+each on its own dedicated Redis subscriber connection.
+
+## Room scoping — flagged assumption, chose global for v1
+
+**Global broadcast, not per-brand/per-model rooms.** Every connected
+WebSocket client receives every `drop:live` event; the frontend filters
+client-side by comparing the event's `dropEventId` against the one
+page/component actually cares about (see `useDropLiveSocket`'s own
+comment in `apps/web/src/components/drops/`).
+
+Why: at today's scale — a handful of launch-catalog drops, a handful of
+concurrent viewers — targeted rooms are real implementation cost
+(client-side room join/leave bookkeeping on every navigation, server-
+side room membership tracking) for a broadcast that costs nothing extra
+to send globally. `ws` (the library this gateway uses, not Socket.io —
+see its own comment) has no built-in room concept either, so targeted
+rooms would mean hand-rolling one. The actual cost of going global is a
+few unused bytes on the wire per uninterested client, never a wrong UI
+update, since the payload always carries enough to filter on.
+**Revisit with targeted rooms once concurrent viewers or drop frequency
+are actually high enough for that "unused bytes" cost to matter — this
+is a real tradeoff to override, not a settled decision.**
+
+## What was built
+
+| File | What |
+|---|---|
+| `drop-live.gateway.ts` | `DropLiveGateway` — `ws`-based (not Socket.io), mounted at `/ws/drops`, subscribes to `drop:live`, broadcasts to every open connection. |
+| `web-push.service.ts` | `WebPushService` — thin wrapper over the `web-push` library, same no-op-until-configured convention as `EmailService`/`RESEND_API_KEY`. Never throws; every send outcome (`sent` / `gone` / `error`) comes back typed. |
+| `drop-push.consumer.ts` | `DropPushConsumer` — the third `drop:live` consumer. Matches `notification_subscriptions` by brand OR model (style_code) OR global, de-dupes a subscriber matched on more than one scope down to one push per endpoint, sends in fixed-size batches (task 7), deletes a subscription on a `410`/`404` "gone" response. |
+| `notifications/` | `NotificationsController` + `NotificationsService` — identify (mint/reuse a `subscribers` row), subscribe/unsubscribe (`notification_subscriptions`), list (with friendly labels), push-subscribe/push-unsubscribe (`web_push_subscriptions`). Every mutating endpoint is `RateLimitGuard`'d (task 7). |
+| `drops.controller.ts` | `GET /drops/by-style-code/:styleCode` — the small read endpoint the sneaker page needed to know a `DropEvent` exists at all; didn't exist before today. |
+| `apps/web/src/lib/notifications.ts` | Frontend API client + the `subscriberId` localStorage lifecycle (mint once via `identify()`, persist, re-identify once on a stale-id 404) + the push-permission flow. |
+| `apps/web/public/sw.js` | The service worker — `push` -> `showNotification`, `notificationclick` -> focus-or-open the sneaker page. Minimal on purpose: this app has no other reason for a service worker. |
+| `apps/web/src/components/drops/` | `useDropLiveSocket` (the WS client hook), `DropStatusBadge` (Upcoming -> Live, no refresh), `NotifyToggle` (model/brand toggles + contextual push prompt), `SubscriptionList` (the settings page). |
+
+## Two Drizzle correctness issues, both caught by actually running the code
+
+**1. `ON CONFLICT` against an expression index isn't expressible through
+Drizzle's typed conflict-target builder.** `notification_subscriptions`'s
+uniqueness (0006) is `UNIQUE (subscriber_id, scope_type, COALESCE(scope_value, ''))`
+— an expression index, not a plain-column one. `NotificationsService.subscribe()`
+uses raw `sql` with the exact expression in the `ON CONFLICT` clause
+instead. Verified directly: subscribing to the same scope twice returns
+`{ok:true}` both times with only one row in the database (see the
+manual endpoint testing below) — not assumed correct from reading the
+Postgres docs.
+
+**2. Drizzle's `sql` template does not bind a plain JS array as a single
+Postgres array-typed parameter.** Hit this exact class of bug once
+already in `DropHealthService.consumerSummary()` (Day 13); this time it
+showed up in an early draft of the push-matching query that tried
+`scope_value = ANY(${array})`. Same fix as Day 13: build the list with
+`sql.join(...)` into a real SQL list/array literal rather than trying to
+pass a JS array through as one parameter. Mentioning it again here
+because it's the second time this exact mistake happened — worth
+remembering as a standing gotcha with this ORM, not a one-off.
+
+## Manual endpoint verification (before the end-to-end test)
+
+Every `notifications/*` endpoint was called directly and checked
+against the database, not just trusted from the code:
+
+- `identify` (no email) and `identify` (with email, then called again
+  with the same email) — confirmed the second call returns the *same*
+  `subscriberId` rather than minting a duplicate `subscribers` row.
+- `subscribe` (brand), `subscribe` (model), `subscribe` (brand again,
+  duplicate) — confirmed exactly 2 rows exist after 3 calls (the
+  `ON CONFLICT` fix above, load-bearing).
+- `subscribe` with `scopeType: 'global'` + a `scopeValue` present —
+  confirmed `400` with the exact validation message, not a `500` from a
+  Postgres `CHECK` violation. (This DTO validator was rewritten once
+  already after a direct test — see `subscription.dto.ts`'s own comment
+  — because two stacked `@ValidateIf` blocks on one property silently
+  don't combine the way they look like they should in class-validator;
+  caught by running four cases through `validate()` directly rather
+  than trusting the decorator stack.)
+- `unsubscribe` (brand) — confirmed the row is gone and the model
+  subscription survives.
+- `push-subscribe`, then `push-subscribe` again with the same
+  `endpoint` and different keys — confirmed one row, updated in place
+  (`onConflictDoUpdate` against the plain `UNIQUE` on `endpoint`, which
+  — unlike `notification_subscriptions` above — Drizzle's typed builder
+  handles natively, no raw SQL needed).
+- An unknown `subscriberId` against `subscribe` — confirmed `404
+  unknown_subscriber`, not a foreign-key `500`.
+- Rate limiting — burst-called `identify` past its 20/hour limit and
+  confirmed real `429`s starting exactly where the quota ran out, and
+  staying `429` on every subsequent call in the same window (Redis-
+  backed persistence, not an in-memory counter that would reset per
+  request).
+
+## End-to-end verification — real timing, nothing faked
+
+Same discipline as Day 13: the scheduler was left running on its normal
+1-minute poll, never manually triggered. Setup:
+
+- Re-used Day 13's `seed:test-drops` script (unchanged) for a Panda
+  Dunk drop a few minutes out.
+- A real WebSocket client (Node's native `WebSocket` — the same API a
+  browser tab uses, not the server-side `ws` library) connected to
+  `/ws/drops` and left open, simulating "one browser tab on the drop
+  page."
+- A `web_push_subscriptions` row with a **cryptographically valid**
+  P-256 key pair (generated via Node's `crypto.createECDH`, so it
+  passes `web-push`'s own local validation) pointed at a syntactically
+  real but non-existent FCM endpoint
+  (`https://fcm.googleapis.com/fcm/send/...`), subscribed to the same
+  model — specifically to see what happens past local validation, not
+  just that a malformed key gets rejected.
+
+**Result, one real flip, all three consumers independently reacting to
+one publish:**
+
+```
+13:44:05 IST  drop's scheduled release_time
+13:45:00 IST  scheduler tick flips status upcoming -> live, publishes drop:live
+13:45:00.092Z  DropSchedulerService publishes
+13:45:00.100Z  WebSocket client receives the frame       (+8ms)
+13:45:00.xxx   DropNewsAutoPostService auto-posts the NewsItem
+13:45:00.xxx   DropPushConsumer: 2 matched, 0 sent, 1 stale (removed), 1 failed
+```
+
+**The push outcome is the most informative part, not the least.**
+Neither push subscription was a real, permission-granted browser
+subscription — this environment has no browser UI to grant one from —
+but the two fake ones exercised the two different real failure paths on
+purpose:
+
+- The intentionally malformed key (`p256dh` too short) failed **before
+  any network call**, inside `web-push`'s own local validation — logged
+  as `error`, left in place (not a confirmed-dead endpoint, just a bad
+  local input).
+- The cryptographically valid key against a syntactically real but
+  unregistered FCM URL made an **actual HTTPS request to Google's push
+  infrastructure**, got back a real `404`/`410`, and `DropPushConsumer`
+  correctly classified that as `gone` and deleted the row — confirmed
+  by querying `web_push_subscriptions` immediately after and finding it
+  gone, with no `drop_consumer_failures` row written (this is an
+  expected, handled outcome, not a failure — see the consumer's own
+  comment on why it's logged, not Sentried).
+
+So: real scheduler timing, real Pub/Sub fan-out to three independent
+consumers, a real WebSocket round-trip with a measured **8ms**
+publish-to-client latency, and a real network round-trip to Google's
+own push infrastructure with correct handling of both outcomes it can
+return. What wasn't and couldn't be verified from this environment is
+the very last hop — an actual OS-level push notification appearing on
+a real device after a human clicked "Allow." Everything server-side
+feeding that hop was verified for real; that specific last step is a
+reasonable, honestly-flagged gap for the person running this on an
+actual browser to confirm.
+
+`GET /health/drops` after this run (both consumers now listed, both
+clean):
+
+```json
+{
+  "ok": true,
+  "consumers": [
+    { "consumer": "news-feed-auto-post", "failures24h": 0 },
+    { "consumer": "web-push", "failures24h": 0 }
+  ]
+}
+```
+
+Zero `drop_consumer_failures` rows is correct here, not a gap in
+coverage — every outcome above (the malformed-key error, the real
+404 cleanup) is handled *inside* `DropPushConsumer.sendBatched()` and
+never propagates to the outer catch that writes that table. That outer
+path exists for something failing before matching even starts (e.g. the
+drop lookup itself throwing) — not exercised today, same as Day 13's
+equivalent gap for the news consumer.
+
+## Failure isolation (task 5) — verified, not just structurally argued
+
+Unlike Day 13 (where this section said "not fault-injected today, same
+pattern as Day 6-7"), this one *was* naturally exercised: in the single
+test run above, `DropPushConsumer` hit two different error conditions
+(a local validation failure and a real remote 404) in the same
+broadcast that `DropLiveGateway` delivered cleanly to its one client and
+`DropNewsAutoPostService` auto-posted without incident. Three
+consumers, one publish, one of them degraded in two different ways,
+zero effect on the other two — because each owns its own Redis
+subscriber connection and its own try/catch boundary, exactly as
+designed.
+
+## Copy accuracy (task 4)
+
+`NotifyToggle` tells a subscriber "we check every minute... not to the
+second" — a direct, literal statement of `DROP_SCHEDULER_INTERVAL_MINUTES`'s
+actual default (1), not a vaguer "instant" claim the scheduler's real
+polling interval can't back up. If that env var is ever changed in
+production, this copy needs to change with it — flagged in the
+component's own comment, not just here.
+
+## What's still open
+
+- The lightweight-identity and hybrid-content-sourcing sign-offs from
+  Day 12 are unchanged and still open.
+- Targeted WebSocket rooms (brand/model-scoped), if concurrent viewers
+  or drop frequency ever make the global broadcast's "wasted bytes"
+  cost real — see the room-scoping section above.
+- A real end-to-end push test on an actual browser/device, to close the
+  one gap this environment genuinely can't verify.

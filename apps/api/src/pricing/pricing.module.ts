@@ -44,6 +44,12 @@ import { PriceSnapshotService } from './price-snapshot.service';
     MarketIntelligenceService,
     MarketIntelligenceCacheService,
     drizzleProvider,
+    // Day 14: DropsModule imports this module for `DRIZZLE`/the pg pool
+    // (its own doc comment explains why) and now also needs REDIS_CLIENT
+    // for RateLimitGuard on the new notification endpoints — exporting
+    // it here reuses the one ioredis client already created for the
+    // price pipeline's rate limiting instead of opening a second one.
+    redisProvider,
   ],
 })
 export class PricingModule {}

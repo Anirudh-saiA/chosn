@@ -15,12 +15,21 @@ export function Masthead() {
         <Link href="/" className="font-display text-xl text-text">
           CH<span className="text-brass">O</span>SN
         </Link>
-        <nav>
+        <nav className="flex items-center gap-6">
           <Link
             href="/sneakers"
             className="font-mono text-ui-label text-text-soft transition-colors duration-150 ease-chosn hover:text-text"
           >
             Search sneakers
+          </Link>
+          {/* Day 14 — real once /notifications has something to manage
+              (subscriptions are created from a sneaker page's "Notify me"
+              toggle), same "no link to an incomplete page" rule as above. */}
+          <Link
+            href="/notifications"
+            className="font-mono text-ui-label text-text-soft transition-colors duration-150 ease-chosn hover:text-text"
+          >
+            Notifications
           </Link>
         </nav>
       </div>
