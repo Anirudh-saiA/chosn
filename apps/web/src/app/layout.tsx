@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Archivo, JetBrains_Mono, Zilla_Slab } from 'next/font/google';
+import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body>
-        <MonitoringProvider>{children}</MonitoringProvider>
+        <AuthSessionProvider>
+          <MonitoringProvider>{children}</MonitoringProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

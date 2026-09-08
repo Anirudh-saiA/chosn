@@ -27,6 +27,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   time,
   timestamp,
@@ -318,6 +319,8 @@ export const waitlistEntries = pgTable('waitlist_entries', {
   source: text('source').notNull().default('landing_page'),
   confirmed: boolean('confirmed').notNull().default(true),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  /** Day 16 — set once this email creates a real account; never retroactively guessed, never deleted. See 0008_auth.sql. */
+  linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),
 });
 
 // ------------------------------------------------------------ relations
@@ -485,6 +488,8 @@ export const subscribers = pgTable('subscribers', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /** Day 16 — NULL means still anonymous; the existing no-login flow is unaffected either way. See 0008_auth.sql. */
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
 });
 
 export const webPushSubscriptions = pgTable(
@@ -591,3 +596,85 @@ export const dropConsumerFailures = pgTable(
     recentIdx: index('drop_consumer_failures_recent_idx').on(t.consumer, t.failedAt.desc()),
   }),
 );
+
+// -------------------------------------------------------------- day 16: auth
+//
+// See apps/api/drizzle/0008_auth.sql and drops/README.md's Day 16
+// section for the full reasoning. Auth.js (NextAuth v5) in apps/web is
+// the one thing that writes these tables in the app's normal operation
+// — apps/api's own copy here exists for the reconciliation script
+// (Day 16 task 3) and any future endpoint that needs to read a user.
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name'),
+  email: text('email').notNull().unique(),
+  emailVerified: timestamp('email_verified', { withTimezone: true }),
+  image: text('image'),
+  /** NULL for an OAuth-only account. bcrypt output — hashed in apps/web, never here. */
+  passwordHash: text('password_hash'),
+  totpEnabled: boolean('totp_enabled').notNull().default(false),
+  // totp_secret_encrypted (BYTEA, pgp_sym_encrypt'd) also exists
+  // physically — not modeled here, same convention as sneakers'
+  // search_vector: it's only ever touched through raw sql`` calls
+  // (apps/web/src/lib/auth/totp.ts) that call pgcrypto functions
+  // Drizzle's typed builder has no way to express inline.
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const accounts = pgTable(
+  'accounts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('provider_account_id').notNull(),
+    refreshToken: text('refresh_token'),
+    accessToken: text('access_token'),
+    expiresAt: integer('expires_at'),
+    tokenType: text('token_type'),
+    scope: text('scope'),
+    idToken: text('id_token'),
+    sessionState: text('session_state'),
+  },
+  (t) => ({
+    providerAccountUniq: uniqueIndex('accounts_provider_account_unique').on(t.provider, t.providerAccountId),
+    userIdx: index('accounts_user_idx').on(t.userId),
+  }),
+);
+
+export const sessions = pgTable(
+  'sessions',
+  {
+    sessionToken: text('session_token').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expires: timestamp('expires', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    userIdx: index('sessions_user_idx').on(t.userId),
+  }),
+);
+
+export const verificationTokens = pgTable(
+  'verification_tokens',
+  {
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.identifier, t.token] }),
+  }),
+);
+
+export const usersRelations = relations(users, ({ many }) => ({
+  accounts: many(accounts),
+  sessions: many(sessions),
+  subscribers: many(subscribers),
+}));
