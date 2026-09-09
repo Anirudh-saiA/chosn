@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { LoginForm } from '@/components/auth/LoginForm';
 
 export const metadata: Metadata = { title: 'Sign in | CHOSN' };
@@ -22,6 +23,7 @@ export default function LoginPage() {
           <LoginForm googleEnabled={Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)} />
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

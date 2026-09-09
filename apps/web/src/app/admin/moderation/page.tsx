@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { ReportsQueue } from '@/components/admin/ReportsQueue';
 import { fetchReports } from '@/lib/moderation';
 
@@ -42,6 +43,7 @@ export default async function ModerationPage() {
           <ReportsQueue initialReports={reports} apiToken={apiToken} />
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

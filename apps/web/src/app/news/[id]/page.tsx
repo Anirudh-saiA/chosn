@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { relativeTime } from '@/lib/catalog';
 import { fetchNewsArticle, fetchNewsList, excerpt } from '@/lib/news';
 
@@ -107,6 +108,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
           </div>
         )}
       </article>
+      <SiteFooter />
     </main>
   );
 }
