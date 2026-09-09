@@ -64,7 +64,43 @@ export function LandingHero() {
             aria-hidden
             className="absolute -right-[10%] top-[15%] h-[70vh] w-[70vh] rounded-full bg-ember/10 blur-[120px]"
           />
-          <SneakerPlaceholder tone="bone" className="relative h-[48vh] w-auto max-w-[80vw] sm:h-[58vh]" />
+
+          {/* Speed lines — a skate/action-photo device (a shoe caught
+              mid-trick, not sitting still), not a generic decoration:
+              this is the "cool, in motion" energy standing in for real
+              action photography, same honesty-over-fakery approach as
+              the mark itself. Angled opposite the mark's tilt, like a
+              motion trail it's pulling away from. */}
+          <svg
+            aria-hidden
+            viewBox="0 0 400 400"
+            className="pointer-events-none absolute h-[70vh] w-[70vh] opacity-[0.14]"
+          >
+            <line x1="60" y1="290" x2="180" y2="230" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
+            <line x1="40" y1="240" x2="140" y2="195" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
+            <line x1="30" y1="190" x2="110" y2="160" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+
+          {/* A held, off-axis tilt — "caught mid-trick," not sitting
+              level — plus a slow idle drift (±2°) so the mark reads as
+              alive even before the cursor-tilt above ever engages.
+              `animate` resolves to a single static value under reduced
+              motion rather than just zeroing the transition duration on
+              the array form — an array `animate` still runs its
+              keyframes at duration 0 as a snap-through, which is not
+              the same as never moving. */}
+          <motion.div
+            initial={false}
+            animate={prefersReducedMotion ? { rotate: -12 } : { rotate: [-10, -14, -10] }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }
+            }
+            className="relative"
+          >
+            <SneakerPlaceholder tone="bone" className="h-[48vh] w-auto max-w-[80vw] sm:h-[58vh]" />
+          </motion.div>
         </div>
       </motion.div>
 
