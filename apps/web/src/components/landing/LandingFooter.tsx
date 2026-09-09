@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import { AFFILIATE_DISCLOSURE_SHORT, NOT_A_MARKETPLACE } from '@/lib/legal-copy';
 
 /**
- * "Hairline divider, small text links only" — the affiliate line here
- * is a shorter, footer-appropriate restatement of
- * pricing/AffiliateDisclosure.tsx's real language (that component's
- * own convention is to sit next to an actual offer table, which this
- * page doesn't have — it's a preview, not a live comparison).
+ * "Hairline divider, small text links only." Day 19 task 3: the
+ * affiliate/marketplace copy now comes from lib/legal-copy.ts rather
+ * than being restated in this file's own words — this footer and the
+ * price pages' AffiliateDisclosure were saying overlapping but
+ * non-identical things, which is exactly the "three phrasings written
+ * on three different days" problem that task flags.
  */
 export function LandingFooter() {
   return (
@@ -25,12 +27,20 @@ export function LandingFooter() {
             <Link href="/transparency" className="transition-colors hover:text-ink">
               Transparency
             </Link>
+            <Link href="/terms" className="transition-colors hover:text-ink">
+              Terms
+            </Link>
+            <Link href="/privacy" className="transition-colors hover:text-ink">
+              Privacy
+            </Link>
+            <Link href="/feedback" className="transition-colors hover:text-ink">
+              Feedback
+            </Link>
           </nav>
           <p className="font-grotesk text-xs text-ink/40">© {new Date().getFullYear()} CHOSN</p>
         </div>
         <p className="mt-6 font-grotesk text-xs text-ink/40">
-          CHOSN compares prices and links out to retailers and resale marketplaces — it never sells sneakers or
-          holds funds. Some links are affiliate links; CHOSN may earn a commission at no extra cost to you.
+          {NOT_A_MARKETPLACE} {AFFILIATE_DISCLOSURE_SHORT}
         </p>
       </div>
     </footer>

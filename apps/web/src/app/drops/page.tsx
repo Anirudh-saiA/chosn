@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { DropLiveProvider } from '@/components/drops/drop-live-context';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
@@ -50,6 +51,7 @@ export default async function DropsPage() {
           </SubscriptionsProvider>
         </DropLiveProvider>
       </div>
+      <SiteFooter />
     </main>
   );
 }

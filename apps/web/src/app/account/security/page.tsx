@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
+import { DeleteAccount } from '@/components/auth/DeleteAccount';
 import { ProfileSettings } from '@/components/auth/ProfileSettings';
 import { TotpSetup } from '@/components/auth/TotpSetup';
 
@@ -45,7 +47,17 @@ export default async function AccountSecurityPage() {
             <TotpSetup />
           </div>
         </section>
+
+        <section className="mt-10">
+          <h2 className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
+            Delete account
+          </h2>
+          <div className="mt-3">
+            <DeleteAccount />
+          </div>
+        </section>
       </div>
+      <SiteFooter />
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { SubscriptionList } from '@/components/drops/SubscriptionList';
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function NotificationsSettingsPage() {
 
         <SubscriptionList />
       </div>
+      <SiteFooter />
     </main>
   );
 }

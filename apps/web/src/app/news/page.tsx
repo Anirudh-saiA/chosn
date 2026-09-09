@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { NewsCard } from '@/components/news/NewsCard';
 import { NewsFeatureCard } from '@/components/news/NewsFeatureCard';
 import { fetchNewsList } from '@/lib/news';
@@ -25,6 +26,7 @@ export default async function NewsPage() {
             shows up here automatically.
           </p>
         </div>
+        <SiteFooter />
       </main>
     );
   }
@@ -55,6 +57,7 @@ export default async function NewsPage() {
           </ul>
         )}
       </div>
+      <SiteFooter />
     </main>
   );
 }

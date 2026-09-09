@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 
 export const metadata: Metadata = { title: 'Set new password | CHOSN' };
@@ -26,6 +27,7 @@ export default async function ResetPasswordPage({ searchParams }: PageProps) {
           </p>
         )}
       </div>
+      <SiteFooter />
     </main>
   );
 }
