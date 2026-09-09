@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { Skateboard } from './Skateboard';
 import { SneakerPlaceholder } from './SneakerPlaceholder';
 
 const HEADLINE_LINES = ['Every price.', 'One place.'];
@@ -46,6 +47,11 @@ export function LandingHero() {
 
   return (
     <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-ink">
+      {/* Confined to the right half on large screens, not centered
+          across the full width — the earlier centered version sat
+          directly on top of the left-anchored headline. On small
+          screens (where a side-by-side split has no room) it fades
+          low-opacity behind the text instead of disappearing outright. */}
       <motion.div
         ref={imageRef}
         onMouseMove={handleMouseMove}
@@ -54,27 +60,26 @@ export function LandingHero() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         style={{ rotateX, rotateY }}
-        className="absolute inset-0"
+        className="absolute inset-y-0 right-0 w-full opacity-20 sm:opacity-30 lg:w-[52%] lg:opacity-100"
       >
-        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-ink to-[#161616]">
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-ink to-[#161616] lg:bg-none">
           {/* A soft off-center glow behind the mark — the one bit of
               depth standing in for what real photo lighting would give
               this frame for free. */}
           <div
             aria-hidden
-            className="absolute -right-[10%] top-[15%] h-[70vh] w-[70vh] rounded-full bg-ember/10 blur-[120px]"
+            className="absolute right-[5%] top-[20%] h-[55vh] w-[55vh] rounded-full bg-ember/10 blur-[120px]"
           />
 
           {/* Speed lines — a skate/action-photo device (a shoe caught
               mid-trick, not sitting still), not a generic decoration:
               this is the "cool, in motion" energy standing in for real
               action photography, same honesty-over-fakery approach as
-              the mark itself. Angled opposite the mark's tilt, like a
-              motion trail it's pulling away from. */}
+              the mark itself. */}
           <svg
             aria-hidden
             viewBox="0 0 400 400"
-            className="pointer-events-none absolute h-[70vh] w-[70vh] opacity-[0.14]"
+            className="pointer-events-none absolute h-[55vh] w-[55vh] opacity-[0.16]"
           >
             <line x1="60" y1="290" x2="180" y2="230" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
             <line x1="40" y1="240" x2="140" y2="195" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
@@ -82,16 +87,19 @@ export function LandingHero() {
           </svg>
 
           {/* A held, off-axis tilt — "caught mid-trick," not sitting
-              level — plus a slow idle drift (±2°) so the mark reads as
-              alive even before the cursor-tilt above ever engages.
-              `animate` resolves to a single static value under reduced
-              motion rather than just zeroing the transition duration on
-              the array form — an array `animate` still runs its
-              keyframes at duration 0 as a snap-through, which is not
-              the same as never moving. */}
+              level — plus a slow idle drift so the mark reads as alive
+              even before the cursor-tilt above ever engages. Held to a
+              modest ±3° range (down from an earlier, much wider swing)
+              — a rotated shape's effective bounding box grows with the
+              angle, and the wider version was part of what pushed it
+              into the headline's space. `animate` resolves to a single
+              static value under reduced motion rather than the same
+              keyframe array with the transition duration zeroed out —
+              an array `animate` at duration 0 still snaps through its
+              keyframes, which is not "no motion." */}
           <motion.div
             initial={false}
-            animate={prefersReducedMotion ? { rotate: -12 } : { rotate: [-10, -14, -10] }}
+            animate={prefersReducedMotion ? { rotate: -6 } : { rotate: [-4, -7, -4] }}
             transition={
               prefersReducedMotion
                 ? { duration: 0 }
@@ -99,7 +107,22 @@ export function LandingHero() {
             }
             className="relative"
           >
-            <SneakerPlaceholder tone="bone" className="h-[48vh] w-auto max-w-[80vw] sm:h-[58vh]" />
+            <SneakerPlaceholder tone="bone" className="h-[34vh] w-auto max-w-[70%] sm:h-[40vh] lg:h-[46vh]" />
+
+            {/* The board itself — kept a separate, clearly offset shape
+                rather than merged under the shoe, so the two stay
+                legible on their own rather than risking the kind of
+                unreadable overlap the first version of this mark had.
+                Positioned lower-left and counter-rotated slightly, like
+                it's mid-separation from the foot rather than pinned
+                directly beneath it — the same "caught mid-trick" idea
+                the speed lines and tilt already carry. */}
+            <div
+              aria-hidden
+              className="absolute -bottom-[8%] -left-[18%] w-[85%] -rotate-[18deg] opacity-90"
+            >
+              <Skateboard tone="bone" className="h-auto w-full" />
+            </div>
           </motion.div>
         </div>
       </motion.div>
@@ -108,8 +131,8 @@ export function LandingHero() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
 
       <div className="relative z-10 w-full px-6 pb-14 sm:px-10 sm:pb-20 lg:pb-24">
-        <div className="mx-auto max-w-[90rem]">
-          <h1 className="font-editorial text-[3.25rem] font-black leading-[0.95] tracking-tight text-bone sm:text-[5.5rem] lg:text-[7.5rem]">
+        <div className="mx-auto max-w-[90rem] lg:max-w-[52rem]">
+          <h1 className="font-editorial text-[3.25rem] font-black leading-[0.95] tracking-tight text-bone sm:text-[5.5rem] lg:text-[6rem]">
             {HEADLINE_LINES.map((line, i) => (
               <span key={line} className="block overflow-hidden">
                 <motion.span
