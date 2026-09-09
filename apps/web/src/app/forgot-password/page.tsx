@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
 export const metadata: Metadata = { title: 'Reset password | CHOSN' };
@@ -17,6 +18,7 @@ export default function ForgotPasswordPage() {
           <ForgotPasswordForm />
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

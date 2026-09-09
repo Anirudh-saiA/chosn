@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
 import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
 import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
 import { fetchDropForSneaker } from '@/lib/drops';
@@ -103,6 +104,7 @@ export default async function SneakerPricePage({ params }: PageProps) {
 
         <PriceComparisonView styleCode={styleCode} initialData={data} />
       </div>
+      <SiteFooter />
     </main>
   );
 }

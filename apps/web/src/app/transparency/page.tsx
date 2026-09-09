@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Transparency | CHOSN',
@@ -58,6 +59,7 @@ export default function TransparencyPage() {
           </p>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

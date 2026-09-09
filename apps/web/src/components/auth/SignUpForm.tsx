@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Input, buttonVariantClass } from '@chosn/ui';
 
@@ -89,6 +90,32 @@ export function SignUpForm() {
         />
         <p className="mt-1 text-meta text-text-faint">At least 10 characters.</p>
       </div>
+
+      {/*
+        Day 19 task 5 — the age statement and terms acceptance sit above
+        the button, as a statement of what clicking it means, rather
+        than as a pre-ticked checkbox. A pre-ticked box isn't valid
+        consent under the DPDP Act (or GDPR), and an unticked box that
+        blocks the button adds friction without adding legal weight
+        beyond this — the action itself is the affirmative act.
+
+        Not age-*verified* at v1, and the policy pages say so plainly.
+        The under-13 line is what the DPDP Act's children's-data
+        provisions hang on: below that, processing needs verifiable
+        parental consent, which CHOSN doesn't implement, so those
+        accounts simply aren't offered.
+      */}
+      <p className="max-w-[46ch] text-meta text-text-faint">
+        You must be 13 or older to create a CHOSN account. By creating one you agree to our{' '}
+        <Link href="/terms" className="text-brass underline underline-offset-2">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="text-brass underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
+      </p>
 
       <button type="submit" disabled={status === 'submitting'} className={buttonVariantClass('primary')}>
         {status === 'submitting' ? 'Creating account…' : 'Create account'}

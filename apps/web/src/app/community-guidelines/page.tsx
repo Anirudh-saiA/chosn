@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Community Guidelines | CHOSN',
@@ -150,6 +151,7 @@ export default function CommunityGuidelinesPage() {
           <p className="text-meta text-text-faint">Last substantive revision: September 2026.</p>
         </Section>
       </div>
+      <SiteFooter />
     </main>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { DropLiveProvider } from '@/components/drops/drop-live-context';
 import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
 import { LivePricePreview } from '@/components/drops/LivePricePreview';
@@ -153,6 +154,7 @@ export default async function DropDetailPage({ params }: PageProps) {
           </div>
         </div>
       </DropLiveProvider>
+      <SiteFooter />
     </main>
   );
 }

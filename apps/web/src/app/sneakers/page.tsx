@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { EmptyState } from '@/components/search/EmptyState';
 import { SearchControls } from '@/components/search/SearchControls';
 import { SneakerCard } from '@/components/search/SneakerCard';
@@ -55,6 +56,7 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           )}
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

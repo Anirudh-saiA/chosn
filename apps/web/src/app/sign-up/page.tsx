@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Masthead } from '@/components/Masthead';
+import { SiteFooter } from '@/components/SiteFooter';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 
 export const metadata: Metadata = { title: 'Create account | CHOSN' };
@@ -22,6 +23,7 @@ export default function SignUpPage() {
           <SignUpForm />
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

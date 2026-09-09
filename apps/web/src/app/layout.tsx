@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Archivo, Fraunces, Instrument_Sans, JetBrains_Mono, Zilla_Slab } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
+import { ConsentBanner } from '@/components/ConsentBanner';
 import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthSessionProvider>
           <MonitoringProvider>{children}</MonitoringProvider>
+          <ConsentBanner />
         </AuthSessionProvider>
       </body>
     </html>
