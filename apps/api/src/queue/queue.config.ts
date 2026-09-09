@@ -1,5 +1,4 @@
 import type { JobsOptions } from 'bullmq';
-import type { RedisOptions } from 'ioredis';
 import type { FetchTarget } from '../retailers/retailer-adapter.interface';
 
 /**
@@ -62,8 +61,21 @@ export const PRICE_FETCH_JOB_OPTIONS: JobsOptions = {
  *
  * maxRetriesPerRequest: null is BullMQ's documented requirement — with a
  * finite retry count, a blocking command can be aborted mid-wait.
+ *
+ * Return type is deliberately inferred, not annotated as either
+ * package's own type — this helper feeds two different constructors
+ * across the codebase: BullMQ's Queue/Worker (which since v6 wants its
+ * own `ConnectionOptions`, a pluggable-backend rework that gave it a
+ * connection-options interface separate from ioredis's) and plain
+ * `new Redis(...)` pub/sub clients elsewhere (drop-live.gateway.ts and
+ * friends, which want ioredis's own `RedisOptions`). Pinning the
+ * return type to either package's type broke the other's call sites —
+ * found by fixing one and immediately breaking the other, not
+ * guessed. The literal object below structurally satisfies both real
+ * shapes; only an explicit type annotation was ever getting in the
+ * way.
  */
-export function bullConnection(): RedisOptions {
+export function bullConnection() {
   const url = new URL(process.env.REDIS_URL ?? 'redis://localhost:6380');
   return {
     host: url.hostname,
