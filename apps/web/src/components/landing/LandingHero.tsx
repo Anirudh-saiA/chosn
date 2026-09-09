@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { Skateboard } from './Skateboard';
 import { SneakerPlaceholder } from './SneakerPlaceholder';
 
 const HEADLINE_LINES = ['Every price.', 'One place.'];
@@ -107,6 +108,21 @@ export function LandingHero() {
             className="relative"
           >
             <SneakerPlaceholder tone="bone" className="h-[34vh] w-auto max-w-[70%] sm:h-[40vh] lg:h-[46vh]" />
+
+            {/* The board itself — kept a separate, clearly offset shape
+                rather than merged under the shoe, so the two stay
+                legible on their own rather than risking the kind of
+                unreadable overlap the first version of this mark had.
+                Positioned lower-left and counter-rotated slightly, like
+                it's mid-separation from the foot rather than pinned
+                directly beneath it — the same "caught mid-trick" idea
+                the speed lines and tilt already carry. */}
+            <div
+              aria-hidden
+              className="absolute -bottom-[8%] -left-[18%] w-[85%] -rotate-[18deg] opacity-90"
+            >
+              <Skateboard tone="bone" className="h-auto w-full" />
+            </div>
           </motion.div>
         </div>
       </motion.div>
