@@ -1,8 +1,21 @@
+import { existsSync, mkdirSync } from 'node:fs';
+import { unlink } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { classifyImage } from '../moderation/classifier.service';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { postImages, posts } from '../db/schema';
+
+/**
+ * Local disk storage under apps/api/uploads/ — no cloud storage
+ * configured for this local-dev-scoped feature (see docs/community/
+ * README.md). Owned here (not the controller) because both the
+ * controller's Multer config and this service's own reject-and-delete
+ * path (see `attach()` below) need the same directory.
+ */
+export const UPLOADS_DIR = join(process.cwd(), 'uploads');
+if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true });
 
 /**
  * Multer's actual output shape (`@types/multer` isn't installed — this
@@ -65,21 +78,35 @@ export class PostImagesService {
 
     const url = `/uploads/${file.filename}`;
 
-    // Classify before the row is visible as anything but 'pending' — see
-    // this class's own doc comment. Best-effort: a classifier failure
-    // must not block the upload itself (same "never let bookkeeping mask
-    // the real result" convention the price-fetch pipeline follows).
-    let classifierStatus: 'clean' | 'flagged' | 'pending' = 'pending';
+    // Classify before the row exists at all — see this class's own doc
+    // comment. Day 23 QA fix: this used to insert a 'flagged' row
+    // regardless of the verdict, which meant a flagged image was never
+    // actually rejected, just labeled — PostCard.tsx's own "Removed —
+    // flagged by review" placeholder was the only thing standing
+    // between a viewer and the image, and nothing stopped the raw file
+    // being fetched directly by URL either. There's no broadcast-
+    // latency constraint here (unlike chat's deliberate broadcast-then-
+    // review tradeoff) — classification already runs synchronously
+    // before the row is created, so a flagged result can and should
+    // reject the upload outright: the file is deleted from disk and the
+    // request fails with a real error, the same as a bad mime type or
+    // an oversized file. A classifier failure or a 'clean'/unconfigured
+    // (null) verdict still fails open onto 'clean' — a moderation tool
+    // outage must never itself become the reason every upload breaks.
     let classifierScore: number | null = null;
     try {
       const verdict = await classifyImage(url);
       if (verdict) {
-        classifierStatus = verdict.nsfw ? 'flagged' : 'clean';
         classifierScore = verdict.score;
-      } else {
-        classifierStatus = 'clean'; // stub returned null — see doc comment
+        if (verdict.nsfw) {
+          await unlink(join(UPLOADS_DIR, file.filename)).catch((err) => {
+            this.logger.warn(`could not delete rejected upload ${file.filename}: ${(err as Error).message}`);
+          });
+          throw new InvalidImageError('This image was flagged by review and could not be uploaded.');
+        }
       }
     } catch (err) {
+      if (err instanceof InvalidImageError) throw err;
       this.logger.warn(`image classification failed, treating as unclassified: ${(err as Error).message}`);
     }
 
@@ -89,7 +116,7 @@ export class PostImagesService {
         postId,
         checklistItemId: checklistItemId ?? null,
         url,
-        classifierStatus,
+        classifierStatus: 'clean', // any row that reaches this insert already passed the check above
         classifierScore: classifierScore !== null ? classifierScore.toString() : null,
       })
       .returning();

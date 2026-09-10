@@ -1,7 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { comments, posts, users } from '../db/schema';
+import { comments, posts, userReputation, users } from '../db/schema';
+import { ReputationService } from '../reputation/reputation.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
 export interface CommentSummary {
@@ -10,6 +11,7 @@ export interface CommentSummary {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   body: string;
   createdAt: string;
 }
@@ -22,7 +24,10 @@ export interface CommentSummary {
  */
 @Injectable()
 export class CommentsService {
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly reputation: ReputationService,
+  ) {}
 
   async create(postId: string, authorUserId: string, dto: CreateCommentDto): Promise<CommentSummary> {
     const [post] = await this.db.select({ id: posts.id }).from(posts).where(eq(posts.id, postId)).limit(1);
@@ -37,6 +42,7 @@ export class CommentsService {
       .from(users)
       .where(eq(users.id, authorUserId))
       .limit(1);
+    const rep = await this.reputation.getForUser(authorUserId);
 
     return {
       id: row!.id,
@@ -44,6 +50,7 @@ export class CommentsService {
       authorUserId,
       authorDisplayName: author?.displayName ?? null,
       authorAvatarSeed: author?.avatarSeed ?? '',
+      authorReputationScore: rep?.score ?? 0,
       body: row!.body,
       createdAt: row!.createdAt.toISOString(),
     };
@@ -57,14 +64,16 @@ export class CommentsService {
         authorUserId: comments.authorUserId,
         authorDisplayName: users.displayName,
         authorAvatarSeed: users.avatarSeed,
+        authorReputationScore: userReputation.score,
         body: comments.body,
         createdAt: comments.createdAt,
       })
       .from(comments)
       .innerJoin(users, eq(users.id, comments.authorUserId))
+      .leftJoin(userReputation, eq(userReputation.userId, comments.authorUserId))
       .where(and(eq(comments.postId, postId), eq(comments.isRemoved, false)))
       .orderBy(asc(comments.createdAt));
 
-    return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+    return rows.map((r) => ({ ...r, authorReputationScore: r.authorReputationScore ?? 0, createdAt: r.createdAt.toISOString() }));
   }
 }

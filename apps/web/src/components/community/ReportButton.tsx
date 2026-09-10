@@ -58,6 +58,7 @@ export function ReportButton({ entityType, entityId, variant = 'inline' }: Repor
       <select
         value={reason}
         onChange={(e) => setReason(e.target.value as ReportReason)}
+        aria-label="Report reason"
         className="border border-moss/30 bg-vault px-1 py-0.5 text-text"
       >
         {REPORT_REASONS.map((r) => (

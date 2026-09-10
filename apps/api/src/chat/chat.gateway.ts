@@ -1,11 +1,13 @@
 import type { IncomingMessage } from 'node:http';
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer, type OnGatewayConnection } from '@nestjs/websockets';
-import type Redis from 'ioredis';
+import Redis from 'ioredis';
 import type { WebSocket } from 'ws';
 import type { Server } from 'ws';
 import { verifyApiToken, type ApiJwtPayload } from '../auth/api-jwt';
 import { REDIS_CLIENT } from '../common/redis.provider';
+import { bullConnection } from '../queue/queue.config';
+import { isModerationRetractEvent, MODERATION_RETRACT_CHANNEL } from '../trust-safety/moderation-events.pubsub';
 import { BlocksService } from '../trust-safety/blocks.service';
 import { ChatMessagesService } from './chat-messages.service';
 import { ChatRoomsService } from './chat-rooms.service';
@@ -51,8 +53,9 @@ function isIncomingChatFrame(value: unknown): value is IncomingChatFrame {
  * one that does everything.
  */
 @WebSocketGateway({ path: '/ws/chat' })
-export class ChatGateway implements OnGatewayConnection {
+export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChatGateway.name);
+  private moderationSubscriber?: Redis;
 
   @WebSocketServer()
   private server!: Server;
@@ -63,6 +66,49 @@ export class ChatGateway implements OnGatewayConnection {
     private readonly messages: ChatMessagesService,
     private readonly blocks: BlocksService,
   ) {}
+
+  /**
+   * Day 23 fix: an admin actioning a message-type report in
+   * /admin/reports now sets `is_removed = true` on that row (see
+   * ReportsService.hideEntity), but a viewer already connected to the
+   * room wouldn't see that until their next history fetch. Same
+   * dedicated-subscriber pattern as DropLiveGateway (a subscribed
+   * ioredis connection can't issue other commands, and this consumer
+   * must stay independent of the request-path REDIS_CLIENT above) —
+   * on a retraction event, broadcast the same `chat:retract` frame the
+   * classifier's own auto-flag path already sends, so the client-side
+   * handling is identical regardless of which review path caused it.
+   */
+  async onModuleInit(): Promise<void> {
+    if (!process.env.DATABASE_URL) {
+      this.logger.warn('DATABASE_URL unset — chat moderation-retraction subscriber not started');
+      return;
+    }
+    this.moderationSubscriber = new Redis(bullConnection());
+    await this.moderationSubscriber.subscribe(MODERATION_RETRACT_CHANNEL);
+    this.moderationSubscriber.on('message', (channel, message) => {
+      if (channel !== MODERATION_RETRACT_CHANNEL) return;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(message);
+      } catch {
+        this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, not JSON: ${message.slice(0, 200)}`);
+        return;
+      }
+      if (!isModerationRetractEvent(parsed)) {
+        this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, missing fields: ${message.slice(0, 200)}`);
+        return;
+      }
+      this.broadcastToRoom(parsed.roomId, { type: 'chat:retract', roomId: parsed.roomId, messageId: parsed.messageId });
+    });
+    this.moderationSubscriber.on('error', (err) => {
+      this.logger.error(`moderation-retraction subscriber error: ${err.message}`);
+    });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.moderationSubscriber?.quit();
+  }
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
     const url = new URL(request.url ?? '', 'http://internal');

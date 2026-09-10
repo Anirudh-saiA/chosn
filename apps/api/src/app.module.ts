@@ -8,6 +8,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { InternalModule } from './internal/internal.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { PricingModule } from './pricing/pricing.module';
+import { ReputationModule } from './reputation/reputation.module';
 import { TrustSafetyModule } from './trust-safety/trust-safety.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 
@@ -23,6 +24,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     CommunityModule,
     ChatModule,
     InternalModule,
+    ReputationModule,
   ],
   controllers: [AppController],
 })

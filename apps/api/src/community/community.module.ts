@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PricingModule } from '../pricing/pricing.module';
 import { RateLimitGuard } from '../common/rate-limit.guard';
+import { ReputationModule } from '../reputation/reputation.module';
 import { TrustSafetyModule } from '../trust-safety/trust-safety.module';
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
@@ -17,12 +18,15 @@ import { VotesService } from './votes.service';
  * post types share. Imports PricingModule for DRIZZLE (reused, not
  * re-declared — see DropsModule's own comment on why a third module
  * opening a third connection pool is a real cost) and
- * MarketIntelligenceService (Price Check's auto-attached card), and
+ * MarketIntelligenceService (Price Check's auto-attached card),
  * TrustSafetyModule for BlocksService (feed-level block filtering, the
- * `excludeBlockedContent` gap Day 17 flagged as unbuilt).
+ * `excludeBlockedContent` gap Day 17 flagged as unbuilt), and (Day 23)
+ * ReputationModule for the reputation badge on every post/comment
+ * author and the Legit Check posting gate — see PostsService.create
+ * and VotesService.cast's own comments on where each is applied.
  */
 @Module({
-  imports: [PricingModule, TrustSafetyModule],
+  imports: [PricingModule, TrustSafetyModule, ReputationModule],
   controllers: [PostsController, CommentsController, VotesController, PostImagesController],
   providers: [RateLimitGuard, PostsService, CommentsService, VotesService, PostImagesService],
 })

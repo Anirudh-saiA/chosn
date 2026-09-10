@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
 import { ReportButton } from '@/components/community/ReportButton';
+import { ReputationBadge } from '@/components/community/ReputationBadge';
 import { chatWsUrl, getChatHistory, type ChatMessage, type ChatRoom as ChatRoomSummary } from '@/lib/chat';
 
 interface ChatRoomProps {
@@ -26,6 +27,11 @@ export function ChatRoom({ room }: ChatRoomProps) {
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  // Task 7's accessibility pass: a visually-hidden live region announces
+  // each *new* incoming message to a screen reader, separate from the
+  // visible list — the list itself isn't aria-live, so loading 100
+  // history rows on mount doesn't get announced as 100 live updates.
+  const [announcement, setAnnouncement] = useState('');
   const socketRef = useRef<WebSocket | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const isArchived = room.status === 'archived';
@@ -57,6 +63,8 @@ export function ChatRoom({ room }: ChatRoomProps) {
           const parsed = JSON.parse(event.data);
           if (parsed.type === 'chat:message' && parsed.roomId === room.id) {
             setMessages((prev) => [...prev, parsed.message]);
+            const from = parsed.message.authorDisplayName ?? 'Collector';
+            setAnnouncement(`${from}: ${parsed.message.body}`);
           } else if (parsed.type === 'chat:retract' && parsed.roomId === room.id) {
             setMessages((prev) => prev.filter((m) => m.id !== parsed.messageId));
           } else if (parsed.type === 'chat:error') {
@@ -103,17 +111,30 @@ export function ChatRoom({ room }: ChatRoomProps) {
         <span className={`h-2 w-2 rounded-full ${connected ? 'bg-signal' : 'bg-text-faint'}`} aria-label={connected ? 'Connected' : 'Reconnecting'} />
       </div>
 
+      {/* Visually hidden — see the `announcement` state's own comment. Not the visible list itself, which would re-announce the whole history on every mount. */}
+      <div aria-live="polite" role="status" className="sr-only">
+        {announcement}
+      </div>
+
       <div ref={listRef} className="flex h-64 flex-col gap-2.5 overflow-y-auto px-4 py-3">
         {messages.length === 0 && <p className="font-mono text-meta text-text-faint">No messages yet — be first.</p>}
         {messages.map((m) => (
           <div key={m.id} className="group flex items-start gap-2">
             <AvatarIdenticon seed={m.authorAvatarSeed} size={20} className="mt-0.5 shrink-0" />
             <p className="flex-1 text-body text-text">
-              <span className="font-mono text-meta text-text-faint">{m.authorDisplayName ?? 'Collector'}: </span>
+              <span className="font-mono text-meta text-text-faint">{m.authorDisplayName ?? 'Collector'}</span>
+              <ReputationBadge score={m.authorReputationScore} className="mx-1 align-middle" />
+              <span className="font-mono text-meta text-text-faint">: </span>
               {m.body}
             </p>
             {m.authorUserId !== ownUserId && (
-              <span className="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              // group-focus-within, not just group-hover — a keyboard user
+              // tabbing to this button must be able to see it once
+              // focused, not just a mouse user hovering (task 7's
+              // accessibility pass caught this: opacity-0 with no
+              // focus-visible counterpart leaves a focused-but-invisible
+              // control, a real keyboard-nav failure, not a cosmetic one).
+              <span className="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                 <ReportButton entityType="message" entityId={m.id} />
               </span>
             )}

@@ -45,7 +45,9 @@ export function VoteButtons({ votableType, votableId, initialScore, initialViewe
       >
         ▲
       </button>
-      <span className="min-w-[2ch] text-center text-text">{score}</span>
+      <span className="min-w-[2ch] text-center text-text" aria-live="polite">
+        {score}
+      </span>
       <button
         type="button"
         onClick={() => cast(-1)}

@@ -14,6 +14,9 @@ export interface Report {
   reviewedBy: string | null;
   reviewedAt: string | null;
   reviewNote: string | null;
+  contentPreview: string | null;
+  contentAuthorUserId: string | null;
+  isHidden: boolean | null;
 }
 
 /**

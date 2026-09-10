@@ -952,3 +952,23 @@ export const chatMessages = pgTable(
     roomIdx: index('chat_messages_room_idx').on(t.roomId, t.createdAt),
   }),
 );
+
+// ------------------------------------------------------- day 23: reputation
+//
+// See apps/api/drizzle/0013_reputation.sql and docs/community/README.md's
+// Day 23 section for the full reasoning, the formula weights, and the
+// gated-action threshold — all flagged for override.
+
+export const userReputation = pgTable('user_reputation', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  score: integer('score').notNull().default(0),
+  /** Placeholder today — always 0, no real purchase-verification signal wired up yet. See ReputationService's own doc comment. */
+  verifiedPurchaseCount: integer('verified_purchase_count').notNull().default(0),
+  /** Sum of max(0, netVotes) across every post/comment this user authored — the real v1 signal (account activity + vote quality). */
+  helpfulVotesReceived: integer('helpful_votes_received').notNull().default(0),
+  /** Denormalized copy of users.created_at at last calculation — avoids a join from every read path that just wants the badge/score. */
+  accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
+  lastCalculatedAt: timestamp('last_calculated_at', { withTimezone: true }).notNull().defaultNow(),
+});

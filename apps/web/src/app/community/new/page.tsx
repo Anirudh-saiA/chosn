@@ -52,6 +52,7 @@ function NewPostForm() {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
   const [createdPostId, setCreatedPostId] = useState<string | null>(null);
   const [uploadedFor, setUploadedFor] = useState<Set<string>>(new Set());
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
 
   // drop_talk
   const presetDropEventId = searchParams.get('dropEventId');
@@ -137,8 +138,17 @@ function NewPostForm() {
 
   async function handleUpload(itemId: string, file: File) {
     if (!createdPostId) return;
-    const image = await uploadPostImage(apiToken!, createdPostId, file, itemId);
-    if (image) setUploadedFor((prev) => new Set(prev).add(itemId));
+    setUploadErrors((prev) => ({ ...prev, [itemId]: '' }));
+    const result = await uploadPostImage(apiToken!, createdPostId, file, itemId);
+    if (result.ok) {
+      setUploadedFor((prev) => new Set(prev).add(itemId));
+    } else {
+      // A rejection is a real, meaningful outcome now (oversized, wrong
+      // type, or flagged by review) — the previous version of this
+      // handler silently dropped it, leaving someone staring at a file
+      // input that just... didn't do anything.
+      setUploadErrors((prev) => ({ ...prev, [itemId]: result.message }));
+    }
   }
 
   return (
@@ -155,20 +165,28 @@ function NewPostForm() {
             </p>
             <ul className="mt-4 flex flex-col gap-3">
               {checklist.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 border border-moss/20 p-3">
-                  <span className="text-body text-text">{item.label}</span>
-                  {uploadedFor.has(item.id) ? (
-                    <span className="font-mono text-meta text-signal">Uploaded</span>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleUpload(item.id, file);
-                      }}
-                      className="font-mono text-meta text-text-faint"
-                    />
+                <li key={item.id} className="flex flex-col gap-1.5 border border-moss/20 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-body text-text">{item.label}</span>
+                    {uploadedFor.has(item.id) ? (
+                      <span className="font-mono text-meta text-signal">Uploaded</span>
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        aria-label={`Photo for ${item.label}`}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUpload(item.id, file);
+                        }}
+                        className="font-mono text-meta text-text-faint"
+                      />
+                    )}
+                  </div>
+                  {uploadErrors[item.id] && (
+                    <p role="alert" className="font-mono text-meta text-rust">
+                      {uploadErrors[item.id]}
+                    </p>
                   )}
                 </li>
               ))}

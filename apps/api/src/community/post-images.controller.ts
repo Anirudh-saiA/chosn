@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { extname } from 'node:path';
 import {
   BadRequestException,
   Body,
@@ -17,17 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { AuthenticatedRequest, ApiAuthGuard } from '../auth/api-auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
-import { InvalidImageError, PostImagesService, type UploadedFileLike } from './post-images.service';
-
-/**
- * Local disk storage under apps/api/uploads/ — no cloud storage
- * configured for this local-dev-scoped feature (see docs/community/
- * README.md). Filenames are regenerated (random uuid + the original
- * extension), never the client-supplied `originalname`, so a crafted
- * filename can't path-traverse or collide with another upload.
- */
-const UPLOADS_DIR = join(process.cwd(), 'uploads');
-if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true });
+import { InvalidImageError, PostImagesService, UPLOADS_DIR, type UploadedFileLike } from './post-images.service';
 
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 

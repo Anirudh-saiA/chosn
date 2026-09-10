@@ -2,8 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, asc, eq, notInArray } from 'drizzle-orm';
 import * as Sentry from '@sentry/node';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { chatMessages, users } from '../db/schema';
+import { chatMessages, userReputation, users } from '../db/schema';
 import { classifyText } from '../moderation/classifier.service';
+import { ReputationService } from '../reputation/reputation.service';
 import { BlocksService } from '../trust-safety/blocks.service';
 
 export interface ChatMessageSummary {
@@ -12,6 +13,7 @@ export interface ChatMessageSummary {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   body: string;
   classifierStatus: string;
   createdAt: string;
@@ -34,6 +36,7 @@ export class ChatMessagesService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
     private readonly blocks: BlocksService,
+    private readonly reputation: ReputationService,
   ) {}
 
   async create(roomId: string, authorUserId: string, body: string): Promise<ChatMessageSummary> {
@@ -43,6 +46,7 @@ export class ChatMessagesService {
       .from(users)
       .where(eq(users.id, authorUserId))
       .limit(1);
+    const rep = await this.reputation.getForUser(authorUserId);
 
     return {
       id: row!.id,
@@ -50,6 +54,7 @@ export class ChatMessagesService {
       authorUserId,
       authorDisplayName: author?.displayName ?? null,
       authorAvatarSeed: author?.avatarSeed ?? '',
+      authorReputationScore: rep?.score ?? 0,
       body: row!.body,
       classifierStatus: row!.classifierStatus,
       createdAt: row!.createdAt.toISOString(),
@@ -101,12 +106,14 @@ export class ChatMessagesService {
         authorUserId: chatMessages.authorUserId,
         authorDisplayName: users.displayName,
         authorAvatarSeed: users.avatarSeed,
+        authorReputationScore: userReputation.score,
         body: chatMessages.body,
         classifierStatus: chatMessages.classifierStatus,
         createdAt: chatMessages.createdAt,
       })
       .from(chatMessages)
       .innerJoin(users, eq(users.id, chatMessages.authorUserId))
+      .leftJoin(userReputation, eq(userReputation.userId, chatMessages.authorUserId))
       .where(
         and(
           eq(chatMessages.roomId, roomId),
@@ -117,6 +124,6 @@ export class ChatMessagesService {
       .orderBy(asc(chatMessages.createdAt))
       .limit(limit);
 
-    return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+    return rows.map((r) => ({ ...r, authorReputationScore: r.authorReputationScore ?? 0, createdAt: r.createdAt.toISOString() }));
   }
 }

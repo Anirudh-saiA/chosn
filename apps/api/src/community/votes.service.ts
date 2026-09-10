@@ -1,18 +1,31 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { posts, pollVotes, votes } from '../db/schema';
+import { comments, posts, pollVotes, votes } from '../db/schema';
+import { ReputationService } from '../reputation/reputation.service';
 import { CastPollVoteDto } from './dto/cast-poll-vote.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 @Injectable()
 export class VotesService {
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  private readonly logger = new Logger(VotesService.name);
+
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly reputation: ReputationService,
+  ) {}
 
   /**
    * Generic upvote/downvote for posts and comments. `value: 0` clears an
    * existing vote — a caller toggling the same button they already
    * clicked shouldn't need a separate DELETE endpoint to express "un-vote."
+   *
+   * Day 23: every vote here changes whoever authored the voted-on
+   * content's `helpfulVotesReceived`, so their reputation is
+   * recalculated inline, after the vote itself commits — best-effort
+   * (a recalculation failure must never fail the vote the user actually
+   * came here to cast; ReputationSchedulerService's recurring pass is
+   * the self-healing backstop if this one somehow doesn't land).
    */
   async cast(userId: string, dto: CastVoteDto): Promise<{ voteScore: number }> {
     if (dto.value === 0) {
@@ -29,7 +42,25 @@ export class VotesService {
         });
     }
 
-    return { voteScore: await this.scoreFor(dto.votableType, dto.votableId) };
+    const voteScore = await this.scoreFor(dto.votableType, dto.votableId);
+
+    const authorId = await this.authorOf(dto.votableType, dto.votableId);
+    if (authorId) {
+      this.reputation.recalculateForUser(authorId).catch((err) => {
+        this.logger.warn(`reputation recalculation failed for ${authorId}: ${(err as Error).message}`);
+      });
+    }
+
+    return { voteScore };
+  }
+
+  private async authorOf(votableType: 'post' | 'comment', votableId: string): Promise<string | null> {
+    if (votableType === 'post') {
+      const [row] = await this.db.select({ authorUserId: posts.authorUserId }).from(posts).where(eq(posts.id, votableId)).limit(1);
+      return row?.authorUserId ?? null;
+    }
+    const [row] = await this.db.select({ authorUserId: comments.authorUserId }).from(comments).where(eq(comments.id, votableId)).limit(1);
+    return row?.authorUserId ?? null;
   }
 
   private async scoreFor(votableType: 'post' | 'comment', votableId: string): Promise<number> {

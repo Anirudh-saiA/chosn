@@ -1,9 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { posts } from '../db/schema';
 import { BlocksService } from '../trust-safety/blocks.service';
 import { MarketIntelligenceService } from '../pricing/market-intelligence.service';
+import { LEGIT_CHECK_MIN_REPUTATION, ReputationService } from '../reputation/reputation.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 
@@ -15,6 +16,7 @@ export interface PostSummary {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   createdAt: string;
   commentCount: number;
   voteScore: number;
@@ -44,6 +46,7 @@ export class PostsService {
     @Inject(DRIZZLE) private readonly db: Db,
     private readonly blocks: BlocksService,
     private readonly marketIntelligence: MarketIntelligenceService,
+    private readonly reputation: ReputationService,
   ) {}
 
   async create(authorUserId: string, dto: CreatePostDto): Promise<{ id: string }> {
@@ -51,6 +54,16 @@ export class PostsService {
       const ids = new Set((dto.legitCheckChecklist ?? []).map((i) => i.id));
       if (ids.size !== (dto.legitCheckChecklist ?? []).length) {
         throw new BadRequestException({ error: 'invalid_checklist', message: 'Checklist item ids must be unique.' });
+      }
+
+      // Day 23, task 2's gate — see LEGIT_CHECK_MIN_REPUTATION's own doc
+      // comment for the threshold and why only this post type is gated.
+      const rep = await this.reputation.getForUser(authorUserId);
+      if ((rep?.score ?? 0) < LEGIT_CHECK_MIN_REPUTATION) {
+        throw new ForbiddenException({
+          error: 'reputation_too_low',
+          message: `Posting a Legit Check needs a little more standing on CHOSN first (score ${rep?.score ?? 0}/${LEGIT_CHECK_MIN_REPUTATION}) — comment or post elsewhere, or just give your account a few days, and this unlocks.`,
+        });
       }
     }
 
@@ -78,6 +91,7 @@ export class PostsService {
       SELECT
         p.id, p.post_type, p.title, p.body, p.author_user_id, p.created_at,
         u.display_name AS author_display_name, u.avatar_seed AS author_avatar_seed,
+        COALESCE(ur.score, 0) AS author_reputation_score,
         p.legit_check_checklist,
         s.style_code, s.brand, s.model, s.colorway,
         v.id AS variant_id, v.size, v.size_system,
@@ -90,6 +104,7 @@ export class PostsService {
         upv.choice AS viewer_poll_choice
       FROM posts p
       JOIN users u ON u.id = p.author_user_id
+      LEFT JOIN user_reputation ur ON ur.user_id = p.author_user_id
       LEFT JOIN sneaker_variants v ON v.id = p.sneaker_variant_id
       LEFT JOIN sneakers s ON s.id = v.sneaker_id
       LEFT JOIN drop_events de ON de.id = p.drop_event_id
@@ -134,6 +149,7 @@ export class PostsService {
       SELECT
         p.id, p.post_type, p.title, p.body, p.author_user_id, p.created_at,
         u.display_name AS author_display_name, u.avatar_seed AS author_avatar_seed,
+        COALESCE(ur.score, 0) AS author_reputation_score,
         p.legit_check_checklist,
         s.style_code, s.brand, s.model, s.colorway,
         v.id AS variant_id, v.size, v.size_system,
@@ -146,6 +162,7 @@ export class PostsService {
         upv.choice AS viewer_poll_choice
       FROM posts p
       JOIN users u ON u.id = p.author_user_id
+      LEFT JOIN user_reputation ur ON ur.user_id = p.author_user_id
       LEFT JOIN sneaker_variants v ON v.id = p.sneaker_variant_id
       LEFT JOIN sneakers s ON s.id = v.sneaker_id
       LEFT JOIN drop_events de ON de.id = p.drop_event_id
@@ -211,6 +228,7 @@ export class PostsService {
       authorUserId: String(r.author_user_id),
       authorDisplayName: (r.author_display_name as string | null) ?? null,
       authorAvatarSeed: String(r.author_avatar_seed),
+      authorReputationScore: Number(r.author_reputation_score ?? 0),
       createdAt: new Date(r.created_at as string).toISOString(),
       commentCount: Number(r.comment_count),
       voteScore: Number(r.vote_score),

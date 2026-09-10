@@ -3,6 +3,7 @@ import { AvatarIdenticon } from '@/components/AvatarIdenticon';
 import { MarketIntelligenceCard } from '@/components/pricing/MarketIntelligenceCard';
 import type { Post } from '@/lib/community';
 import { CopOrDropBar } from './CopOrDropBar';
+import { ReputationBadge } from './ReputationBadge';
 import { VoteButtons } from './VoteButtons';
 
 function timeAgo(iso: string): string {
@@ -33,11 +34,16 @@ export function PostCard({ post }: { post: Post }) {
     <article className="border border-moss/20 bg-vault-raised p-5">
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <AvatarIdenticon seed={post.authorAvatarSeed} size={28} />
+          <Link href={`/u/${post.authorUserId}`}>
+            <AvatarIdenticon seed={post.authorAvatarSeed} size={28} />
+          </Link>
           <div>
-            <p className="font-mono text-ui-label text-text">
-              {post.authorDisplayName ?? `Collector ${post.authorUserId.slice(0, 4)}`}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <Link href={`/u/${post.authorUserId}`} className="font-mono text-ui-label text-text hover:underline">
+                {post.authorDisplayName ?? `Collector ${post.authorUserId.slice(0, 4)}`}
+              </Link>
+              <ReputationBadge score={post.authorReputationScore} />
+            </div>
             <p className="font-mono text-meta text-text-faint">{timeAgo(post.createdAt)}</p>
           </div>
         </div>
@@ -111,18 +117,33 @@ function PostBody({ post }: { post: Post }) {
           )}
           {post.images && post.images.length > 0 && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {post.images.map((img) => (
-                <div key={img.id} className="relative aspect-square overflow-hidden border border-moss/20 bg-vault">
-                  {img.classifierStatus === 'flagged' ? (
-                    <div className="flex h-full items-center justify-center p-2 text-center font-mono text-meta text-rust">
-                      Removed — flagged by review
-                    </div>
-                  ) : (
-                    // Local disk-served upload — see PostImagesController's own comment; a plain <img>, not next/image, since this is served from apps/api's own origin (a different host than the web app), not a domain next/image is configured to optimize.
-                    <img src={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}${img.url}`} alt="" className="h-full w-full object-cover" />
-                  )}
-                </div>
-              ))}
+              {post.images.map((img) => {
+                // Task 7's accessibility pass: these photos ARE a Legit
+                // Check's content, not decoration — an empty alt (the
+                // previous state here) tells a screen reader to skip
+                // them entirely, which is exactly backwards for a post
+                // type whose whole point is "look at these photos."
+                const checklistLabel = post.legitCheckChecklist?.find((c) => c.id === img.checklistItemId)?.label;
+                const altText = checklistLabel
+                  ? `Legit Check photo: ${checklistLabel}`
+                  : `Legit Check photo${post.title ? ` for ${post.title}` : ''}`;
+                return (
+                  <div key={img.id} className="relative aspect-square overflow-hidden border border-moss/20 bg-vault">
+                    {img.classifierStatus === 'flagged' ? (
+                      <div className="flex h-full items-center justify-center p-2 text-center font-mono text-meta text-rust">
+                        Removed — flagged by review
+                      </div>
+                    ) : (
+                      // Local disk-served upload — see PostImagesController's own comment; a plain <img>, not next/image, since this is served from apps/api's own origin (a different host than the web app), not a domain next/image is configured to optimize.
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}${img.url}`}
+                        alt={altText}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
 import { createComment, type Comment } from '@/lib/community';
+import { ReputationBadge } from './ReputationBadge';
 
 /** Legit Check's community "verdicts" render here too (task 2) — a comment thread is a comment thread regardless of what post type it hangs off. */
 export function CommentThread({ postId, initialComments }: { postId: string; initialComments: Comment[] }) {
@@ -34,9 +36,16 @@ export function CommentThread({ postId, initialComments }: { postId: string; ini
       <ul className="mt-3 flex flex-col gap-4">
         {comments.map((c) => (
           <li key={c.id} className="flex gap-2.5">
-            <AvatarIdenticon seed={c.authorAvatarSeed} size={24} />
+            <Link href={`/u/${c.authorUserId}`}>
+              <AvatarIdenticon seed={c.authorAvatarSeed} size={24} />
+            </Link>
             <div>
-              <p className="font-mono text-meta text-text-faint">{c.authorDisplayName ?? `Collector ${c.authorUserId.slice(0, 4)}`}</p>
+              <div className="flex items-center gap-1.5">
+                <Link href={`/u/${c.authorUserId}`} className="font-mono text-meta text-text-faint hover:underline">
+                  {c.authorDisplayName ?? `Collector ${c.authorUserId.slice(0, 4)}`}
+                </Link>
+                <ReputationBadge score={c.authorReputationScore} />
+              </div>
               <p className="mt-0.5 text-body text-text">{c.body}</p>
             </div>
           </li>

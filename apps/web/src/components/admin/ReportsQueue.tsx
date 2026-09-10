@@ -30,7 +30,20 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
     setBusyId(null);
     if (ok) {
       setReports((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status, reviewNote: noteDraft[id]?.trim() || null } : r)),
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                status,
+                reviewNote: noteDraft[id]?.trim() || null,
+                // "Actioned" also hides the underlying content server-side
+                // (ReportsService.review) for every type except 'user',
+                // which has nothing to hide — mirror that here rather
+                // than waiting on a refetch.
+                isHidden: status === 'actioned' && r.reportedEntityType !== 'user' ? true : r.isHidden,
+              }
+            : r,
+        ),
       );
     }
   }
@@ -52,18 +65,32 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
                 {report.reportedEntityType} · {report.reportedEntityId}
               </span>
             </div>
-            <span
-              className={
-                report.status === 'pending'
-                  ? 'font-mono text-meta uppercase tracking-[0.06em] text-rust'
-                  : 'font-mono text-meta uppercase tracking-[0.06em] text-text-faint'
-              }
-            >
-              {report.status}
-            </span>
+            <div className="flex items-center gap-2">
+              {report.isHidden && (
+                <span className="font-mono text-meta uppercase tracking-[0.06em] text-signal">Hidden</span>
+              )}
+              <span
+                className={
+                  report.status === 'pending'
+                    ? 'font-mono text-meta uppercase tracking-[0.06em] text-rust'
+                    : 'font-mono text-meta uppercase tracking-[0.06em] text-text-faint'
+                }
+              >
+                {report.status}
+              </span>
+            </div>
           </div>
 
-          {report.details && <p className="max-w-[70ch] text-body text-text-soft">{report.details}</p>}
+          {/* The content preview task 5's QA pass added — a reviewer no longer has to go find a raw entity id to know what's even being reported. Null when the content has since been deleted. */}
+          {report.contentPreview !== null ? (
+            <p className="max-w-[70ch] border-l-2 border-moss/25 pl-3 text-body text-text-soft">{report.contentPreview}</p>
+          ) : (
+            <p className="max-w-[70ch] text-meta italic text-text-faint">Content no longer exists.</p>
+          )}
+
+          {report.details && (
+            <p className="max-w-[70ch] text-meta text-text-faint">Reporter's note: {report.details}</p>
+          )}
 
           <p className="text-meta text-text-faint">
             Filed {new Date(report.createdAt).toLocaleString()} by reporter {report.reporterUserId}

@@ -14,6 +14,7 @@ export interface ChatMessage {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   body: string;
   classifierStatus: string;
   createdAt: string;

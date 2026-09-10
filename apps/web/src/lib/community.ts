@@ -31,6 +31,7 @@ export interface Post {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   createdAt: string;
   commentCount: number;
   voteScore: number;
@@ -50,6 +51,7 @@ export interface Comment {
   authorUserId: string;
   authorDisplayName: string | null;
   authorAvatarSeed: string;
+  authorReputationScore: number;
   body: string;
   createdAt: string;
 }
@@ -112,7 +114,7 @@ export async function uploadPostImage(
   postId: string,
   file: File,
   checklistItemId?: string,
-): Promise<PostImage | null> {
+): Promise<{ ok: true; image: PostImage } | { ok: false; message: string }> {
   const form = new FormData();
   form.append('file', file);
   if (checklistItemId) form.append('checklistItemId', checklistItemId);
@@ -121,8 +123,15 @@ export async function uploadPostImage(
     headers: { Authorization: `Bearer ${apiToken}` },
     body: form,
   });
-  if (!res.ok) return null;
-  return (await res.json()).image ?? null;
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    // Task 6's hardening pass (Day 23) means a rejection here is a real,
+    // meaningful outcome now — oversized, wrong type, or flagged by
+    // review — not just a network blip, so the caller needs the actual
+    // message, not a bare null.
+    return { ok: false, message: body?.message ?? 'Could not upload that image — try again.' };
+  }
+  return { ok: true, image: body.image };
 }
 
 export async function castVote(
