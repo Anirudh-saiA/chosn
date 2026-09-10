@@ -63,10 +63,10 @@ export function WaitlistMinimal() {
   return (
     <section className="bg-ember py-28 sm:py-36 lg:py-44">
       <motion.div
-        initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.5 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-2xl px-6 text-center sm:px-10"
       >
         <h2 className="font-editorial text-3xl font-semibold leading-tight tracking-tight text-bone sm:text-4xl">

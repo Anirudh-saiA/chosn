@@ -28,7 +28,17 @@ function cspHeaderValue() {
     // injected external request — it just doesn't stop inline-script
     // XSS the way a nonce would. Revisit if a real XSS finding ever
     // surfaces that this specific gap would have stopped.
-    'script-src': ["'self'", "'unsafe-inline'"],
+    //
+    // 'unsafe-eval' added in dev only: Next.js's dev-mode Fast Refresh
+    // and React's dev-mode call-stack reconstruction genuinely call
+    // eval() — that's the console error this fixed, and it's not
+    // optional tooling, dev breaks without it. The comment above this
+    // one is the actual production security posture; this dev carve-out
+    // never reaches a deployed build (NODE_ENV is 'production' there).
+    'script-src':
+      process.env.NODE_ENV === 'production'
+        ? ["'self'", "'unsafe-inline'"]
+        : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
     'style-src': ["'self'", "'unsafe-inline'"], // Next's App Router injects some CSS as inline <style>; far lower risk than inline script
     'img-src': ["'self'", 'data:'], // data: for the TOTP QR code (lib/auth/totp.ts) and any future data-URI placeholder art
     'font-src': ["'self'"], // next/font self-hosts every face at build time (layout.tsx's own comment) — no fonts.gstatic.com needed at runtime
