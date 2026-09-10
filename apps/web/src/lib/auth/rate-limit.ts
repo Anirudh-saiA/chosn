@@ -20,7 +20,24 @@ import Redis from 'ioredis';
  * stuffing bot is the wrong tradeoff — better to briefly 503 login
  * during a Redis outage than to silently remove its rate limit.
  */
-const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380');
+/**
+ * Real bug found in production (Day 22): with no `maxRetriesPerRequest`
+ * or `connectTimeout`, ioredis's default retry strategy kept a command
+ * queued for ~2 minutes when Redis was unreachable before the promise
+ * finally rejected — and because this limiter fails *closed* (see this
+ * file's own header comment on why), a slow connectivity failure was
+ * indistinguishable from a real rate limit: sign-up and sign-in both
+ * hung, then failed with a "too many attempts" message that had nothing
+ * to do with the actual problem. `maxRetriesPerRequest: 1` +
+ * `connectTimeout` (matching apps/api's REDIS_CLIENT provider, which
+ * already got this right) makes the failure fast and honest instead —
+ * the `catch` below still fails closed, it just does so in milliseconds,
+ * not minutes.
+ */
+const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380', {
+  maxRetriesPerRequest: 1,
+  connectTimeout: 3_000,
+});
 redis.on('error', (err) => console.error('[authRateLimit] redis error:', err.message));
 
 export interface RateLimitResult {
