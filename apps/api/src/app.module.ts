@@ -5,6 +5,7 @@ import { ChatModule } from './chat/chat.module';
 import { CommunityModule } from './community/community.module';
 import { DropsModule } from './drops/drops.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { InternalModule } from './internal/internal.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { PricingModule } from './pricing/pricing.module';
 import { TrustSafetyModule } from './trust-safety/trust-safety.module';
@@ -21,6 +22,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     FeedbackModule,
     CommunityModule,
     ChatModule,
+    InternalModule,
   ],
   controllers: [AppController],
 })
