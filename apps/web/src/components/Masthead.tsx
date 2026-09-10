@@ -38,6 +38,18 @@ export function Masthead() {
           >
             News
           </Link>
+          {/* Day 21/22 — the community feed existed as a real route with
+              no way to find it except typing the URL, since this file
+              never got updated when it shipped. Same "no link to an
+              incomplete page" rule as everything else here, just applied
+              late: the page has been complete and verified since it
+              shipped, this was a missed link, not a deliberately-withheld one. */}
+          <Link
+            href="/community"
+            className="font-mono text-ui-label text-text-soft transition-colors duration-150 ease-chosn hover:text-text"
+          >
+            Community
+          </Link>
           {/* Day 14 — real once /notifications has something to manage
               (subscriptions are created from a sneaker page's "Notify me"
               toggle), same "no link to an incomplete page" rule as above. */}
