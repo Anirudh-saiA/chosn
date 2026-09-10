@@ -1,9 +1,10 @@
 import './instrument';
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
+import { SentryExceptionFilter } from './common/sentry-exception.filter';
 import { ensurePricePartitions, runMigrations } from './db/migrate';
 
 async function bootstrap() {
@@ -26,6 +27,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
+  app.useGlobalFilters(new SentryExceptionFilter(app.get(HttpAdapterHost).httpAdapter));
   // Nest has no default WebSocket transport of its own — without this,
   // @WebSocketGateway falls back to trying Socket.io, which isn't
   // installed (this app uses plain `ws` — see DropLiveGateway's own
