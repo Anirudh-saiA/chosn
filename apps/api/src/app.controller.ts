@@ -10,18 +10,6 @@ export class AppController {
   }
 
   /**
-   * Temporary — added to verify SENTRY_DSN is actually reaching Sentry
-   * after today's Railway env-var setup, per Sentry's own onboarding
-   * snippet. Remove once confirmed; not meant to stay as a permanent
-   * route (a public "throw on demand" endpoint is unnecessary surface
-   * once it's done its one job).
-   */
-  @Get('debug-sentry')
-  debugSentry() {
-    throw new Error('My first Sentry error!');
-  }
-
-  /**
    * Proves the infra pipe end to end without any feature code: confirms
    * DATABASE_URL and REDIS_URL actually resolve to live instances, or
    * reports exactly which one doesn't.
