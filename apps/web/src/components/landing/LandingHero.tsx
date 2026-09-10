@@ -2,9 +2,8 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
-import { Skateboard } from './Skateboard';
-import { SneakerPlaceholder } from './SneakerPlaceholder';
 import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
 
 const HEADLINE_LINES = ['Every price.', 'One place.'];
@@ -14,17 +13,12 @@ const HEADLINE_LINES = ['Every price.', 'One place.'];
  * the flag itself.
  *
  * Set `NEXT_PUBLIC_LOCAL_HERO_IMAGE` in `.env.local` to a path under
- * `/local-preview/` to preview the hero with a real photograph instead
- * of the generated placeholder mark. Unset — which is the case in CI
- * and on every deployed build — falls back to the placeholder, so this
- * file is safe to commit while the image itself never is:
+ * `/local-preview/` to preview the hero against an unlicensed
+ * reference photo. Unset — which is the case in CI and on every
+ * deployed build — falls back to the real, licensed photo below, so
+ * this file is safe to commit while any local-preview image never is:
  * `apps/web/public/local-preview/` is gitignored precisely because the
  * repo and the Vercel deployment are both public.
- *
- * This exists so the layout can be evaluated against real imagery
- * before paying for a licence. Swapping in licensed photography later
- * means dropping it in `public/` properly and pointing this at it —
- * the layout below doesn't change.
  */
 
 /**
@@ -95,69 +89,24 @@ export function LandingHero() {
             className="h-full w-full object-cover object-center"
           />
         ) : (
-          <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-ink to-[#161616] lg:bg-none">
-            {/* A soft off-center glow behind the mark — the one bit of
-                depth standing in for what real photo lighting would give
-                this frame for free. */}
-            <div
-              aria-hidden
-              className="absolute right-[5%] top-[20%] h-[55vh] w-[55vh] rounded-full bg-ember/10 blur-[120px]"
-            />
-
-            {/* Speed lines — a skate/action-photo device (a shoe caught
-                mid-trick, not sitting still), not a generic decoration:
-                this is the "cool, in motion" energy standing in for real
-                action photography, same honesty-over-fakery approach as
-                the mark itself. */}
-            <svg
-              aria-hidden
-              viewBox="0 0 400 400"
-              className="pointer-events-none absolute h-[55vh] w-[55vh] opacity-[0.16]"
-            >
-              <line x1="60" y1="290" x2="180" y2="230" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
-              <line x1="40" y1="240" x2="140" y2="195" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
-              <line x1="30" y1="190" x2="110" y2="160" stroke="#F7F5F0" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-
-            {/* A held, off-axis tilt — "caught mid-trick," not sitting
-                level — plus a slow idle drift so the mark reads as alive
-                even before the cursor-tilt above ever engages. Held to a
-                modest ±3° range (down from an earlier, much wider swing)
-                — a rotated shape's effective bounding box grows with the
-                angle, and the wider version was part of what pushed it
-                into the headline's space. `animate` resolves to a single
-                static value under reduced motion rather than the same
-                keyframe array with the transition duration zeroed out —
-                an array `animate` at duration 0 still snaps through its
-                keyframes, which is not "no motion." */}
-            <motion.div
-              initial={false}
-              animate={prefersReducedMotion ? { rotate: -6 } : { rotate: [-4, -7, -4] }}
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0 }
-                  : { duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }
-              }
-              className="relative"
-            >
-              <SneakerPlaceholder tone="bone" className="h-[34vh] w-auto max-w-[70%] sm:h-[40vh] lg:h-[46vh]" />
-
-              {/* The board itself — kept a separate, clearly offset shape
-                  rather than merged under the shoe, so the two stay
-                  legible on their own rather than risking the kind of
-                  unreadable overlap the first version of this mark had.
-                  Positioned lower-left and counter-rotated slightly, like
-                  it's mid-separation from the foot rather than pinned
-                  directly beneath it — the same "caught mid-trick" idea
-                  the speed lines and tilt already carry. */}
-              <div
-                aria-hidden
-                className="absolute -bottom-[8%] -left-[18%] w-[85%] -rotate-[18deg] opacity-90"
-              >
-                <Skateboard tone="bone" className="h-auto w-full" />
-              </div>
-            </motion.div>
-          </div>
+          // Day 19: the real, committed hero photo — not a placeholder
+          // anymore. Pexels License (free for commercial use, no
+          // attribution required — see StatementSection's own comment
+          // for the same license's terms, since that's where this file
+          // was first vetted). No visible logo/brand/person in the
+          // shot. Highest-resolution licensed asset on hand
+          // (4681×3888), which matters here more than anywhere else on
+          // the page — this is the one image that has to cover a full
+          // viewport width. `priority` because it's the largest
+          // above-the-fold image on the site's most visited route.
+          <Image
+            src="/images/statement-sneaker.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
         )}
       </motion.div>
 
