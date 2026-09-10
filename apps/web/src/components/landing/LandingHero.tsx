@@ -90,17 +90,23 @@ export function LandingHero() {
           />
         ) : (
           // Day 19: the real, committed hero photo — not a placeholder
-          // anymore. Pexels License (free for commercial use, no
-          // attribution required — see StatementSection's own comment
-          // for the same license's terms, since that's where this file
-          // was first vetted). No visible logo/brand/person in the
-          // shot. Highest-resolution licensed asset on hand
-          // (4681×3888), which matters here more than anywhere else on
-          // the page — this is the one image that has to cover a full
-          // viewport width. `priority` because it's the largest
-          // above-the-fold image on the site's most visited route.
+          // anymore. AI-generated (ChatGPT) skate-park composite,
+          // provided directly by the account holder — no third-party
+          // trademark or photographer's copyright involved, unlike the
+          // real-photo candidates rejected earlier this session. Only
+          // 1672×941 source — soft once stretched past ~1700px wide;
+          // swap for a higher-resolution regeneration if that shows on
+          // a large monitor. The image carries its own baked-in copy
+          // (its own wordmark, headline, nav); deliberately NOT hiding
+          // our real Masthead/headline/CTA over it the way local-preview
+          // mode does for images like this — losing the real "Sign in"
+          // link and a working "Compare now" button from the live site
+          // would be a bigger loss than some visual overlap with the
+          // image's own decorative text. `priority` because it's the
+          // largest above-the-fold image on the site's most visited
+          // route.
           <Image
-            src="/images/statement-sneaker.jpg"
+            src="/images/hero-skatepark.png"
             alt=""
             fill
             priority
