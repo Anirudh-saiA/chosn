@@ -4,6 +4,7 @@ import { LandingMasthead } from '@/components/landing/LandingMasthead';
 import { MarketPreview } from '@/components/landing/MarketPreview';
 import { StatementSection } from '@/components/landing/StatementSection';
 import { WaitlistMinimal } from '@/components/landing/WaitlistMinimal';
+import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
 
 /**
  * Landing-page-only fashion-editorial fork — see
@@ -20,7 +21,13 @@ import { WaitlistMinimal } from '@/components/landing/WaitlistMinimal';
 export default function HomePage() {
   return (
     <main className="relative">
-      <LandingMasthead />
+      {/* Day 19 local-preview mode: the current NEXT_PUBLIC_LOCAL_HERO_IMAGE
+          reference photo has a complete hero composition — its own
+          wordmark, nav, headline, and footer copy — baked into the
+          pixels. Rendering the real Masthead on top of that just
+          duplicates it, so it's hidden for this mode only; unset in
+          every real build, so this never affects production. */}
+      {!LOCAL_HERO_IMAGE && <LandingMasthead />}
       <LandingHero />
       <StatementSection />
       <MarketPreview />

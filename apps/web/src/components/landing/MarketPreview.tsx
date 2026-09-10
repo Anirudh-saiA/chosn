@@ -17,10 +17,10 @@ export function MarketPreview() {
   return (
     <section className="bg-ink py-24 sm:py-32 lg:py-40">
       <motion.div
-        initial={prefersReducedMotion ? false : { opacity: 0, scale: 1.03 }}
+        initial={{ opacity: 0, scale: 1.03 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, amount: 0.4 }}
-        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-[90rem] px-6 sm:px-10"
       >
         <p className="font-grotesk text-xs uppercase tracking-[0.16em] text-bone/50">

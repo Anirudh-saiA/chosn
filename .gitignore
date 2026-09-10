@@ -20,3 +20,15 @@ coverage
 
 .vercel
 .env*
+
+# Day 19 — local-only design preview assets.
+# Unlicensed/reference imagery used to evaluate the hero layout on a
+# dev machine. Never committed, never deployed: the repo and the Vercel
+# deployment are both public, so committing these would be publishing
+# them. Swap in licensed photography before this ships.
+apps/web/public/local-preview/
+# Loose reference images dropped in the repo root while designing.
+/*.jpg
+/*.jpeg
+/*.png
+/*.webp

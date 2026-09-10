@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { buttonVariantClass } from '@chosn/ui';
 import { getConsent, setConsent } from '@/lib/consent';
+import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
 
 /**
  * Day 19 task 4. Two equally-weighted buttons, no dark pattern: the
@@ -15,6 +16,14 @@ import { getConsent, setConsent } from '@/lib/consent';
  * analytics to work, so holding the page hostage until someone answers
  * would be a worse experience for no privacy gain — the tracking is
  * already off until they say otherwise.
+ *
+ * Day 19 local-preview fix: when the local-only hero image is active
+ * (see lib/local-preview.ts) LandingHero renders its own fixed
+ * bottom-0 warning ribbon. Both are bottom-anchored, so without this
+ * offset they'd stack directly on top of each other and only the one
+ * rendered later in the DOM would actually be visible — which is what
+ * was happening. This never applies to a real deployment: the flag is
+ * unset there, so this is always `bottom-0` in production.
  */
 export function ConsentBanner() {
   const [visible, setVisible] = useState(false);
@@ -38,7 +47,9 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label="Analytics consent"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-moss/30 bg-vault-raised px-6 py-5"
+      className={`fixed inset-x-0 z-50 border-t border-moss/30 bg-vault-raised px-6 py-5 ${
+        LOCAL_HERO_IMAGE ? 'bottom-8' : 'bottom-0'
+      }`}
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-[70ch] text-data-inline text-text-soft">
