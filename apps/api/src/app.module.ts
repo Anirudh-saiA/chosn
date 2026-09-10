@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { CatalogModule } from './catalog/catalog.module';
+import { ChatModule } from './chat/chat.module';
+import { CommunityModule } from './community/community.module';
 import { DropsModule } from './drops/drops.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ModerationModule } from './moderation/moderation.module';
@@ -17,6 +19,8 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     TrustSafetyModule,
     ModerationModule,
     FeedbackModule,
+    CommunityModule,
+    ChatModule,
   ],
   controllers: [AppController],
 })

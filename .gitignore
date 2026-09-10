@@ -32,3 +32,9 @@ apps/web/public/local-preview/
 /*.jpeg
 /*.png
 /*.webp
+
+# Day 21/22 — Legit Check post photos, local-disk-uploaded user content.
+# See docs/community/README.md's "local disk storage" scope note: no
+# real object storage configured yet, and user uploads don't belong in
+# a public git repo regardless.
+apps/api/uploads/

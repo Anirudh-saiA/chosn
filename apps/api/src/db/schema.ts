@@ -749,3 +749,206 @@ export const usersRelations = relations(users, ({ many }) => ({
   reportsFiled: many(reports, { relationName: 'reporter' }),
   blocksMade: many(userBlocks, { relationName: 'blocker' }),
 }));
+
+// -------------------------------------------------- day 21/22: community posts + chat
+//
+// One `posts` table for all four post types (the "generic post-type
+// template" the brief asks for), not one table per type — the
+// type-specific columns are nullable and only the relevant ones get set
+// per `postType`. A future fifth type is a new enum value plus (if it
+// needs one) a new nullable column, not a new table and a new set of
+// joins every feed query has to learn about.
+//
+// See apps/api/drizzle/0012_community.sql and
+// docs/community/README.md for the full reasoning, the scope decisions
+// flagged for override, and the chat moderation latency tradeoff.
+
+export const postTypeEnum = pgEnum('post_type', ['price_check', 'cop_or_drop', 'legit_check', 'drop_talk']);
+export const pollChoiceEnum = pgEnum('poll_choice', ['cop', 'drop']);
+export const votableTypeEnum = pgEnum('votable_type', ['post', 'comment']);
+export const classifierStatusEnum = pgEnum('classifier_status', ['pending', 'clean', 'flagged']);
+export const chatRoomStatusEnum = pgEnum('chat_room_status', ['scheduled', 'open', 'archived']);
+
+export const posts = pgTable(
+  'posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    postType: postTypeEnum('post_type').notNull(),
+    title: text('title'),
+    body: text('body'),
+    /** price_check, cop_or_drop — the sneaker/variant the post is about. */
+    sneakerVariantId: uuid('sneaker_variant_id').references(() => sneakerVariants.id, { onDelete: 'set null' }),
+    /** drop_talk (required there) — optionally set on the other types too if a post happens to be drop-specific. */
+    dropEventId: uuid('drop_event_id').references(() => dropEvents.id, { onDelete: 'set null' }),
+    /**
+     * legit_check only: the checklist items this post asks the community
+     * to verify against, as `{id, label}[]`. Configurable per-post rather
+     * than a hardcoded enum, per the brief — an authentication checklist
+     * varies by silhouette (a Dunk's checklist isn't a Yeezy's) and this
+     * shouldn't need a migration to add "size tag font" as a new item.
+     */
+    legitCheckChecklist: jsonb('legit_check_checklist'),
+    /** Moderation hook, same convention as reports/comments below — hidden from the feed, not physically deleted, so a wrongly-actioned removal is reversible. */
+    isRemoved: boolean('is_removed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    typeIdx: index('posts_type_idx').on(t.postType, t.createdAt.desc()),
+    authorIdx: index('posts_author_idx').on(t.authorUserId),
+    dropEventIdx: index('posts_drop_event_idx').on(t.dropEventId),
+    // legit_check requires a checklist; every other type must not carry
+    // one — catches "used the wrong post type's shape" at write time,
+    // not as a silent display bug the first time someone renders it.
+    checklistShapeCheck: check(
+      'posts_legit_check_checklist_shape',
+      sql`(${t.postType} = 'legit_check' AND ${t.legitCheckChecklist} IS NOT NULL) OR (${t.postType} != 'legit_check' AND ${t.legitCheckChecklist} IS NULL)`,
+    ),
+  }),
+);
+
+export const postImages = pgTable(
+  'post_images',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    /** Which `legitCheckChecklist` item this photo answers — the checklist item's own `id`, not a FK (the checklist is JSON, not a table). Null for a photo not tied to a specific item. */
+    checklistItemId: text('checklist_item_id'),
+    /** Local disk path under /uploads — see UploadsModule's own comment on why (no cloud storage configured for local dev). */
+    url: text('url').notNull(),
+    /**
+     * Day 17's classifyImage() stub result. 'pending' until the
+     * classifier call resolves; today that resolves to 'clean'
+     * immediately (the stub always returns null → treated as clean —
+     * see PostImagesService), but the column and the pending state exist
+     * now so a real NSFW provider is a body-only change later, not a
+     * schema change.
+     */
+    classifierStatus: classifierStatusEnum('classifier_status').notNull().default('pending'),
+    classifierScore: numeric('classifier_score', { precision: 4, scale: 3 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    postIdx: index('post_images_post_idx').on(t.postId),
+  }),
+);
+
+export const comments = pgTable(
+  'comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    isRemoved: boolean('is_removed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    postIdx: index('comments_post_idx').on(t.postId, t.createdAt),
+  }),
+);
+
+export const votes = pgTable(
+  'votes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    votableType: votableTypeEnum('votable_type').notNull(),
+    votableId: uuid('votable_id').notNull(),
+    /** +1 or -1 — a `check` constraint, not a boolean, so a future "this isn't a binary vote" case isn't a column-type migration. */
+    value: integer('value').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // One vote per user per thing — casting again updates the existing
+    // row (see VotesService.cast) rather than accumulating duplicates.
+    oneVotePerUser: uniqueIndex('votes_one_per_user').on(t.userId, t.votableType, t.votableId),
+    votableIdx: index('votes_votable_idx').on(t.votableType, t.votableId),
+    valueCheck: check('votes_value_check', sql`${t.value} IN (1, -1)`),
+  }),
+);
+
+/**
+ * Cop or Drop's own table, not a reuse of `votes` — a poll choice
+ * ('cop'/'drop') isn't a +1/-1 score, it's a two-option pick with its
+ * own live percentage-bar display, and conflating the two would mean
+ * every future generic-vote query has to filter out poll ballots to
+ * stay correct. Explicit per the brief.
+ */
+export const pollVotes = pgTable(
+  'poll_votes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    choice: pollChoiceEnum('choice').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    onePollVotePerUser: uniqueIndex('poll_votes_one_per_user').on(t.postId, t.userId),
+  }),
+);
+
+export const chatRooms = pgTable(
+  'chat_rooms',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    dropEventId: uuid('drop_event_id')
+      .notNull()
+      .references(() => dropEvents.id, { onDelete: 'cascade' }),
+    status: chatRoomStatusEnum('status').notNull().default('scheduled'),
+    /** release_time minus 1h — when the scheduler should flip this to 'open'. */
+    opensAt: timestamp('opens_at', { withTimezone: true }).notNull(),
+    /** Set once opened (opened time + 24h) — when the scheduler should flip this to 'archived'. NULL until then. */
+    archivesAt: timestamp('archives_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    oneRoomPerDrop: uniqueIndex('chat_rooms_drop_event_unique').on(t.dropEventId),
+    statusIdx: index('chat_rooms_status_idx').on(t.status),
+  }),
+);
+
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roomId: uuid('room_id')
+      .notNull()
+      .references(() => chatRooms.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    /**
+     * Broadcast-then-review (flagged decision, see docs/community/README.md):
+     * a message ships to every connected client the instant it's sent,
+     * `classifierStatus` starts 'pending' and updates async — the
+     * classifier call never sits between "user hits send" and "message
+     * appears," because that latency is worst exactly when a drop is
+     * hottest. A message that resolves 'flagged' gets retracted (task 7)
+     * after the fact, not held back before.
+     */
+    classifierStatus: classifierStatusEnum('classifier_status').notNull().default('pending'),
+    isRemoved: boolean('is_removed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    roomIdx: index('chat_messages_room_idx').on(t.roomId, t.createdAt),
+  }),
+);

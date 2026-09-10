@@ -73,4 +73,26 @@ export class BlocksService {
     );
     return (result.rowCount ?? 0) > 0;
   }
+
+  /**
+   * The set-based counterpart to `isBlockedEitherWay` — this is the
+   * `excludeBlockedContent(userId, query)` shape Day 17's README flagged
+   * as not yet built ("the piece to revisit first" once a real feature
+   * needs it). Day 21/22's community feed is that first real caller: a
+   * feed query needs "every author I don't want to see," not a one-pair
+   * check repeated per row. Returns raw ids rather than a query-builder
+   * fragment — CommunityService queries via Drizzle, this module via a
+   * plain `pg.Pool`, and an id array composes cleanly with either
+   * (`NOT IN (...)`) without coupling the two modules' query layers
+   * together.
+   */
+  async blockedUserIds(userId: string): Promise<string[]> {
+    const result = await this.pool.query<{ other_user_id: string }>(
+      `SELECT blocked_user_id AS other_user_id FROM user_blocks WHERE blocker_user_id = $1
+       UNION
+       SELECT blocker_user_id AS other_user_id FROM user_blocks WHERE blocked_user_id = $1`,
+      [userId],
+    );
+    return result.rows.map((r) => r.other_user_id);
+  }
 }

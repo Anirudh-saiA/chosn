@@ -10,8 +10,10 @@ import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import { OfficialPurchaseLinks } from '@/components/drops/OfficialPurchaseLinks';
 import { RaffleNotice } from '@/components/drops/RaffleNotice';
 import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
+import { ChatRoom } from '@/components/chat/ChatRoom';
 import { formatInr } from '@/lib/catalog';
 import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo } from '@/lib/drops';
+import { getChatRoomByDrop } from '@/lib/chat';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -36,6 +38,14 @@ async function loadDrop(id: string) {
   return fetchDropDetail(id, { next: { revalidate: REVALIDATE_SECONDS } });
 }
 
+async function loadChatRoom(dropEventId: string) {
+  // Same revalidate window as the rest of this page — the room's mere
+  // existence (whether to render the widget at all) can be a few
+  // minutes stale on first load; once mounted, ChatRoom's own
+  // WebSocket keeps messages live regardless.
+  return getChatRoomByDrop(dropEventId, { next: { revalidate: REVALIDATE_SECONDS } });
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const drop = await loadDrop(id);
@@ -54,6 +64,7 @@ export default async function DropDetailPage({ params }: PageProps) {
   const { id } = await params;
   const drop = await loadDrop(id);
   if (!drop) notFound();
+  const chatRoom = await loadChatRoom(drop.id);
 
   const { sneaker } = drop;
   const purchaseLinks = parsePurchaseLinks(drop.purchaseLinks);
@@ -126,6 +137,25 @@ export default async function DropDetailPage({ params }: PageProps) {
             {drop.status === 'live' && drop.defaultVariant && (
               <LivePricePreview styleCode={sneaker.styleCode} size={drop.defaultVariant.size} />
             )}
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">Community</p>
+                <Link
+                  href={`/community/new?type=drop_talk&dropEventId=${drop.id}`}
+                  className="font-mono text-meta text-brass hover:underline"
+                >
+                  Start a Drop Talk post →
+                </Link>
+              </div>
+              {chatRoom ? (
+                <ChatRoom room={chatRoom} />
+              ) : (
+                <p className="text-meta text-text-faint">
+                  Live chat opens automatically an hour before release.
+                </p>
+              )}
+            </div>
 
             {drop.relatedNews.length > 0 ? (
               <div>

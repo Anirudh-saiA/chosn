@@ -1,6 +1,8 @@
 import './instrument';
+import { join } from 'node:path';
 import { ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
@@ -22,12 +24,17 @@ async function bootstrap() {
     }
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000' });
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
   app.useGlobalFilters(new SentryExceptionFilter(app.get(HttpAdapterHost).httpAdapter));
+  // Day 22: Legit Check post photos — local disk storage, no cloud
+  // configured yet (see community/post-images.controller.ts's own
+  // comment). Served from the same origin the upload endpoint writes
+  // to, under /uploads.
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
   // Nest has no default WebSocket transport of its own — without this,
   // @WebSocketGateway falls back to trying Socket.io, which isn't
   // installed (this app uses plain `ws` — see DropLiveGateway's own
