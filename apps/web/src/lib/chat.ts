@@ -25,8 +25,12 @@ export async function getChatRoomByDrop(dropEventId: string, init?: RequestInit)
   return (await res.json()).room ?? null;
 }
 
-export async function getChatHistory(roomId: string): Promise<ChatMessage[]> {
-  const res = await fetch(`${API_URL}/chat/rooms/${roomId}/messages`, { cache: 'no-store' });
+/** `apiToken`, when present, lets the API filter out a blocked author's messages for this specific viewer (task 7) — omitted for an anonymous reader, who sees everything, same as the feed. */
+export async function getChatHistory(roomId: string, apiToken?: string): Promise<ChatMessage[]> {
+  const res = await fetch(`${API_URL}/chat/rooms/${roomId}/messages`, {
+    cache: 'no-store',
+    headers: apiToken ? { Authorization: `Bearer ${apiToken}` } : undefined,
+  });
   if (!res.ok) return [];
   return (await res.json()).messages ?? [];
 }

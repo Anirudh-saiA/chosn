@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, notInArray } from 'drizzle-orm';
 import * as Sentry from '@sentry/node';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { chatMessages, users } from '../db/schema';
 import { classifyText } from '../moderation/classifier.service';
+import { BlocksService } from '../trust-safety/blocks.service';
 
 export interface ChatMessageSummary {
   id: string;
@@ -30,7 +31,10 @@ export interface ChatMessageSummary {
 export class ChatMessagesService {
   private readonly logger = new Logger(ChatMessagesService.name);
 
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly blocks: BlocksService,
+  ) {}
 
   async create(roomId: string, authorUserId: string, body: string): Promise<ChatMessageSummary> {
     const [row] = await this.db.insert(chatMessages).values({ roomId, authorUserId, body }).returning();
@@ -78,7 +82,18 @@ export class ChatMessagesService {
     }
   }
 
-  async history(roomId: string, limit = 100): Promise<ChatMessageSummary[]> {
+  /**
+   * Task 7's block enforcement, read side: a signed-in viewer never sees
+   * history from someone they've blocked (or who's blocked them) — same
+   * `blockedUserIds` set-based approach PostsService's feed filtering
+   * uses, not a per-row `isBlockedEitherWay` check. An anonymous viewer
+   * (no `viewerUserId`) sees everything, same as an anonymous feed
+   * reader — blocking is an account-holder's control, not something an
+   * unauthenticated request can invoke either direction.
+   */
+  async history(roomId: string, limit = 100, viewerUserId: string | null = null): Promise<ChatMessageSummary[]> {
+    const excludedAuthors = viewerUserId ? await this.blocks.blockedUserIds(viewerUserId) : [];
+
     const rows = await this.db
       .select({
         id: chatMessages.id,
@@ -92,7 +107,13 @@ export class ChatMessagesService {
       })
       .from(chatMessages)
       .innerJoin(users, eq(users.id, chatMessages.authorUserId))
-      .where(and(eq(chatMessages.roomId, roomId), eq(chatMessages.isRemoved, false)))
+      .where(
+        and(
+          eq(chatMessages.roomId, roomId),
+          eq(chatMessages.isRemoved, false),
+          excludedAuthors.length > 0 ? notInArray(chatMessages.authorUserId, excludedAuthors) : undefined,
+        ),
+      )
       .orderBy(asc(chatMessages.createdAt))
       .limit(limit);
 

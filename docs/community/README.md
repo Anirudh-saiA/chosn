@@ -35,6 +35,18 @@ types plus live per-drop chat, built on top of it in the same session.
   shape exactly, a `ChatGateway` extending Day 14's `ws`-based
   connection pattern with real room scoping, a rate-limited chat UI on
   the drop detail page.
+- **Chat report/block enforcement** (task 7, added in a follow-up pass
+  after the first version shipped only the moderation-classifier half):
+  a `ReportButton` on every chat message (the same generic
+  `POST /trust-safety/reports` posts/comments will eventually use, not a
+  chat-specific endpoint), plus block enforcement on both sides —
+  `ChatGateway.send` computes the sender's blocked-either-way set once
+  per message and skips those specific recipients in the room broadcast,
+  and `ChatMessagesService.history` filters a blocked author out of a
+  signed-in viewer's REST history the same way `PostsService.list`
+  filters the feed. Verified with a real 3-account test (blocker,
+  blocked, bystander): the blocked user's live message reaches the
+  bystander but not the blocker, and REST history agrees.
 
 ## Assumptions flagged for override
 

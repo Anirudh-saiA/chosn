@@ -1,4 +1,6 @@
-import { Controller, Get, NotFoundException, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, ParseUUIDPipe, Query, Req } from '@nestjs/common';
+import { OptionalAuth } from '../auth/optional-auth.decorator';
+import type { OptionallyAuthenticatedRequest } from '../auth/optional-auth.guard';
 import { ChatMessagesService } from './chat-messages.service';
 import { ChatRoomsService } from './chat-rooms.service';
 
@@ -16,12 +18,24 @@ export class ChatController {
     return { room };
   }
 
-  /** History load on connect — the WebSocket itself only ever pushes new messages, never replays past ones (see ChatGateway's own comment). Works for an archived room too (task 5: read-only, not deleted). */
+  /**
+   * History load on connect — the WebSocket itself only ever pushes new
+   * messages, never replays past ones (see ChatGateway's own comment).
+   * Works for an archived room too (task 5: read-only, not deleted).
+   * `OptionalAuth` (not required) identifies a signed-in viewer for
+   * task 7's block filtering without requiring sign-in just to read a
+   * public chat's history.
+   */
   @Get('rooms/:id/messages')
-  async history(@Param('id', new ParseUUIDPipe()) id: string, @Query('limit') limit?: string) {
+  @OptionalAuth()
+  async history(
+    @Req() req: OptionallyAuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('limit') limit?: string,
+  ) {
     const room = await this.rooms.getById(id);
     if (!room) throw new NotFoundException({ error: 'not_found', message: 'Chat room not found.' });
     const parsedLimit = limit ? Math.min(Math.max(Number(limit) || 100, 1), 200) : 100;
-    return { messages: await this.messages.history(id, parsedLimit) };
+    return { messages: await this.messages.history(id, parsedLimit, req.user?.userId ?? null) };
   }
 }

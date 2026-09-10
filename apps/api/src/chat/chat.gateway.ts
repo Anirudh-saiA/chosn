@@ -6,6 +6,7 @@ import type { WebSocket } from 'ws';
 import type { Server } from 'ws';
 import { verifyApiToken, type ApiJwtPayload } from '../auth/api-jwt';
 import { REDIS_CLIENT } from '../common/redis.provider';
+import { BlocksService } from '../trust-safety/blocks.service';
 import { ChatMessagesService } from './chat-messages.service';
 import { ChatRoomsService } from './chat-rooms.service';
 
@@ -60,6 +61,7 @@ export class ChatGateway implements OnGatewayConnection {
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly rooms: ChatRoomsService,
     private readonly messages: ChatMessagesService,
+    private readonly blocks: BlocksService,
   ) {}
 
   handleConnection(client: WebSocket, request: IncomingMessage): void {
@@ -163,7 +165,15 @@ export class ChatGateway implements OnGatewayConnection {
     if (room.status !== 'open') return this.sendError(client, 'This chat has not opened yet.');
 
     const message = await this.messages.create(roomId, identity.userId, trimmed);
-    this.broadcastToRoom(roomId, { type: 'chat:message', roomId, message });
+
+    // Task 7's block enforcement, live side: one query per send (not per
+    // recipient) — the set of users blocked-either-way with the author,
+    // checked against each connected member's own identity below. A
+    // room-mate with no identity (never signed in / expired token) has
+    // no block relationship possible and always receives the message,
+    // same as an anonymous feed reader seeing every post.
+    const excludedRecipients = await this.blocks.blockedUserIds(identity.userId);
+    this.broadcastToRoom(roomId, { type: 'chat:message', roomId, message }, excludedRecipients);
 
     // Broadcast-then-review (task 7, approved tradeoff — see
     // ChatMessagesService's own doc comment): classification runs after
@@ -173,15 +183,29 @@ export class ChatGateway implements OnGatewayConnection {
     });
   }
 
-  /** Per-client try/catch (same discipline as DropLiveGateway.broadcast) — one half-closed socket in a room must not stop delivery to the rest. */
-  private broadcastToRoom(roomId: string, payload: unknown): void {
+  /**
+   * Per-client try/catch (same discipline as DropLiveGateway.broadcast)
+   * — one half-closed socket in a room must not stop delivery to the
+   * rest. `excludedRecipients` (task 7) skips any connected member whose
+   * identified userId is in that set — a blocked-either-way relationship
+   * with the message's author means this specific client never receives
+   * this specific broadcast, while everyone else in the room still does.
+   */
+  private broadcastToRoom(roomId: string, payload: unknown, excludedRecipients: string[] = []): void {
     const members = roomMembers.get(roomId);
     if (!members || members.size === 0) return;
+    const excluded = new Set(excludedRecipients);
     const outgoing = JSON.stringify(payload);
     let sent = 0;
+    let skipped = 0;
     let failed = 0;
     for (const client of members) {
       if (client.readyState !== client.OPEN) continue;
+      const recipientId = connectionIdentity.get(client)?.userId;
+      if (recipientId && excluded.has(recipientId)) {
+        skipped++;
+        continue;
+      }
       try {
         client.send(outgoing);
         sent++;
@@ -190,6 +214,8 @@ export class ChatGateway implements OnGatewayConnection {
         this.logger.warn(`chat send failed for one client in room ${roomId}: ${(err as Error).message}`);
       }
     }
-    this.logger.debug(`chat room ${roomId}: sent to ${sent} client(s)${failed ? `, ${failed} failed` : ''}`);
+    this.logger.debug(
+      `chat room ${roomId}: sent to ${sent} client(s)${skipped ? `, ${skipped} blocked` : ''}${failed ? `, ${failed} failed` : ''}`,
+    );
   }
 }

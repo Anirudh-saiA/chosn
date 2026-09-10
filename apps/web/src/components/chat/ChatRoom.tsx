@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
+import { ReportButton } from '@/components/community/ReportButton';
 import { chatWsUrl, getChatHistory, type ChatMessage, type ChatRoom as ChatRoomSummary } from '@/lib/chat';
 
 interface ChatRoomProps {
@@ -20,6 +21,7 @@ interface ChatRoomProps {
 export function ChatRoom({ room }: ChatRoomProps) {
   const { data: session } = useSession();
   const apiToken = (session as unknown as { apiToken?: string } | null)?.apiToken;
+  const ownUserId = (session?.user as unknown as { id?: string } | undefined)?.id;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -29,7 +31,11 @@ export function ChatRoom({ room }: ChatRoomProps) {
   const isArchived = room.status === 'archived';
 
   useEffect(() => {
-    getChatHistory(room.id).then(setMessages);
+    // Deliberately not re-running on every apiToken change (e.g. session
+    // refresh) — refiltering history mid-scroll on a token rotation
+    // would be a jarring message-count jump for no visible reason; a
+    // fresh mount (room change, page reload) picks up the current token.
+    getChatHistory(room.id, apiToken).then(setMessages);
   }, [room.id]);
 
   useEffect(() => {
@@ -100,12 +106,17 @@ export function ChatRoom({ room }: ChatRoomProps) {
       <div ref={listRef} className="flex h-64 flex-col gap-2.5 overflow-y-auto px-4 py-3">
         {messages.length === 0 && <p className="font-mono text-meta text-text-faint">No messages yet — be first.</p>}
         {messages.map((m) => (
-          <div key={m.id} className="flex items-start gap-2">
+          <div key={m.id} className="group flex items-start gap-2">
             <AvatarIdenticon seed={m.authorAvatarSeed} size={20} className="mt-0.5 shrink-0" />
-            <p className="text-body text-text">
+            <p className="flex-1 text-body text-text">
               <span className="font-mono text-meta text-text-faint">{m.authorDisplayName ?? 'Collector'}: </span>
               {m.body}
             </p>
+            {m.authorUserId !== ownUserId && (
+              <span className="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                <ReportButton entityType="message" entityId={m.id} />
+              </span>
+            )}
           </div>
         ))}
       </div>
