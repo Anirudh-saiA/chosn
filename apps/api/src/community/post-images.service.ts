@@ -111,10 +111,19 @@ export class PostImagesService {
     // before the row is created, so a flagged result can and should
     // reject the upload outright: the object is deleted from the bucket
     // and the request fails with a real error, the same as a bad mime
-    // type or an oversized file. A classifier failure or a
-    // 'clean'/unconfigured (null) verdict still fails open onto 'clean'
-    // — a moderation tool outage must never itself become the reason
-    // every upload breaks.
+    // type or an oversized file.
+    //
+    // Day 26: flipped to fail-closed. `classifyImage` resolving `null`
+    // (no NSFW provider configured — its own documented no-op
+    // convention, same as classifyText) is NOT a failure and still
+    // passes through as 'clean' — that's a deliberate, known state, not
+    // an outage. But an actual thrown error (network failure, timeout,
+    // a malformed response once a real provider is wired up) now
+    // rejects the upload instead of silently waving it through: a
+    // Legit Check photo that couldn't be screened is exactly the one
+    // case this feature exists to prevent showing unreviewed, so an
+    // outage in the reviewer is a reason to block, not a reason to skip
+    // the review.
     let classifierScore: number | null = null;
     try {
       const verdict = await classifyImage(url);
@@ -127,7 +136,9 @@ export class PostImagesService {
       }
     } catch (err) {
       if (err instanceof InvalidImageError) throw err;
-      this.logger.warn(`image classification failed, treating as unclassified: ${(err as Error).message}`);
+      this.logger.error(`image classification failed — rejecting upload (fail-closed): ${(err as Error).message}`);
+      await this.storage.deleteByUrl(url);
+      throw new InvalidImageError("We couldn't verify this image — try again.");
     }
 
     const [row] = await this.db
