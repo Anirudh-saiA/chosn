@@ -134,12 +134,8 @@ function PostBody({ post }: { post: Post }) {
                         Removed — flagged by review
                       </div>
                     ) : (
-                      // Local disk-served upload — see PostImagesController's own comment; a plain <img>, not next/image, since this is served from apps/api's own origin (a different host than the web app), not a domain next/image is configured to optimize.
-                      <img
-                        src={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}${img.url}`}
-                        alt={altText}
-                        className="h-full w-full object-cover"
-                      />
+                      // Day 26: img.url is now a full object-storage URL (apps/api's StorageService), not a path relative to the API origin — plain <img>, not next/image, since the bucket's domain isn't one next/image is configured to optimize.
+                      <img src={img.url} alt={altText} className="h-full w-full object-cover" />
                     )}
                   </div>
                 );

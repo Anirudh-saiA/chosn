@@ -7,6 +7,7 @@ import type { Server } from 'ws';
 import { verifyApiToken, type ApiJwtPayload } from '../auth/api-jwt';
 import { REDIS_CLIENT } from '../common/redis.provider';
 import { bullConnection } from '../queue/queue.config';
+import { CHAT_BROADCAST_CHANNEL, isChatBroadcastEvent } from '../trust-safety/chat-events.pubsub';
 import { isModerationRetractEvent, MODERATION_RETRACT_CHANNEL } from '../trust-safety/moderation-events.pubsub';
 import { BlocksService } from '../trust-safety/blocks.service';
 import { ChatMessagesService } from './chat-messages.service';
@@ -78,6 +79,16 @@ export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleD
    * on a retraction event, broadcast the same `chat:retract` frame the
    * classifier's own auto-flag path already sends, so the client-side
    * handling is identical regardless of which review path caused it.
+   *
+   * Day 26: the same subscriber connection also carries
+   * CHAT_BROADCAST_CHANNEL — every `chat:send` now publishes here
+   * instead of calling `broadcastToRoom` directly (see `send()` below),
+   * so a message from a client on one Railway instance still reaches a
+   * room-mate connected to a different instance. One subscriber
+   * connection for both channels, branched on `channel`, rather than a
+   * second Redis connection — ioredis subscriptions are cheap to add to
+   * an existing subscriber, and this class already established the
+   * "one dedicated subscriber, can't issue other commands" constraint.
    */
   async onModuleInit(): Promise<void> {
     if (!process.env.DATABASE_URL) {
@@ -85,24 +96,41 @@ export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleD
       return;
     }
     this.moderationSubscriber = new Redis(bullConnection());
-    await this.moderationSubscriber.subscribe(MODERATION_RETRACT_CHANNEL);
+    await this.moderationSubscriber.subscribe(MODERATION_RETRACT_CHANNEL, CHAT_BROADCAST_CHANNEL);
     this.moderationSubscriber.on('message', (channel, message) => {
-      if (channel !== MODERATION_RETRACT_CHANNEL) return;
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(message);
-      } catch {
-        this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, not JSON: ${message.slice(0, 200)}`);
+      if (channel === MODERATION_RETRACT_CHANNEL) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message);
+        } catch {
+          this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, not JSON: ${message.slice(0, 200)}`);
+          return;
+        }
+        if (!isModerationRetractEvent(parsed)) {
+          this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, missing fields: ${message.slice(0, 200)}`);
+          return;
+        }
+        this.broadcastToRoom(parsed.roomId, { type: 'chat:retract', roomId: parsed.roomId, messageId: parsed.messageId });
         return;
       }
-      if (!isModerationRetractEvent(parsed)) {
-        this.logger.error(`malformed ${MODERATION_RETRACT_CHANNEL} payload, missing fields: ${message.slice(0, 200)}`);
-        return;
+
+      if (channel === CHAT_BROADCAST_CHANNEL) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message);
+        } catch {
+          this.logger.error(`malformed ${CHAT_BROADCAST_CHANNEL} payload, not JSON: ${message.slice(0, 200)}`);
+          return;
+        }
+        if (!isChatBroadcastEvent(parsed)) {
+          this.logger.error(`malformed ${CHAT_BROADCAST_CHANNEL} payload, missing fields: ${message.slice(0, 200)}`);
+          return;
+        }
+        this.broadcastToRoom(parsed.roomId, parsed.payload, parsed.excludedRecipients);
       }
-      this.broadcastToRoom(parsed.roomId, { type: 'chat:retract', roomId: parsed.roomId, messageId: parsed.messageId });
     });
     this.moderationSubscriber.on('error', (err) => {
-      this.logger.error(`moderation-retraction subscriber error: ${err.message}`);
+      this.logger.error(`moderation-retraction/chat-broadcast subscriber error: ${err.message}`);
     });
   }
 
@@ -219,14 +247,32 @@ export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleD
     // no block relationship possible and always receives the message,
     // same as an anonymous feed reader seeing every post.
     const excludedRecipients = await this.blocks.blockedUserIds(identity.userId);
-    this.broadcastToRoom(roomId, { type: 'chat:message', roomId, message }, excludedRecipients);
+    await this.publishToRoom(roomId, { type: 'chat:message', roomId, message }, excludedRecipients);
 
     // Broadcast-then-review (task 7, approved tradeoff — see
     // ChatMessagesService's own doc comment): classification runs after
     // the message is already visible, never before.
     void this.messages.classifyAndMaybeRetract(message.id, trimmed).then((flagged) => {
-      if (flagged) this.broadcastToRoom(roomId, { type: 'chat:retract', roomId, messageId: message.id });
+      if (flagged) void this.publishToRoom(roomId, { type: 'chat:retract', roomId, messageId: message.id }, []);
     });
+  }
+
+  /**
+   * Day 26: every live chat frame goes out through Redis pub/sub rather
+   * than a direct `broadcastToRoom` call, so instance B's room members
+   * get it too (see `onModuleInit`'s CHAT_BROADCAST_CHANNEL handler,
+   * which is this same publish's delivery half — including on *this*
+   * instance, there's no local-delivery shortcut). Uses the shared
+   * request-path `this.redis` client (PUBLISH isn't a blocking command,
+   * unlike the dedicated subscriber's SUBSCRIBE), same client
+   * `underRateLimit` above already issues commands on.
+   */
+  private async publishToRoom(roomId: string, payload: unknown, excludedRecipients: string[]): Promise<void> {
+    try {
+      await this.redis.publish(CHAT_BROADCAST_CHANNEL, JSON.stringify({ roomId, payload, excludedRecipients }));
+    } catch (err) {
+      this.logger.error(`failed to publish chat broadcast for room ${roomId}: ${(err as Error).message}`);
+    }
   }
 
   /**

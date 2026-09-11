@@ -1,36 +1,29 @@
-import { existsSync, mkdirSync } from 'node:fs';
-import { unlink } from 'node:fs/promises';
-import { join } from 'node:path';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { fromBuffer as sniffFileType } from 'file-type';
+import sharp from 'sharp';
 import { classifyImage } from '../moderation/classifier.service';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { postImages, posts } from '../db/schema';
+import { StorageService } from './storage.service';
 
 /**
- * Local disk storage under apps/api/uploads/ — no cloud storage
- * configured for this local-dev-scoped feature (see docs/community/
- * README.md). Owned here (not the controller) because both the
- * controller's Multer config and this service's own reject-and-delete
- * path (see `attach()` below) need the same directory.
- */
-export const UPLOADS_DIR = join(process.cwd(), 'uploads');
-if (!existsSync(UPLOADS_DIR)) mkdirSync(UPLOADS_DIR, { recursive: true });
-
-/**
- * Multer's actual output shape (`@types/multer` isn't installed — this
- * repo prefers a hand-written structural type over pulling in a
- * type-only package for the handful of fields this service actually
- * reads, same call this codebase makes elsewhere for lean dependencies).
+ * Multer's actual output shape with `memoryStorage()` (`@types/multer`
+ * isn't installed — this repo prefers a hand-written structural type
+ * over pulling in a type-only package for the handful of fields this
+ * service actually reads, same call this codebase makes elsewhere for
+ * lean dependencies).
  */
 export interface UploadedFileLike {
   originalname: string;
   mimetype: string;
   size: number;
-  filename: string;
+  buffer: Buffer;
 }
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+/** What `file-type`'s magic-byte sniff must agree the file actually is, keyed by its declared extension below. */
+const SNIFFED_TO_EXT: Record<string, string> = { jpg: '.jpg', png: '.png', webp: '.webp' };
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export class InvalidImageError extends Error {}
@@ -43,12 +36,25 @@ export class InvalidImageError extends Error {}
  * comment), which this service treats as "nothing flagged," so a photo
  * displays immediately; swapping in a real provider later changes what
  * this service does with a non-null result, not whether it calls one.
+ *
+ * Day 26: added two checks ahead of the classifier call — a declared
+ * `image/jpeg` mimetype is trivially spoofable (Multer trusts whatever
+ * Content-Type the client sent), so `file-type` sniffs the actual magic
+ * bytes and the upload is rejected if they disagree. Every accepted
+ * image is then re-encoded through sharp (`.rotate()` normalizes
+ * orientation first so EXIF's rotation isn't lost, not just its other
+ * metadata) before it ever reaches the classifier or the bucket — GPS
+ * coordinates and device info in a stranger's photo have no business
+ * surviving an upload to a public post.
  */
 @Injectable()
 export class PostImagesService {
   private readonly logger = new Logger(PostImagesService.name);
 
-  constructor(@Inject(DRIZZLE) private readonly db: Db) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Db,
+    private readonly storage: StorageService,
+  ) {}
 
   async attach(
     postId: string,
@@ -76,7 +82,22 @@ export class PostImagesService {
       }
     }
 
-    const url = `/uploads/${file.filename}`;
+    // Magic-byte check: a declared `image/jpeg` mimetype is just
+    // whatever Content-Type the client sent, trivial to spoof. Reject
+    // if the actual bytes don't agree — same rejection path as a bad
+    // declared mimetype, before anything is uploaded or re-encoded.
+    const sniffed = await sniffFileType(file.buffer);
+    const ext = sniffed ? SNIFFED_TO_EXT[sniffed.ext] : undefined;
+    if (!sniffed || !ext || sniffed.mime !== file.mimetype) {
+      throw new InvalidImageError('This file is not a valid JPEG, PNG, or WebP image.');
+    }
+
+    // Strip EXIF (GPS, device info, etc.) by re-encoding — `.rotate()`
+    // bakes in EXIF orientation first so the re-encode doesn't silently
+    // rotate the image now that the orientation tag is gone.
+    const stripped = await sharp(file.buffer).rotate().toBuffer();
+
+    const url = await this.storage.upload(stripped, file.mimetype, ext);
 
     // Classify before the row exists at all — see this class's own doc
     // comment. Day 23 QA fix: this used to insert a 'flagged' row
@@ -88,20 +109,19 @@ export class PostImagesService {
     // latency constraint here (unlike chat's deliberate broadcast-then-
     // review tradeoff) — classification already runs synchronously
     // before the row is created, so a flagged result can and should
-    // reject the upload outright: the file is deleted from disk and the
-    // request fails with a real error, the same as a bad mime type or
-    // an oversized file. A classifier failure or a 'clean'/unconfigured
-    // (null) verdict still fails open onto 'clean' — a moderation tool
-    // outage must never itself become the reason every upload breaks.
+    // reject the upload outright: the object is deleted from the bucket
+    // and the request fails with a real error, the same as a bad mime
+    // type or an oversized file. A classifier failure or a
+    // 'clean'/unconfigured (null) verdict still fails open onto 'clean'
+    // — a moderation tool outage must never itself become the reason
+    // every upload breaks.
     let classifierScore: number | null = null;
     try {
       const verdict = await classifyImage(url);
       if (verdict) {
         classifierScore = verdict.score;
         if (verdict.nsfw) {
-          await unlink(join(UPLOADS_DIR, file.filename)).catch((err) => {
-            this.logger.warn(`could not delete rejected upload ${file.filename}: ${(err as Error).message}`);
-          });
+          await this.storage.deleteByUrl(url);
           throw new InvalidImageError('This image was flagged by review and could not be uploaded.');
         }
       }

@@ -1,5 +1,4 @@
 import './instrument';
-import { join } from 'node:path';
 import { ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -30,11 +29,9 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
   app.useGlobalFilters(new SentryExceptionFilter(app.get(HttpAdapterHost).httpAdapter));
-  // Day 22: Legit Check post photos — local disk storage, no cloud
-  // configured yet (see community/post-images.controller.ts's own
-  // comment). Served from the same origin the upload endpoint writes
-  // to, under /uploads.
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
+  // Day 26: Legit Check post photos now go straight to object storage
+  // (community/storage.service.ts) — nothing is written to or served
+  // from local disk anymore, so no static-assets mount here.
   // Nest has no default WebSocket transport of its own — without this,
   // @WebSocketGateway falls back to trying Socket.io, which isn't
   // installed (this app uses plain `ws` — see DropLiveGateway's own

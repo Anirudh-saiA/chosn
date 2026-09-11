@@ -13,6 +13,7 @@ import { PostImagesController } from './post-images.controller';
 import { PostImagesService } from './post-images.service';
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
+import { StorageService } from './storage.service';
 import { UserActivityController } from './user-activity.controller';
 import { VotesController } from './votes.controller';
 import { VotesService } from './votes.service';
@@ -48,6 +49,7 @@ import { VotesService } from './votes.service';
     CommentsService,
     VotesService,
     PostImagesService,
+    StorageService,
     CommunityNotificationsService,
     CommunityPushConsumer,
   ],

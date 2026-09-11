@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import {
   BadRequestException,
@@ -13,10 +12,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { AuthenticatedRequest, ApiAuthGuard } from '../auth/api-auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
-import { InvalidImageError, PostImagesService, UPLOADS_DIR, type UploadedFileLike } from './post-images.service';
+import { InvalidImageError, PostImagesService, type UploadedFileLike } from './post-images.service';
 
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -29,14 +28,17 @@ export class PostImagesController {
   @RateLimit({ limit: 40, windowSeconds: 3600 })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: UPLOADS_DIR,
-        filename: (_req, file, cb) => {
-          const ext = extname(file.originalname).toLowerCase();
-          if (!ALLOWED_EXT.has(ext)) return cb(new BadRequestException('Unsupported file extension.'), '');
-          cb(null, `${randomUUID()}${ext}`);
-        },
-      }),
+      // Day 26: in-memory buffer, never written to disk — the service
+      // validates (magic bytes), strips EXIF, and uploads the buffer
+      // straight to object storage. Extension is still checked here,
+      // before Multer even buffers the body, same as the old diskStorage
+      // filename callback.
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const ext = extname(file.originalname).toLowerCase();
+        if (!ALLOWED_EXT.has(ext)) return cb(new BadRequestException('Unsupported file extension.'), false);
+        cb(null, true);
+      },
       limits: { fileSize: 8 * 1024 * 1024 },
     }),
   )

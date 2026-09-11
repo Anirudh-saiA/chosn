@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { wsBaseUrl } from '@/lib/ws-url';
 
 interface DropLiveMessage {
   type: 'drop:live';
@@ -19,8 +20,7 @@ function isDropLiveMessage(value: unknown): value is DropLiveMessage {
 }
 
 function wsUrl(): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-  return apiUrl.replace(/^http/, 'ws') + '/ws/drops';
+  return `${wsBaseUrl()}/ws/drops`;
 }
 
 const DropLiveContext = createContext<Set<string> | null>(null);

@@ -71,16 +71,20 @@ out to invite abuse (someone uploading unrelated/bad photos to another
 person's thread) — the fix is an `authorUserId === post.authorUserId`
 check in `PostImagesService.attach`, not a schema change.
 
-### 3. Local disk storage for uploaded images, not cloud storage
+### 3. Object storage for uploaded images (Day 26 — resolved)
 
-`apps/api/uploads/`, served via `useStaticAssets`. No S3/Cloudinary/etc.
-configured — consistent with this whole feature's brief explicitly
-scoping it to local dev ("Everything runs locally"). **This does not
-survive a real deploy as-is**: Railway's filesystem isn't durable across
-redeploys, and multiple instances wouldn't share the same disk. Needs a
-real object-storage provider wired in before this ships to production —
-flagged here rather than discovered the first time an uploaded photo
-disappears after a redeploy.
+Originally local disk (`apps/api/uploads/`, served via
+`useStaticAssets`) — flagged here as not surviving a real deploy
+(Railway's filesystem isn't durable across redeploys, and multiple
+instances wouldn't share the same disk). Day 26 replaced this with
+`community/storage.service.ts`, an S3-compatible client (Cloudflare R2
+or AWS S3, same code either way — see `apps/api/.env.example`'s
+`STORAGE_*` vars). `PostImagesController` now buffers the upload in
+memory (`memoryStorage()`, never touches disk) and `PostImagesService`
+adds two checks ahead of the existing ones: `file-type` magic-byte
+sniffing (the declared `Content-Type` is trivially spoofable) and an
+EXIF-stripping re-encode via `sharp` before the classifier or the bucket
+ever see the bytes.
 
 ### 4. Comment threading is flat, not nested
 

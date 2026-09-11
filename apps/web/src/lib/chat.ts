@@ -1,3 +1,5 @@
+import { wsBaseUrl } from './ws-url';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export interface ChatRoom {
@@ -37,6 +39,6 @@ export async function getChatHistory(roomId: string, apiToken?: string): Promise
 }
 
 export function chatWsUrl(apiToken?: string): string {
-  const base = API_URL.replace(/^http/, 'ws') + '/ws/chat';
+  const base = `${wsBaseUrl()}/ws/chat`;
   return apiToken ? `${base}?token=${apiToken}` : base;
 }
