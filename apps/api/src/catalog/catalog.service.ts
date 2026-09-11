@@ -6,6 +6,7 @@ import {
   type MarketIntelligenceSummary,
   type Signal,
 } from '../pricing/market-intelligence.service';
+import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
 export interface CatalogOffer {
   retailerSlug: string;
@@ -23,6 +24,13 @@ export interface CatalogOffer {
   fetchFrequencyMinutes: number;
   /** Older than 2x the retailer's own cadence — same rule Day 9's ranking uses. */
   isStale: boolean;
+  /**
+   * 'fixture' means this retailer's credentials were never approved and
+   * the price/URL are placeholder data, not a real quote (Day 20: this
+   * was previously invisible on the price page — only /health/fetch
+   * exposed it — so a fixture price rendered identically to a real one).
+   */
+  mode: RetailerMode;
 }
 
 export interface CatalogVariant {
@@ -123,6 +131,7 @@ interface OfferRow {
   retailer_name: string;
   retailer_logo_url: string | null;
   fetch_frequency_minutes: number;
+  integration_type: string;
   price: string;
   shipping_cost: string | null;
   currency: string;
@@ -208,7 +217,7 @@ export class CatalogService {
   private async offersFor(variantId: string): Promise<CatalogOffer[]> {
     const { rows } = await this.db.execute(sql`
       SELECT r.slug AS retailer_slug, r.name AS retailer_name, r.logo_url AS retailer_logo_url,
-             r.fetch_frequency_minutes,
+             r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
@@ -235,6 +244,7 @@ export class CatalogService {
         fetchedAt: fetchedAt.toISOString(),
         fetchFrequencyMinutes: r.fetch_frequency_minutes,
         isStale: Date.now() - fetchedAt.getTime() > staleCutoffMs,
+        mode: retailerModeFor(r.retailer_slug, r.integration_type),
       };
     });
   }

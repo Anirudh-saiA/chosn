@@ -49,4 +49,28 @@ export class PriceSnapshotService {
       return row;
     });
   }
+
+  /**
+   * Clears is_latest for a variant/retailer with no successful fetch to
+   * replace it — a mapping that was removed, or a manual entry gone
+   * stale past MAX_AGE_DAYS. Without this, a PermanentFetchError just
+   * dead-letters the job and the *previous* snapshot keeps reporting
+   * is_latest=true forever, so the price page keeps showing a retailer
+   * offer (and a "View Deal" link) for data that no longer exists —
+   * found on Day 20 when correcting two placeholder Superkicks/VegNonVeg
+   * listing_urls: deleting the bad manual_price_entries rows didn't stop
+   * the old fixture-URL snapshot from still being served as current.
+   */
+  async retract(retailerId: string, sneakerVariantId: string): Promise<void> {
+    await this.db
+      .update(priceSnapshots)
+      .set({ isLatest: false })
+      .where(
+        and(
+          eq(priceSnapshots.sneakerVariantId, sneakerVariantId),
+          eq(priceSnapshots.retailerId, retailerId),
+          eq(priceSnapshots.isLatest, true),
+        ),
+      );
+  }
 }

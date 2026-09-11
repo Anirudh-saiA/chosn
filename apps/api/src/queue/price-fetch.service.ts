@@ -266,6 +266,20 @@ export class PriceFetchService implements OnModuleInit, OnModuleDestroy {
 
     await this.deadLetter?.add('dead-letter', payload, { removeOnComplete: false });
 
+    // A permanent failure (mapping removed, manual entry gone stale) means
+    // no new snapshot is coming to replace the current one via record()'s
+    // own is_latest handoff — so without this, whatever was last fetched
+    // stays "latest" and keeps being served indefinitely, even though its
+    // source no longer exists. Best-effort: never let this mask the
+    // original failure below.
+    if (unrecoverable && payload.target) {
+      try {
+        await this.snapshots.retract(payload.target.retailerId, payload.target.sneakerVariantId);
+      } catch (retractErr) {
+        this.logger.warn(`could not retract stale snapshot: ${(retractErr as Error).message}`);
+      }
+    }
+
     // Also recorded in Postgres. The dead-letter queue holds the job so it
     // can be retried, but Redis is a cache we're willing to lose and
     // BullMQ trims old jobs — the 24h failure counts in the health summary

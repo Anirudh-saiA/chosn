@@ -27,7 +27,14 @@ export function OfferTable({ offers }: OfferTableProps) {
     );
   }
 
-  const bestRowIndex = offers.findIndex((o) => o.inStock && !o.isStale && o.effectivePriceInr !== null);
+  // Day 20: a fixture-mode offer (credentials never approved, price/URL
+  // are placeholder data — see CatalogOffer.mode) must never win the one
+  // highlighted "best deal" slot. Recommending fabricated data as the
+  // cheapest real price is the single worst trust failure this page can
+  // produce.
+  const bestRowIndex = offers.findIndex(
+    (o) => o.mode !== 'fixture' && o.inStock && !o.isStale && o.effectivePriceInr !== null,
+  );
 
   return (
     <div className="overflow-x-auto border border-moss/25 bg-vault-raised">
@@ -56,6 +63,7 @@ export function OfferTable({ offers }: OfferTableProps) {
 }
 
 function OfferRow({ offer, isBest }: { offer: CatalogOffer; isBest: boolean }) {
+  const isFixture = offer.mode === 'fixture';
   const unavailable = !offer.inStock || offer.effectivePriceInr === null;
 
   return (
@@ -82,7 +90,9 @@ function OfferRow({ offer, isBest }: { offer: CatalogOffer; isBest: boolean }) {
         {offer.condition}
       </td>
       <td className="whitespace-nowrap px-4 py-3 font-sans text-data-inline">
-        {!offer.inStock ? (
+        {isFixture ? (
+          <span className="text-rust">Demo price — not live yet</span>
+        ) : !offer.inStock ? (
           <span className="text-text-faint">Currently unavailable</span>
         ) : offer.isStale ? (
           <span className="text-rust">Price data may be outdated</span>
@@ -94,7 +104,18 @@ function OfferRow({ offer, isBest }: { offer: CatalogOffer; isBest: boolean }) {
         {relativeTime(offer.fetchedAt)}
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right">
-        {unavailable ? (
+        {isFixture ? (
+          // This retailer's integration was never approved — price and
+          // listingUrl are placeholder data with nowhere real to send a
+          // click (see retailer-mode.ts). No "View Deal" button here,
+          // ever, until the adapter's isConfigured flips to true.
+          <span
+            className="text-meta text-text-faint"
+            title="This retailer isn't connected yet — the price above is placeholder data, not a real offer."
+          >
+            Not yet available
+          </span>
+        ) : unavailable ? (
           <span className="text-meta text-text-faint">No deal</span>
         ) : (
           <a

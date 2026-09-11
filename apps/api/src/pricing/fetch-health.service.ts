@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
+import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
 export interface RetailerHealth {
   slug: string;
@@ -8,7 +9,7 @@ export interface RetailerHealth {
   integrationType: string;
   status: string;
   /** Whether credentials exist, or the source runs on fixtures. */
-  mode: 'live' | 'fixture' | 'manual';
+  mode: RetailerMode;
   fetchEveryMinutes: number;
   lastSuccessAt: string | null;
   minutesSinceSuccess: number | null;
@@ -97,7 +98,7 @@ export class FetchHealthService implements OnModuleInit, OnModuleDestroy {
         name: String(row.name),
         integrationType: String(row.integration_type),
         status: String(row.status),
-        mode: this.modeFor(String(row.slug), String(row.integration_type)),
+        mode: retailerModeFor(String(row.slug), String(row.integration_type)),
         fetchEveryMinutes: cadence,
         lastSuccessAt: lastSuccess ? lastSuccess.toISOString() : null,
         minutesSinceSuccess: minutesSince,
@@ -120,22 +121,5 @@ export class FetchHealthService implements OnModuleInit, OnModuleDestroy {
       if (r.stale || r.failures24h > 0) this.logger.warn(`STALE/FAILING ${line}`);
       else this.logger.log(line);
     }
-  }
-
-  /**
-   * Which sources need credentials before they report real prices. Kept
-   * in sync with each adapter's isConfigured by reading the same env vars
-   * — the health endpoint would be misleading if it claimed a source was
-   * live while the adapter was quietly serving fixtures.
-   */
-  private modeFor(slug: string, integrationType: string): RetailerHealth['mode'] {
-    if (integrationType === 'manual') return 'manual';
-    const configured: Record<string, boolean> = {
-      flipkart: Boolean(process.env.FLIPKART_AFFILIATE_TOKEN && process.env.FLIPKART_AFFILIATE_ID),
-      myntra: Boolean(process.env.ADMITAD_ACCESS_TOKEN && process.env.ADMITAD_WEBSITE_ID),
-      ajio: Boolean(process.env.INRDEALS_API_TOKEN && process.env.INRDEALS_PUBLISHER_ID),
-      'end-clothing': Boolean(process.env.AWIN_API_TOKEN && process.env.AWIN_PUBLISHER_ID),
-    };
-    return configured[slug] ? 'live' : 'fixture';
   }
 }

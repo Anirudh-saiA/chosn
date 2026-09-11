@@ -41,6 +41,8 @@ export interface CatalogOffer {
   fetchedAt: string;
   fetchFrequencyMinutes: number;
   isStale: boolean;
+  /** 'fixture' = placeholder data, not a real quote — see OfferTable's disclosure. */
+  mode: 'live' | 'fixture' | 'manual';
 }
 
 export interface CatalogSneaker {
