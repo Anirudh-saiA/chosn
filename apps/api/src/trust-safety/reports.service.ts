@@ -11,7 +11,8 @@ import { MODERATION_RETRACT_CHANNEL } from './moderation-events.pubsub';
 
 export interface Report {
   id: string;
-  reporterUserId: string;
+  /** Null means system-filed, not human-filed — see this column's own migration comment (0014). */
+  reporterUserId: string | null;
   reportedEntityType: string;
   reportedEntityId: string;
   reason: string;
@@ -68,7 +69,7 @@ export class ReportsService {
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
-  async create(reporterUserId: string, dto: CreateReportDto): Promise<Report> {
+  async create(reporterUserId: string | null, dto: CreateReportDto): Promise<Report> {
     // Best-effort, non-blocking pre-screen (task 6) — a toxicity score
     // on the reporter's own free-text `details` doesn't decide anything
     // here (this is a report *about* content, not the content itself),

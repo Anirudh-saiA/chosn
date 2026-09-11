@@ -1,10 +1,33 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
+import type Redis from 'ioredis';
+import { REDIS_CLIENT } from '../common/redis.provider';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { comments, posts, pollVotes, votes } from '../db/schema';
 import { ReputationService } from '../reputation/reputation.service';
+import { ReportsService } from '../trust-safety/reports.service';
 import { CastPollVoteDto } from './dto/cast-poll-vote.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
+
+/**
+ * Day 24 task 6's vote-manipulation guard — flagged for override, per
+ * the brief's own request. Soft signal, not a block: the hard limit
+ * that actually stops a runaway script is VotesController's existing
+ * `RateLimitGuard` (120 votes/hour — see that controller's own
+ * decorator), unchanged today and already real. This threshold is
+ * tighter and shorter-window on purpose — 10 votes inside 2 minutes is
+ * well inside that hourly budget but still an unusual burst worth a
+ * human's eyes (someone rapid-toggling one item's up/down repeatedly,
+ * or working through a list fast enough to look automated), auto-filed
+ * into the same admin queue a human report goes through rather than
+ * silently blocked, since a legitimate fast reader genuinely can vote
+ * this much this quickly and shouldn't be locked out on a heuristic
+ * alone. One flag per user per cooldown window, not one per over-limit
+ * vote, so a single burst doesn't flood the queue with duplicates.
+ */
+const VOTE_ANOMALY_THRESHOLD = 10;
+const VOTE_ANOMALY_WINDOW_SECONDS = 120;
+const VOTE_ANOMALY_COOLDOWN_SECONDS = 3600;
 
 @Injectable()
 export class VotesService {
@@ -12,7 +35,9 @@ export class VotesService {
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly reputation: ReputationService,
+    private readonly reports: ReportsService,
   ) {}
 
   /**
@@ -51,7 +76,47 @@ export class VotesService {
       });
     }
 
+    this.checkForAnomaly(userId).catch((err) => {
+      this.logger.warn(`vote-anomaly check failed for ${userId}: ${(err as Error).message}`);
+    });
+
     return { voteScore };
+  }
+
+  /**
+   * Sliding-window burst detection — same ZADD/ZREMRANGEBYSCORE shape
+   * as the sliding-window rate limiter (auth-rate-limit.controller.ts),
+   * applied as a soft signal here instead of a hard block. Fails open
+   * on any Redis error (never lets a moderation side-effect block or
+   * slow the vote itself) and never throws — always called fire-and-
+   * forget from `cast()`.
+   */
+  private async checkForAnomaly(userId: string): Promise<void> {
+    const key = `vote-activity:${userId}`;
+    const now = Date.now();
+    const pipeline = this.redis.pipeline();
+    pipeline.zadd(key, now, `${now}-${Math.random().toString(36).slice(2)}`);
+    pipeline.zremrangebyscore(key, 0, now - VOTE_ANOMALY_WINDOW_SECONDS * 1000);
+    pipeline.zcard(key);
+    pipeline.expire(key, VOTE_ANOMALY_WINDOW_SECONDS);
+    const results = await pipeline.exec();
+    const count = (results?.[2]?.[1] as number) ?? 0;
+    if (count < VOTE_ANOMALY_THRESHOLD) return;
+
+    const cooldownKey = `vote-anomaly-cooldown:${userId}`;
+    // SET ... NX: only the first caller to cross the threshold within a
+    // cooldown window actually files the report — every vote after it
+    // in the same burst sees the key already set and does nothing.
+    const acquired = await this.redis.set(cooldownKey, '1', 'EX', VOTE_ANOMALY_COOLDOWN_SECONDS, 'NX');
+    if (!acquired) return;
+
+    await this.reports.create(null, {
+      reportedEntityType: 'user',
+      reportedEntityId: userId,
+      reason: 'other',
+      details: `Auto-flagged: ${count} votes cast within ${VOTE_ANOMALY_WINDOW_SECONDS}s — unusual voting burst, review for possible manipulation.`,
+    });
+    this.logger.log(`vote-anomaly report filed for user ${userId} (${count} votes/${VOTE_ANOMALY_WINDOW_SECONDS}s)`);
   }
 
   private async authorOf(votableType: 'post' | 'comment', votableId: string): Promise<string | null> {

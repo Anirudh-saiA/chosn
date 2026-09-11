@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { auth } from '@/auth';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
 import { Masthead } from '@/components/Masthead';
 import { SiteFooter } from '@/components/SiteFooter';
+import { NotificationSettings } from '@/components/community/NotificationSettings';
 import { ReputationBadge } from '@/components/community/ReputationBadge';
+import { getUserActivity } from '@/lib/community';
 import { getPublicProfile } from '@/lib/reputation';
+
+const POST_TYPE_LABEL: Record<string, string> = {
+  price_check: 'Price Check',
+  cop_or_drop: 'Cop or Drop',
+  legit_check: 'Legit Check',
+  drop_talk: 'Drop Talk',
+};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,20 +33,27 @@ function formatDate(iso: string): string {
 }
 
 /**
- * Day 23, task 1's "display reputation... on user profiles" — deliberately
- * minimal (identity + the score breakdown), not a full activity history:
- * this codebase has no post-by-author query yet (ListPostsQueryDto only
- * filters by postType/dropEventId), and building that out is a bigger,
- * separate feature this brief didn't ask for. What's here is the honest,
- * fully-verifiable slice — the same "ship what's real, don't fabricate
- * scope" discipline the rest of this project follows.
+ * Day 23 shipped identity + the reputation breakdown. Day 24 (task 3)
+ * adds the other two pieces the brief asks for: a real activity feed
+ * (their own posts/comments — see lib/community.ts's `getUserActivity`,
+ * one round trip against the new `/community/activity/:userId`
+ * endpoint) and, only when this is the signed-in viewer's own profile,
+ * their notification settings. The own-profile check is a plain id
+ * comparison against `auth()`'s session — the actual security boundary
+ * for anything that check gates (reading/changing notification
+ * preferences) is still `ApiAuthGuard` server-side on every one of
+ * those calls, this is just what decides whether to render the section
+ * at all.
  */
 export default async function ProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const profile = await getPublicProfile(id);
+  const [profile, activity, session] = await Promise.all([getPublicProfile(id), getUserActivity(id), auth()]);
   if (!profile) notFound();
 
   const { reputation, user } = profile;
+  const viewerId = (session?.user as unknown as { id?: string } | undefined)?.id;
+  const apiToken = (session as unknown as { apiToken?: string } | null)?.apiToken;
+  const isOwnProfile = viewerId === id;
 
   return (
     <main>
@@ -96,6 +114,46 @@ export default async function ProfilePage({ params }: PageProps) {
             </p>
           )}
         </section>
+
+        <section className="mt-10">
+          <h2 className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
+            Activity
+          </h2>
+          {activity.posts.length === 0 && activity.comments.length === 0 ? (
+            <p className="mt-3 text-meta text-text-faint">No posts or comments yet.</p>
+          ) : (
+            <ul className="mt-3 flex flex-col divide-y divide-moss/15 border-y border-moss/15">
+              {[
+                ...activity.posts.map((post) => ({ kind: 'post' as const, item: post, createdAt: post.createdAt })),
+                ...activity.comments.map((comment) => ({ kind: 'comment' as const, item: comment, createdAt: comment.createdAt })),
+              ]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((entry) =>
+                  entry.kind === 'post' ? (
+                    <li key={`post-${entry.item.id}`} className="py-3">
+                      <Link href={`/community/${entry.item.id}`} className="flex flex-col gap-0.5 hover:text-brass">
+                        <span className="font-mono text-meta uppercase tracking-[0.06em] text-brass">
+                          {POST_TYPE_LABEL[entry.item.postType] ?? entry.item.postType} · posted
+                        </span>
+                        <span className="text-body text-text">{entry.item.title ?? entry.item.body ?? '(untitled)'}</span>
+                      </Link>
+                    </li>
+                  ) : (
+                    <li key={`comment-${entry.item.id}`} className="py-3">
+                      <Link href={`/community/${entry.item.postId}`} className="flex flex-col gap-0.5 hover:text-brass">
+                        <span className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">
+                          commented on {entry.item.postTitle ?? 'a post'}
+                        </span>
+                        <span className="text-body text-text">{entry.item.body}</span>
+                      </Link>
+                    </li>
+                  ),
+                )}
+            </ul>
+          )}
+        </section>
+
+        {isOwnProfile && apiToken && <NotificationSettings apiToken={apiToken} />}
       </div>
       <SiteFooter />
     </main>

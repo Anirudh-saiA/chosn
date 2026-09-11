@@ -170,6 +170,24 @@ export async function listComments(postId: string): Promise<Comment[]> {
   return (await res.json()).comments ?? [];
 }
 
+// ---------------------------------------------------------------- Day 24: profile activity
+
+export interface ActivityComment extends Comment {
+  postTitle: string | null;
+}
+
+export interface UserActivity {
+  posts: Post[];
+  comments: ActivityComment[];
+}
+
+/** Day 24 task 3/4 — one round trip for a profile page's "their posts/comments" feed. */
+export async function getUserActivity(userId: string): Promise<UserActivity> {
+  const res = await fetch(`${API_URL}/community/activity/${encodeURIComponent(userId)}`, { cache: 'no-store' });
+  if (!res.ok) return { posts: [], comments: [] };
+  return res.json();
+}
+
 export async function createComment(apiToken: string, postId: string, body: string): Promise<Comment | null> {
   const res = await fetch(`${API_URL}/community/posts/${postId}/comments`, {
     method: 'POST',

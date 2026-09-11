@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
@@ -120,9 +121,13 @@ export function ChatRoom({ room }: ChatRoomProps) {
         {messages.length === 0 && <p className="font-mono text-meta text-text-faint">No messages yet — be first.</p>}
         {messages.map((m) => (
           <div key={m.id} className="group flex items-start gap-2">
-            <AvatarIdenticon seed={m.authorAvatarSeed} size={20} className="mt-0.5 shrink-0" />
+            <Link href={`/u/${m.authorUserId}`}>
+              <AvatarIdenticon seed={m.authorAvatarSeed} size={20} className="mt-0.5 shrink-0" />
+            </Link>
             <p className="flex-1 text-body text-text">
-              <span className="font-mono text-meta text-text-faint">{m.authorDisplayName ?? 'Collector'}</span>
+              <Link href={`/u/${m.authorUserId}`} className="font-mono text-meta text-text-faint hover:underline">
+                {m.authorDisplayName ?? 'Collector'}
+              </Link>
               <ReputationBadge score={m.authorReputationScore} className="mx-1 align-middle" />
               <span className="font-mono text-meta text-text-faint">: </span>
               {m.body}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Masthead } from '@/components/Masthead';
 import { SiteFooter } from '@/components/SiteFooter';
+import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
 import { SearchControls } from '@/components/search/SearchControls';
 import { SneakerCard } from '@/components/search/SneakerCard';
@@ -23,7 +24,7 @@ interface PageProps {
 
 export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   const { q, brand, signal } = await searchParams;
-  const { results, total, brands } = await fetchSearch(
+  const { results, total, brands, communityPosts } = await fetchSearch(
     { q, brand, signal },
     { next: { revalidate: 300 } },
   );
@@ -55,6 +56,8 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
             </div>
           )}
         </div>
+
+        <CommunityResults posts={communityPosts} />
       </div>
       <SiteFooter />
     </main>

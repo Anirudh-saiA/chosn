@@ -1,10 +1,11 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { posts } from '../db/schema';
 import { BlocksService } from '../trust-safety/blocks.service';
 import { MarketIntelligenceService } from '../pricing/market-intelligence.service';
 import { LEGIT_CHECK_MIN_REPUTATION, ReputationService } from '../reputation/reputation.service';
+import { CommunityNotificationsService } from './community-notifications.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 
@@ -42,11 +43,14 @@ export interface PostSummary {
  */
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
     private readonly blocks: BlocksService,
     private readonly marketIntelligence: MarketIntelligenceService,
     private readonly reputation: ReputationService,
+    private readonly communityNotifications: CommunityNotificationsService,
   ) {}
 
   async create(authorUserId: string, dto: CreatePostDto): Promise<{ id: string }> {
@@ -79,6 +83,24 @@ export class PostsService {
         legitCheckChecklist: dto.legitCheckChecklist ?? null,
       })
       .returning({ id: posts.id });
+
+    // Day 24 task 2 — @mentions in a brand new post's title/body. No
+    // "reply" case here (there's nothing this post is replying to yet).
+    const mentionText = [dto.title, dto.body].filter(Boolean).join(' ');
+    if (mentionText) {
+      try {
+        await this.communityNotifications.notifyMentions({
+          text: mentionText,
+          actorUserId: authorUserId,
+          entityType: 'post',
+          entityId: row!.id,
+          postId: row!.id,
+        });
+      } catch (err) {
+        this.logger.warn(`mention notification dispatch failed for post ${row!.id}: ${(err as Error).message}`);
+      }
+    }
+
     return row!;
   }
 
@@ -125,6 +147,7 @@ export class PostsService {
       WHERE p.is_removed = false
         ${query.postType ? sql`AND p.post_type = ${query.postType}` : sql``}
         ${query.dropEventId ? sql`AND p.drop_event_id = ${query.dropEventId}` : sql``}
+        ${query.authorUserId ? sql`AND p.author_user_id = ${query.authorUserId}` : sql``}
         ${excludedAuthors.length > 0 ? sql`AND p.author_user_id NOT IN (${sql.join(excludedAuthors, sql`, `)})` : sql``}
       ORDER BY p.created_at DESC
       LIMIT ${limit} OFFSET ${offset}

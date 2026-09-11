@@ -93,7 +93,8 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
           )}
 
           <p className="text-meta text-text-faint">
-            Filed {new Date(report.createdAt).toLocaleString()} by reporter {report.reporterUserId}
+            Filed {new Date(report.createdAt).toLocaleString()} by{' '}
+            {report.reporterUserId ? `reporter ${report.reporterUserId}` : 'CHOSN (auto-flagged, see details)'}
             {report.reviewNote ? ` · review note: ${report.reviewNote}` : ''}
           </p>
 

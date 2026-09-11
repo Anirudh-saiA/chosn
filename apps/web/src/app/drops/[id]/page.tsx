@@ -12,6 +12,7 @@ import { RaffleNotice } from '@/components/drops/RaffleNotice';
 import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { formatInr } from '@/lib/catalog';
+import { listPosts } from '@/lib/community';
 import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo } from '@/lib/drops';
 import { getChatRoomByDrop } from '@/lib/chat';
 
@@ -36,6 +37,11 @@ export async function generateStaticParams() {
 
 async function loadDrop(id: string) {
   return fetchDropDetail(id, { next: { revalidate: REVALIDATE_SECONDS } });
+}
+
+/** Day 24 task 4 — existing Drop Talk discussion about this drop, not just a CTA to start one. Same revalidate window as the rest of this page. */
+async function loadDropTalkPosts(dropEventId: string) {
+  return listPosts({ postType: 'drop_talk', dropEventId, limit: 5 });
 }
 
 async function loadChatRoom(dropEventId: string) {
@@ -64,7 +70,7 @@ export default async function DropDetailPage({ params }: PageProps) {
   const { id } = await params;
   const drop = await loadDrop(id);
   if (!drop) notFound();
-  const chatRoom = await loadChatRoom(drop.id);
+  const [chatRoom, dropTalkPosts] = await Promise.all([loadChatRoom(drop.id), loadDropTalkPosts(drop.id)]);
 
   const { sneaker } = drop;
   const purchaseLinks = parsePurchaseLinks(drop.purchaseLinks);
@@ -148,6 +154,18 @@ export default async function DropDetailPage({ params }: PageProps) {
                   Start a Drop Talk post →
                 </Link>
               </div>
+              {dropTalkPosts.length > 0 && (
+                <ul className="mb-4 flex flex-col divide-y divide-moss/15 border-y border-moss/15">
+                  {dropTalkPosts.map((post) => (
+                    <li key={post.id} className="py-2.5">
+                      <Link href={`/community/${post.id}`} className="flex items-center justify-between gap-3 text-body text-text hover:text-brass">
+                        <span>{post.title ?? '(untitled Drop Talk post)'}</span>
+                        <span className="shrink-0 font-mono text-meta text-text-faint">{post.commentCount} comment{post.commentCount === 1 ? '' : 's'}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {chatRoom ? (
                 <ChatRoom room={chatRoom} />
               ) : (

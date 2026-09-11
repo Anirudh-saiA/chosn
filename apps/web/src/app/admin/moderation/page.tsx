@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { Masthead } from '@/components/Masthead';
@@ -35,7 +36,12 @@ export default async function ModerationPage() {
     <main>
       <Masthead />
       <div className="mx-auto max-w-5xl px-6 py-10 lg:py-14">
-        <h1 className="font-display text-display-section font-semibold text-text">Moderation queue</h1>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="font-display text-display-section font-semibold text-text">Moderation queue</h1>
+          <Link href="/admin/community-health" className="font-mono text-meta text-brass hover:underline">
+            Community health →
+          </Link>
+        </div>
         <p className="mt-2 max-w-[60ch] text-body text-text-soft">
           Reports filed via the generic reportEntity API — pending first, newest first.
         </p>

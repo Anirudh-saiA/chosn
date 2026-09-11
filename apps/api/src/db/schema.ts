@@ -642,6 +642,14 @@ export const users = pgTable('users', {
   avatarSeed: text('avatar_seed')
     .notNull()
     .default(sql`gen_random_uuid()::text`),
+  // Day 24 — deliberately its own toggle, not folded into
+  // notification_subscriptions: that table is Day 12's anonymous
+  // bare-identity/topic-subscription model (subscribe to a brand/model,
+  // get a broadcast when it matches), while a reply/mention is
+  // point-to-point — one specific event addressed to one specific
+  // signed-in user, regardless of any topic. See community-notifications
+  // README section for the full reasoning.
+  notifyOnCommunityActivity: boolean('notify_on_community_activity').notNull().default(true),
 });
 
 export const accounts = pgTable(
@@ -703,9 +711,13 @@ export const reports = pgTable(
   'reports',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    reporterUserId: uuid('reporter_user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    /**
+     * Nullable as of Day 24 (0014_community_notifications.sql) — a null
+     * reporter means this report was filed by the system itself, not a
+     * person (see VotesService's vote-manipulation guard), not a data
+     * gap. Every human-filed report still always carries a real id.
+     */
+    reporterUserId: uuid('reporter_user_id').references(() => users.id, { onDelete: 'cascade' }),
     reportedEntityType: reportEntityTypeEnum('reported_entity_type').notNull(),
     /** Deliberately not an FK — see the migration's header comment. */
     reportedEntityId: uuid('reported_entity_id').notNull(),
@@ -972,3 +984,43 @@ export const userReputation = pgTable('user_reputation', {
   accountCreatedAt: timestamp('account_created_at', { withTimezone: true }).notNull(),
   lastCalculatedAt: timestamp('last_calculated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// --------------------------------------------- day 24: community notifications
+//
+// See apps/api/drizzle/0014_community_notifications.sql and
+// docs/community/README.md's Day 24 section for the full reasoning —
+// the mention-parsing approach and the vote-manipulation threshold are
+// both flagged there for override.
+
+export const communityNotificationTypeEnum = pgEnum('community_notification_type', ['reply', 'mention']);
+
+export const communityNotifications = pgTable(
+  'community_notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    actorUserId: uuid('actor_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: communityNotificationTypeEnum('type').notNull(),
+    /** Reuses votableTypeEnum ('post' | 'comment') — a mention/reply always points at exactly one of those two. */
+    entityType: votableTypeEnum('entity_type').notNull(),
+    /** Not an FK, same convention as reports.reported_entity_id — post and comment are different tables. */
+    entityId: uuid('entity_id').notNull(),
+    /** Always the parent post, even for a comment-level notification — what "view" actually links to. */
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    preview: text('preview').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+  },
+  (t) => ({
+    recipientIdx: index('community_notifications_recipient_idx').on(t.recipientUserId, t.createdAt.desc()),
+    unreadIdx: index('community_notifications_unread_idx')
+      .on(t.recipientUserId)
+      .where(sql`${t.readAt} IS NULL`),
+  }),
+);

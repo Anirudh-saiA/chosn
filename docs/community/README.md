@@ -277,3 +277,123 @@ local dev server:
   `100vh` layout in the chat surface, WebSocket reconnect already
   handled with backoff); worth a real on-device pass before a wider
   launch.
+
+## Day 24: wiring community into the rest of the product
+
+Days 21–23 built posts/chat/moderation/reputation as a mostly standalone
+feature. Day 24 connects it to search, notifications, profiles, and
+gives the team visibility into community health — the "read as one
+product" pass.
+
+### Unified search (task 1)
+
+`CatalogService.search()` now also runs `searchCommunityPosts()` — a
+plain `ILIKE` match on `posts.title`/`posts.body`, capped at 5, only
+when there's a text query (`q`). Deliberately not a `tsvector` column
+like `sneakers.search_vector` — that was a real investment (Day 11's
+own migration + GENERATED column + index) worth making for the
+catalog's primary browse surface; community results are a secondary,
+capped group here, not their own ranked search experience. The two
+result sets (`results`, `communityPosts`) are separate arrays in the
+same response, rendered as two visibly distinct, separately-labeled
+sections on `/sneakers` (`CommunityResults.tsx`) — never merged into
+one list, per the brief's own "tell at a glance" requirement.
+
+### Community notifications (task 2) — flagged decisions
+
+**Mention parsing**: this app has no unique, space-free "username" —
+identity is `displayName` (optional, can contain spaces, can be null)
+per Day 17's anonymity design. `@token` (letters/digits/underscore
+only) matches case-insensitively against an *exact* single-word
+`displayName`. A multi-word display name isn't mentionable by its full
+name, and a user with no display name isn't mentionable at all — a
+real, disclosed limitation (see `mention-parser.ts`'s own doc comment),
+not a bug. A proper username field would fix this but is a bigger,
+separate feature.
+
+**Opt-in/opt-out**: `users.notify_on_community_activity` (default
+true) — its own column, not folded into `notification_subscriptions`
+(Day 12's anonymous topic-subscription model: subscribe to a brand,
+get a broadcast when it matches). A reply/mention is point-to-point —
+one event addressed to one specific signed-in user — a structurally
+different thing. Turning it off suppresses the notification from being
+created at all (not just the push); see `CommunityNotificationsService
+.create()`'s own comment on why that reading was chosen over
+push-only.
+
+**Delivery**: same Redis Pub/Sub shape as the Day 13/14 drops pipeline,
+applied to point-to-point delivery instead of topic broadcast. The
+`community_notifications` row is written *synchronously* at comment/
+post creation (durable, immediately queryable — no dependency on Redis
+or a consumer being up for the in-app list or the walkthrough test to
+work); a `community:notify` event then triggers `CommunityPushConsumer`
+for push-only fan-out, reusing `WebPushService` from `DropsModule`
+rather than a second push-sending wrapper.
+
+**A real bug found while verifying this**: the first version of the
+mention lookup used `sql\`lower(display_name) = ANY(${tokens})\`` —
+Drizzle's `sql` tag spreads an interpolated JS array into `($1, $2)`
+(correct for `IN`, wrong for `ANY`, which needs a real Postgres array),
+so every mention lookup threw and was silently swallowed by the
+enclosing try/catch — reply notifications worked, mentions silently
+never fired. Caught by the local verification script asserting on
+notification counts, not by inspection; confirmed the failure and the
+fix (`inArray(sql\`lower(${users.displayName})\`, tokens)`) each
+directly against Postgres before changing the real service.
+
+### Profile page (task 3)
+
+`/u/[id]` (Day 23) now also renders a time-sorted activity feed (own
+posts + comments, one round trip via `GET /community/activity/:userId`)
+and, only when `auth()`'s session id matches the profile being viewed,
+a notification settings section (the opt-in toggle + the actual inbox,
+mark-all-read). The own-profile check is a plain id comparison for
+render purposes only — `ApiAuthGuard` on every notification endpoint is
+the real boundary, same posture as every other "is this really you"
+check in this app.
+
+### Cross-linking (task 4)
+
+Post/comment author names already linked to `/u/[id]` as of Day 23;
+chat message author names didn't — fixed. The drop detail page had a
+"Start a Drop Talk post" CTA but never showed existing Drop Talk posts
+about that drop — fixed (`listPosts({ postType: 'drop_talk',
+dropEventId })`, already-supported filters, no backend change needed
+there). Drop Talk posts already linked back to their `DropEvent` since
+Day 22.
+
+### Community health dashboard (task 5)
+
+`GET /admin/community-health` (`AdminGuard`, extends the Day 17 /admin
+area via `ModerationModule` rather than a new module): posts/day by
+type (14d), active users (7d — posted, commented, or voted), report
+volume + resolution rate (30d), and chat rooms with ≥3 message reports
+in 7 days (`HIGH_REPORT_ROOM_THRESHOLD`, flagged) as the early-warning
+signal. Deliberately not sophisticated, per the brief's own framing.
+
+### Rate limiting audit + vote-manipulation guard (task 6)
+
+Post creation (20/hour), comment creation (60/hour), and voting
+(120/hour, plus 60/hour on poll votes) already had `RateLimitGuard` —
+confirmed directly, not assumed, including accidentally hitting the
+post-creation limit myself mid-verification from repeated local test
+runs, which is about as real a confirmation as a hard limit gets. New
+today: a **soft** anomaly flag, separate from that hard limit —
+`VotesService.checkForAnomaly` (sliding-window ZADD/ZCARD, same shape
+as the sliding-window rate limiter) auto-files a system report
+(`reporter_user_id NULL` — see 0014's migration comment) into the exact
+same admin queue a human report goes through when one user casts
+`VOTE_ANOMALY_THRESHOLD` (10, flagged) votes within
+`VOTE_ANOMALY_WINDOW_SECONDS` (120, flagged). One flag per cooldown
+hour, not one per over-limit vote. The vote itself is never blocked by
+this — a legitimate fast reader can genuinely vote this much this
+quickly, so this is eyes-on-it, not a lockout.
+
+### Local verification
+
+19 real HTTP checks against the live local server (search grouping,
+reply/mention/dedupe/opt-out, profile activity feed, the drop-talk
+cross-link query, the vote-manipulation burst + resulting system
+report, and the health dashboard reflecting all of the above +
+rejecting a non-admin) — all passing, including the mention-parsing bug
+found and fixed mid-verification.

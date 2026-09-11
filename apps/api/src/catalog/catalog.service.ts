@@ -78,11 +78,30 @@ export interface SearchResultItem {
   currency: string;
 }
 
+export interface CommunityPostSearchResult {
+  id: string;
+  postType: string;
+  title: string | null;
+  /** Truncated — a search result is a pointer to the post, not the post itself. */
+  preview: string;
+  authorDisplayName: string | null;
+  createdAt: string;
+}
+
 export interface SearchResponse {
   results: SearchResultItem[];
   total: number;
   /** Every brand in the catalog, unfiltered — populates the filter UI regardless of the current query. */
   brands: string[];
+  /**
+   * Day 24 task 1 — the same search box now also surfaces matching
+   * community discussion, clearly separate from `results` so the page
+   * can label and render the two groups distinctly rather than mixing a
+   * price-comparison card and a forum post into one undifferentiated
+   * grid. Empty whenever there's no text query — browsing by brand/signal
+   * alone has no obvious community equivalent to show alongside it.
+   */
+  communityPosts: CommunityPostSearchResult[];
 }
 
 interface VariantRow {
@@ -257,7 +276,7 @@ export class CatalogService {
     // actually running the query rather than trusting it by inspection.
     const orderBy = tsQuery ? sql`rank DESC, brand ASC, model ASC` : sql`brand ASC, model ASC`;
 
-    const [{ rows }, { rows: brandRows }] = await Promise.all([
+    const [{ rows }, { rows: brandRows }, communityPosts] = await Promise.all([
       this.db.execute(sql`
         WITH default_variant AS (
           SELECT DISTINCT ON (sneaker_id) sneaker_id, id AS variant_id, size, size_system
@@ -280,6 +299,7 @@ export class CatalogService {
         LIMIT ${limit} OFFSET ${offset}
       `),
       this.db.execute(sql`SELECT DISTINCT brand FROM sneakers ORDER BY brand`),
+      this.searchCommunityPosts(params.q),
     ]);
 
     const results = (rows as unknown as SearchRow[]).map((r) => ({
@@ -301,7 +321,44 @@ export class CatalogService {
       results,
       total: rows.length > 0 ? Number((rows[0] as unknown as SearchRow).total_count) : 0,
       brands: (brandRows as unknown as { brand: string }[]).map((b) => b.brand),
+      communityPosts,
     };
+  }
+
+  /**
+   * Day 24 task 1's community half of unified search. Deliberately
+   * `ILIKE`, not a `tsvector` column like `sneakers.search_vector` —
+   * that was a real investment (Day 11's own migration + GENERATED
+   * column + index) worth making for the catalog's primary browse
+   * surface; community posts are a secondary, capped-at-5 result group
+   * here, not their own ranked search experience, so a substring match
+   * is the honest amount of engineering for what this actually is today.
+   * Revisit with a real tsvector if/when community search grows into
+   * something people use on its own, not just as a search-page sidebar.
+   * `is_removed = false` so a moderator-hidden post never surfaces here
+   * — the same enforcement every other read path already respects.
+   */
+  private async searchCommunityPosts(q?: string): Promise<CommunityPostSearchResult[]> {
+    if (!q?.trim()) return [];
+    const { rows } = await this.db.execute(sql`
+      SELECT p.id, p.post_type, p.title, p.body, p.created_at, u.display_name AS author_display_name
+      FROM posts p
+      JOIN users u ON u.id = p.author_user_id
+      WHERE p.is_removed = false
+        AND (p.title ILIKE ${'%' + q.trim() + '%'} OR p.body ILIKE ${'%' + q.trim() + '%'})
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `);
+    return (rows as unknown as { id: string; post_type: string; title: string | null; body: string | null; created_at: string; author_display_name: string | null }[]).map(
+      (r) => ({
+        id: r.id,
+        postType: r.post_type,
+        title: r.title,
+        preview: ((r.title ? r.title + ' — ' : '') + (r.body ?? '')).slice(0, 160),
+        authorDisplayName: r.author_display_name,
+        createdAt: new Date(r.created_at).toISOString(),
+      }),
+    );
   }
 
   /**

@@ -11,6 +11,10 @@ import { ReportsService } from './reports.service';
 @Module({
   controllers: [ReportsController, BlocksController],
   providers: [pgPoolProvider, redisProvider, RateLimitGuard, AdminGuard, ReportsService, BlocksService],
-  exports: [BlocksService],
+  // Day 24: ReportsService exported alongside BlocksService —
+  // VotesService's vote-manipulation guard files a system report
+  // through the exact same queue a human report goes through (task 6),
+  // rather than inventing a parallel "flags" concept.
+  exports: [BlocksService, ReportsService],
 })
 export class TrustSafetyModule {}

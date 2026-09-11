@@ -50,6 +50,10 @@ import { WebPushService } from './web-push.service';
     DropsService,
     NewsService,
   ],
-  exports: [DropSchedulerService],
+  // Day 24: CommunityModule's own push consumer (CommunityPushConsumer)
+  // reuses this WebPushService rather than a second `web-push`-wrapping
+  // class — same "one wrapper, every future push-sending feature reuses
+  // it" reasoning as REDIS_CLIENT/DRIZZLE elsewhere in this codebase.
+  exports: [DropSchedulerService, WebPushService],
 })
 export class DropsModule {}

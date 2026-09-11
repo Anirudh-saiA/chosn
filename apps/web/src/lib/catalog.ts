@@ -87,10 +87,20 @@ export interface SearchResultItem {
   currency: string;
 }
 
+export interface CommunityPostSearchResult {
+  id: string;
+  postType: string;
+  title: string | null;
+  preview: string;
+  authorDisplayName: string | null;
+  createdAt: string;
+}
+
 export interface SearchResponse {
   results: SearchResultItem[];
   total: number;
   brands: string[];
+  communityPosts: CommunityPostSearchResult[];
 }
 
 export interface SearchQuery {

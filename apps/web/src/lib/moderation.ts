@@ -4,7 +4,8 @@ export type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed';
 
 export interface Report {
   id: string;
-  reporterUserId: string;
+  /** Null means system-filed (e.g. Day 24's vote-manipulation guard), not a human reporter. */
+  reporterUserId: string | null;
   reportedEntityType: string;
   reportedEntityId: string;
   reason: string;
@@ -33,6 +34,23 @@ export async function fetchReports(apiToken: string, status?: ReportStatus): Pro
     cache: 'no-store',
   });
   if (!res.ok) return { reports: [], total: 0 };
+  return res.json();
+}
+
+export interface CommunityHealthSummary {
+  postsPerDay: { day: string; postType: string; count: number }[];
+  activeUsers7d: number;
+  reports: { last7d: number; last30d: number; byStatus: Record<string, number>; resolutionRatePct: number };
+  highReportRooms: { roomId: string; dropEventId: string; sneakerLabel: string | null; reportCount: number }[];
+}
+
+/** Day 24 task 5 — the admin-only community health dashboard's one data call. */
+export async function fetchCommunityHealth(apiToken: string): Promise<CommunityHealthSummary | null> {
+  const res = await fetch(`${API_URL}/admin/community-health`, {
+    headers: { Authorization: `Bearer ${apiToken}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) return null;
   return res.json();
 }
 

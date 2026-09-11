@@ -12,6 +12,11 @@ export class ListPostsQueryDto {
   @IsUUID()
   dropEventId?: string;
 
+  /** Day 24 task 3/4 — a profile page's "their posts" feed. */
+  @IsOptional()
+  @IsUUID()
+  authorUserId?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()
