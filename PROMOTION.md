@@ -45,6 +45,8 @@ production release.**
 | `NEXT_PUBLIC_API_URL` (Vercel) | Points at production Railway URL — set under Vercel's **Production** env-var scope | Points at staging Railway URL — set under Vercel's **Preview** env-var scope |
 | `WEB_ORIGIN` (Railway) | Production Vercel URL(s) | Staging Vercel URL(s) — comma-separated if more than one (see `apps/api/src/common/cors-origins.ts`) |
 | Sentry / PostHog | Same project as staging, tagged `environment: production` | Same project as production, tagged `environment: staging` — see `instrument.ts` / `analytics.ts` |
+| Auth identity (`users`/`accounts`/`sessions`) | Production's Postgres | **Real, isolated** — `chosn_staging`, a second database on the *same* Railway Postgres server (Railway's Hobby-plan volume limit blocks a second Postgres *service*, but nothing stops a second logical database on the existing one). Verified: signing up on staging creates a row in `chosn_staging` only, confirmed absent from production. |
+| Backend API/business logic (`apps/api`) | Production's Railway service | **Shared with production** — staging's frontend calls the *same* `chosnapi-production.up.railway.app`. A dedicated staging API/worker/Redis was attempted and blocked by Railway's account-level free-resource cap (not the volume limit — a harder, non-workaroundable-on-free-tier limit; upgrading is the only real fix). This means community/pricing/reputation data on staging is production's real data, not isolated — only auth identity is genuinely separate today. |
 | Retailer API keys | Real production credentials | Sandbox/test credentials where the provider offers them; otherwise same fixture-mode behavior this app already has for an unconfigured retailer |
 | Push notification (VAPID) keys | Real key pair — real subscribers get real pushes | Separate key pair, so staging testing never pushes to a real subscriber's device |
 | Community content / test accounts | Kept clean — no test posts, no dummy accounts | Where messy test data belongs |
@@ -91,3 +93,24 @@ None of this is something a CLI/CI job can do unattended — it needs
 whoever owns the Railway/Vercel dashboards to actually click through it
 once. Everything after that (deploys, CORS, monitoring tags) is
 automatic per the table above.
+
+## What's real today (Day 27, after actually trying this)
+
+- ✅ `develop` branch, auto-deploying staging Vercel URL, no approval gate
+- ✅ `chosn_staging` Postgres database — real, isolated, migrated,
+  seeded with the real launch catalog, zero community/user content
+- ✅ Staging auth genuinely works end to end and is genuinely isolated —
+  verified with a real sign-up/sign-in against the staging URL, then
+  confirmed the resulting user exists in `chosn_staging` and nowhere in
+  production
+- ✅ `trustHost: true` fix in `apps/web/src/auth.ts` — a real bug this
+  setup found: Auth.js v5 refuses to operate on a branch deployment's
+  dynamic URL without it
+- ❌ Dedicated staging `apps/api`/Redis/worker — blocked by Railway's
+  account-level free-resource cap, a harder limit than the volume one
+  (that one had a free workaround; this one doesn't without upgrading)
+- **Net result**: staging is real for identity/auth and frontend
+  deployment verification, but shares production's actual backend and
+  data for everything else (search, pricing, community, reputation).
+  Treat a staging test of those as "does the frontend correctly call
+  production," not "is this isolated from real users" — it isn't.
