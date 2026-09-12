@@ -7,8 +7,9 @@ payments, or holds inventory.
 This is the Day 3 infrastructure skeleton: repo, CI/CD, environments, and
 the Day 2 design tokens wired into real components. No feature code yet.
 
-**Staging:** https://chosn-web-gamma.vercel.app
-**API:** https://chosnapi-production.up.railway.app ([/health](https://chosnapi-production.up.railway.app/health))
+**Production:** https://chosn-web-gamma.vercel.app
+**Production API:** https://chosnapi-production.up.railway.app ([/health](https://chosnapi-production.up.railway.app/health))
+**Staging:** URL pending — see `PROMOTION.md` (Day 27 introduced a real staging tier; the line above used to be mislabeled "Staging" from back when this repo had only one environment)
 
 - [Day 1 — Foundation Spec](docs/chosn-foundation-spec.html)
 - [Day 2 — Design Tokens](docs/chosn-design-tokens.html)
@@ -107,7 +108,7 @@ Visit `localhost:3000` for the placeholder home page, or
 | `DATABASE_URL` | yes | `postgresql://...` |
 | `REDIS_URL` | yes | `redis://...` |
 | `SENTRY_DSN` | no | Errors go nowhere until this is set |
-| `WEB_ORIGIN` | yes | CORS allow-list |
+| `WEB_ORIGIN` | yes | CORS allow-list. Comma-separated as of Day 27 (`apps/api/src/common/cors-origins.ts`) — production and staging both allowed at once, e.g. `https://chosn-web-gamma.vercel.app,https://chosn-web-git-develop-*.vercel.app` |
 | `PORT` | no | Defaults to 4000 |
 
 No secret is ever committed — both `.env.example` files above hold
@@ -115,9 +116,15 @@ placeholders only.
 
 ## CI/CD
 
+**Branch strategy (Day 27) — see `PROMOTION.md` for the full workflow:**
+`develop` is staging, `main` is production. Feature branches merge into
+`develop` first; `develop` only ever reaches `main` via an explicit
+promotion, never a direct push.
+
 `.github/workflows/ci.yml`, on every PR: lint → typecheck → test → a
-Vercel preview deploy. On merge to `main`: a production deploy gated on
-manual approval.
+Vercel preview deploy. On merge to `develop`: an automatic staging
+deploy, no approval needed. On merge to `main`: a production deploy
+gated on manual approval.
 
 Deploys use Vercel's own CLI (`npm install -g vercel@latest`), not the
 `amondnet/vercel-action` marketplace action — that action pins a
@@ -126,10 +133,13 @@ API correctly (`Error! Could not retrieve Project Settings`, even with
 correct credentials). Installing the CLI fresh each run keeps it
 current for free.
 
-There's no separate staging domain today — Hobby plan, one Vercel
-project, one real URL. If a real staging subdomain gets added later,
-that's a `vercel alias set` step in `deploy-production`, not a whole
-second environment tier.
+Staging deploys to a Vercel-assigned git-branch-alias URL
+(`chosn-web-git-develop-*.vercel.app`), not a custom subdomain — no
+second Vercel project or domain purchase needed, the CLI gets this for
+free from git metadata `actions/checkout@v7` already provides. An
+earlier version of this doc assumed a `staging.chosn.app` domain would
+be added later; that's still a fine upgrade (a `vercel alias set` step)
+but isn't required for staging to work.
 
 The approval gate on production is a **repo setting**, not something
 YAML alone can express: in **Settings → Environments → production**,
@@ -147,6 +157,20 @@ gate entirely.
 Repo is on GitHub (public — required for GitHub's free-tier Environment
 approval gate to work at all), frontend on Vercel, backend + Postgres +
 Redis on Railway, all wired together and verified live.
+
+**Staging (Day 27):** a separate Railway "staging" Environment plus a
+`develop`-branch Vercel deploy is documented as the plan in
+`PROMOTION.md`, not yet provisioned as of this doc update — that's
+dashboard work for whoever owns Railway/Vercel access, not something a
+CI job or this session's tools can do unattended. One real risk worth
+checking before assuming it'll "just work": the Hobby-plan **one-volume-
+per-project** limit noted below for Redis may also apply across
+Environments, not just within production — if so, staging Postgres
+needs the same real-volume budgeting decision production's Redis
+already made (a plain Docker image instead of the official plugin, or
+sharing production's one volume isn't an option since that defeats the
+point of isolated data). Confirm Railway's actual per-Environment volume
+quota before assuming a second Postgres-with-volume just works.
 
 **Railway specifics, since a few things didn't work on the first try:**
 - The `apps/api` service builds from the **repo root** with

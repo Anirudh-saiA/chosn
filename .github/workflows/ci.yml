@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,16 +52,39 @@ jobs:
       - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
       - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
+  # Day 27 — develop's own deploy, no approval gate (that's the whole
+  # point of a staging tier: verify freely before the real gate on
+  # main). Same `vercel deploy --prebuilt` CLI flow as preview/
+  # production, `--environment=preview` (not `--prod`) — Vercel scopes
+  # env vars by Production/Preview/Development, so this picks up
+  # whatever's set under "Preview" (see PROMOTION.md for what that
+  # should point at: the Railway staging API, not production).
+  #
+  # Deliberately not the `staging.chosn.app` domain an earlier version
+  # of this file assumed would exist (see README's CI/CD section) —
+  # Vercel auto-assigns a stable git-branch-alias URL
+  # (chosn-web-git-develop-<team>.vercel.app) to any branch it deploys
+  # via the CLI with git metadata present, which this job gets for free
+  # from actions/checkout@v7's full clone. No custom domain needed to
+  # get a bookmarkable staging URL on the Hobby plan.
+  deploy-staging:
+    name: Deploy staging
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: npm install -g vercel@latest
+      - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+
   # main deploys straight to the live production URL, but only after a
   # human approves it — see the `production` GitHub Environment's
   # required-reviewer setting in README.md.
-  #
-  # No separate staging domain exists yet (Hobby plan, single Vercel
-  # project, one real URL) — an earlier version of this job tried to
-  # alias a `staging.chosn.app` domain that was never actually
-  # registered on the project. Once a real staging domain exists, add
-  # a `vercel alias set` step here rather than reintroducing a second
-  # environment tier that has nothing to point at.
   deploy-production:
     name: Deploy production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
