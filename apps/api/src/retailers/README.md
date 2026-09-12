@@ -33,6 +33,22 @@ fixtures says so — fixture data is never presented as real pricing.
 - **Nike India / SNKRS** — deferred at Day 1; ToS historically restricts
   aggregation.
 
+## Mapping assist tool (Day 8, built retroactively during Day 28)
+
+`mapping-assist.service.ts` — `POST /admin/mapping-assist/suggest` ranks
+a human-collected batch of candidate retailer titles against one sneaker
+(brand/model/silhouette/colorway/style-code, weighted Dice-coefficient
+text similarity + a style-code-in-title bonus, brand as a hard gate) and
+returns the top 3 with a `high`/`medium`/`no_confident_match` band.
+`POST /admin/mapping-assist/confirm` is the only thing that ever writes
+`retailer_product_mappings` — a suggestion never auto-confirms itself.
+No live retailer crawl exists to feed it (see "No scrapers" below and
+the fixture-mode table above) — a human still gathers candidate titles
+by checking the retailer's page, same as every mapping through Day 20;
+this tool only speeds up the confirm step from "read every title" to
+"scan a ranked top-3." See `mapping-assist.service.spec.ts` for the
+scoring contract.
+
 ## No scrapers, deliberately
 
 Day 7's brief asked for scrape-based adapters "already legal-reviewed on
