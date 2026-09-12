@@ -42,6 +42,32 @@ const FIXTURES: Record<string, { price: number; shipping: number; inStock: boole
   SHOFIXTURE003: { price: 9999, shipping: 99, inStock: true },
   SHOFIXTURE004: { price: 10499, shipping: 0, inStock: false },
   SHOFIXTURE005: { price: 12995, shipping: 149, inStock: true },
+  // Day 28 catalog expansion — see drizzle/0015_day28_catalog_expansion.sql
+  // and scripts/generate-catalog-expansion.ts for how these mappings were
+  // confirmed (mapping-assist tool suggestion + human review).
+  SHOFIXTURE006: { price: 11499, shipping: 0, inStock: true }, // Jordan 1 Chicago Lost & Found
+  SHOFIXTURE007: { price: 8999, shipping: 99, inStock: true }, // Air Max 90 Infrared
+  SHOFIXTURE008: { price: 13999, shipping: 0, inStock: false }, // Yeezy Boost 350 V2 Zebra — discontinued at retail, listing shown out of stock
+  SHOFIXTURE009: { price: 11199, shipping: 149, inStock: true }, // NB 990v5 Grey
+  SHOFIXTURE010: { price: 5499, shipping: 0, inStock: true }, // Chuck 70 Hi Black
+  SHOFIXTURE011: { price: 12199, shipping: 0, inStock: true }, // Air Max 97 Silver Bullet
+  SHOFIXTURE012: { price: 6399, shipping: 0, inStock: true }, // Gazelle Core Black
+  SHOFIXTURE013: { price: 6699, shipping: 99, inStock: true }, // Blazer Mid 77 Vintage
+  SHOFIXTURE014: { price: 12199, shipping: 0, inStock: true }, // Jordan 4 Black Cat
+  SHOFIXTURE015: { price: 4499, shipping: 0, inStock: true }, // Vans Old Skool
+  SHOFIXTURE016: { price: 5099, shipping: 0, inStock: true }, // Puma Suede Classic
+  SHOFIXTURE017: { price: 9599, shipping: 149, inStock: true }, // NB 2002R Protection Pack
+  SHOFIXTURE018: { price: 6999, shipping: 0, inStock: true }, // Dunk Low Grey Fog
+  SHOFIXTURE019: { price: 12199, shipping: 0, inStock: true }, // Jordan 4 White Cement
+  SHOFIXTURE020: { price: 8999, shipping: 0, inStock: true }, // Air Max 1 Anniversary Red
+  SHOFIXTURE021: { price: 9599, shipping: 99, inStock: true }, // ASICS Gel-Kayano 14
+  SHOFIXTURE022: { price: 7399, shipping: 0, inStock: true }, // Dunk High Panda
+  SHOFIXTURE023: { price: 4199, shipping: 0, inStock: true }, // Vans Sk8-Hi
+  SHOFIXTURE024: { price: 6999, shipping: 0, inStock: true }, // Samba OG Core Black
+  SHOFIXTURE025: { price: 12199, shipping: 149, inStock: true }, // Ultraboost Light Core Black
+  SHOFIXTURE026: { price: 6999, shipping: 0, inStock: true }, // NB 550 White/Grey
+  SHOFIXTURE027: { price: 6399, shipping: 0, inStock: true }, // Chuck 70 Hi Parchment
+  SHOFIXTURE028: { price: 7399, shipping: 0, inStock: true }, // Air Force 1 '07 LV8
 };
 
 @Injectable()

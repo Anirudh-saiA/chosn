@@ -19,6 +19,25 @@ add it to `adapter.registry.ts`, insert a `retailers` row. Nothing in
 `manual`), last success, and 24h failure count. A source running on
 fixtures says so — fixture data is never presented as real pricing.
 
+## Scaling check (Day 28, catalog 5 -> 28 models)
+
+Each retailer gets its own BullMQ queue with `concurrency: 1`
+(price-fetch.service.ts) — jobs within one retailer run strictly
+sequentially, one at a time, never in parallel bursts, regardless of
+catalog size. At 28 models Flipkart carries the most mappings (28
+sneakers x 2 sizes = 56 jobs per 12h cycle); Flipkart's own documented
+affiliate API limit is 20 requests/second (affiliate.flipkart.com's API
+Terms of Use), so 56 sequential jobs spread across a 12-hour window is
+nowhere close to that ceiling even before accounting for the 30s+
+exponential backoff between retries. No polling-batch or stagger change
+was needed for this expansion — the architecture already has orders of
+magnitude of headroom at this scale. Four of six sources remain
+credential-less fixture mode regardless of catalog size (see the table
+above), so real rate-limit exposure only becomes a live question once
+those affiliate applications are actually approved — worth re-checking
+this section against each network's real documented limits at that
+point, not assuming today's headroom still holds.
+
 ## Not built, and why
 
 - **Adidas India** — Day 1 §01 flags "sneaker inclusion unverified" and
