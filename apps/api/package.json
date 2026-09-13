@@ -14,6 +14,7 @@
     "db:migrate": "node dist/scripts/migrate.js",
     "mi:backfill": "node dist/scripts/backfill-daily-best-prices.js",
     "mi:verify": "node dist/scripts/verify-market-intelligence.js",
+    "mi:refresh-now": "node dist/scripts/refresh-market-intelligence.js",
     "seed:test-drops": "node dist/scripts/seed-test-drops.js",
     "seed:demo-drops": "node dist/scripts/seed-demo-drops.js"
   },
