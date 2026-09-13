@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AdminGuard } from '../auth/admin.guard';
 import { redisProvider } from '../common/redis.provider';
 import { pgPoolProvider } from '../db/db.provider';
 import { drizzleProvider } from '../db/drizzle.provider';
@@ -9,6 +10,7 @@ import {
 } from '../retailers/adapter.registry';
 import { FetchHealthController } from './fetch-health.controller';
 import { FetchHealthService } from './fetch-health.service';
+import { FetchTriggerController } from './fetch-trigger.controller';
 import { MarketIntelligenceCacheService } from './market-intelligence-cache.service';
 import { MarketIntelligenceController } from './market-intelligence.controller';
 import { MarketIntelligenceService } from './market-intelligence.service';
@@ -24,7 +26,7 @@ import { PriceSnapshotService } from './price-snapshot.service';
  * retailers row. Nothing in this module or PriceFetchService changes.
  */
 @Module({
-  controllers: [FetchHealthController, MarketIntelligenceController],
+  controllers: [FetchHealthController, FetchTriggerController, MarketIntelligenceController],
   providers: [
     pgPoolProvider,
     redisProvider,
@@ -36,6 +38,7 @@ import { PriceSnapshotService } from './price-snapshot.service';
     PriceFetchService,
     MarketIntelligenceCacheService,
     MarketIntelligenceService,
+    AdminGuard,
   ],
   exports: [
     PriceFetchService,
