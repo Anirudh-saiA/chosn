@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
+  ServiceUnavailableException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -15,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { AuthenticatedRequest, ApiAuthGuard } from '../auth/api-auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { StorageNotConfiguredError } from './storage.service';
 import { InvalidImageError, PostImagesService, type UploadedFileLike } from './post-images.service';
 
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -55,6 +57,10 @@ export class PostImagesController {
       return { image };
     } catch (err) {
       if (err instanceof InvalidImageError) throw new BadRequestException(err.message);
+      // Not the uploader's fault (a missing bucket config, not a bad
+      // file) — 503, not 400. See storage.service.ts's Day 30 comment
+      // for the outage this distinction exists to prevent recurring.
+      if (err instanceof StorageNotConfiguredError) throw new ServiceUnavailableException(err.message);
       throw err;
     }
   }
