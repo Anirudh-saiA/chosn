@@ -37,6 +37,15 @@ const FIXTURES: Record<string, { price: number; delivery: number; available: boo
   MYNFIXTURE003: { price: 9599, delivery: 0, available: true },
   MYNFIXTURE004: { price: 10199, delivery: 49, available: false },
   MYNFIXTURE005: { price: 12499, delivery: 0, available: true },
+  // Day 28 catalog expansion — only the 5 models whose Myntra candidate
+  // title actually cleared the mapping-assist tool's confidence floor
+  // (see scripts/generate-catalog-expansion.ts's report); the other 18
+  // new models aren't mapped to Myntra this round rather than forced.
+  MYNFIXTURE006: { price: 5299, delivery: 0, available: true }, // Chuck 70 Hi Black
+  MYNFIXTURE007: { price: 4399, delivery: 0, available: true }, // Vans Old Skool
+  MYNFIXTURE008: { price: 6899, delivery: 49, available: true }, // Dunk Low Grey Fog
+  MYNFIXTURE009: { price: 6899, delivery: 0, available: false }, // NB 550 White/Grey
+  MYNFIXTURE010: { price: 7299, delivery: 0, available: true }, // Air Force 1 '07 LV8
 };
 
 @Injectable()

@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
+import { parseAllowedOrigins } from './common/cors-origins';
 import { SentryExceptionFilter } from './common/sentry-exception.filter';
 import { ensurePricePartitions, runMigrations } from './db/migrate';
 
@@ -24,7 +25,11 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000' });
+  // Day 27: WEB_ORIGIN is now comma-separated (see cors-origins.ts) so
+  // both the production and staging Vercel URLs can be allowed at once
+  // — a single-origin WEB_ORIGIN (or none set) behaves exactly as
+  // before.
+  app.enableCors({ origin: parseAllowedOrigins(process.env.WEB_ORIGIN) });
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );

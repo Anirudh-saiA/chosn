@@ -26,6 +26,22 @@ const LOGIN_IP_LIMIT = { limit: 20, windowSeconds: 5 * 60 }; // 20 attempts/5min
 const LOGIN_ACCOUNT_LIMIT = { limit: 8, windowSeconds: 15 * 60 }; // tighter per-account — this is what actually stops credential stuffing against one target email regardless of how many IPs it comes from
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Day 27 real bug found setting up staging: Auth.js v5 refuses to
+  // operate on a host it doesn't already know (a deliberate guard
+  // against host-header spoofing) unless explicitly told to trust the
+  // incoming request's Host header — confirmed by actually hitting
+  // /api/auth/session on a real deployment and getting back
+  // "There was a problem with the server configuration" until this was
+  // added, not assumed from the docs. Production got away without it
+  // because AUTH_URL/its own fixed domain happened to satisfy the
+  // check; a Vercel Preview deployment's URL changes per-branch
+  // (chosn-web-git-<branch>-*.vercel.app) and has no single fixed value
+  // to hardcode. Safe here specifically because both Vercel's
+  // production and preview domains are Vercel-controlled and verified
+  // via its own deployment system — this isn't trusting an arbitrary
+  // client-supplied header the way it would be on a self-hosted origin
+  // with no platform-level domain verification in front of it.
+  trustHost: true,
   adapter: DrizzleAdapter(authDb, {
     usersTable: users,
     accountsTable: accounts,

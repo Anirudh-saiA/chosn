@@ -19,6 +19,25 @@ add it to `adapter.registry.ts`, insert a `retailers` row. Nothing in
 `manual`), last success, and 24h failure count. A source running on
 fixtures says so — fixture data is never presented as real pricing.
 
+## Scaling check (Day 28, catalog 5 -> 28 models)
+
+Each retailer gets its own BullMQ queue with `concurrency: 1`
+(price-fetch.service.ts) — jobs within one retailer run strictly
+sequentially, one at a time, never in parallel bursts, regardless of
+catalog size. At 28 models Flipkart carries the most mappings (28
+sneakers x 2 sizes = 56 jobs per 12h cycle); Flipkart's own documented
+affiliate API limit is 20 requests/second (affiliate.flipkart.com's API
+Terms of Use), so 56 sequential jobs spread across a 12-hour window is
+nowhere close to that ceiling even before accounting for the 30s+
+exponential backoff between retries. No polling-batch or stagger change
+was needed for this expansion — the architecture already has orders of
+magnitude of headroom at this scale. Four of six sources remain
+credential-less fixture mode regardless of catalog size (see the table
+above), so real rate-limit exposure only becomes a live question once
+those affiliate applications are actually approved — worth re-checking
+this section against each network's real documented limits at that
+point, not assuming today's headroom still holds.
+
 ## Not built, and why
 
 - **Adidas India** — Day 1 §01 flags "sneaker inclusion unverified" and
@@ -32,6 +51,22 @@ fixtures says so — fixture data is never presented as real pricing.
   automated fetch" (§04).
 - **Nike India / SNKRS** — deferred at Day 1; ToS historically restricts
   aggregation.
+
+## Mapping assist tool (Day 8, built retroactively during Day 28)
+
+`mapping-assist.service.ts` — `POST /admin/mapping-assist/suggest` ranks
+a human-collected batch of candidate retailer titles against one sneaker
+(brand/model/silhouette/colorway/style-code, weighted Dice-coefficient
+text similarity + a style-code-in-title bonus, brand as a hard gate) and
+returns the top 3 with a `high`/`medium`/`no_confident_match` band.
+`POST /admin/mapping-assist/confirm` is the only thing that ever writes
+`retailer_product_mappings` — a suggestion never auto-confirms itself.
+No live retailer crawl exists to feed it (see "No scrapers" below and
+the fixture-mode table above) — a human still gathers candidate titles
+by checking the retailer's page, same as every mapping through Day 20;
+this tool only speeds up the confirm step from "read every title" to
+"scan a ranked top-3." See `mapping-assist.service.spec.ts` for the
+scoring contract.
 
 ## No scrapers, deliberately
 

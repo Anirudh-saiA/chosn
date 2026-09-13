@@ -86,6 +86,18 @@ function loadPostHog(): void {
           // silently.
           persistence: 'localStorage+cookie',
         });
+        // Day 27: staging and production share one PostHog project (no
+        // new external project to provision) — every event this
+        // session ever sends carries this super-property so a
+        // dashboard filter (or just eyeballing) separates staging
+        // noise from real traffic. NEXT_PUBLIC_VERCEL_ENV is set
+        // automatically by Vercel on every deploy (no dashboard config
+        // needed) — "production" for the Production environment,
+        // "preview" for any other branch (develop included), unset for
+        // a local `next dev` run.
+        posthog.register({
+          environment: process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? 'production' : process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ? 'staging' : 'development',
+        });
         for (const { event, props } of pending.splice(0)) {
           posthog.capture(event, props);
         }
