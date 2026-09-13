@@ -24,7 +24,7 @@
 
 import { MappingAssistService, type MatchCandidate, type MatchTarget } from '../retailers/mapping-assist.service';
 
-interface NewSneaker extends MatchTarget {
+export interface NewSneaker extends MatchTarget {
   category: 'basketball' | 'lifestyle' | 'running' | 'skate';
   gender: 'unisex' | 'men' | 'women';
   releaseDate: string | null;
@@ -32,7 +32,8 @@ interface NewSneaker extends MatchTarget {
   retailPriceInr: number;
 }
 
-const SNEAKERS: NewSneaker[] = [
+/** Exported for reuse (Day 30 reuses this exact list against Ajio/END rather than retyping the 23-sneaker catalog). */
+export const SNEAKERS: NewSneaker[] = [
   { brand: 'Jordan', model: 'Air Jordan 1', silhouette: 'Retro High OG', colorway: 'Varsity Red/Black/Sail/Muslin (Chicago Lost & Found)', styleCode: 'DZ5485-612', category: 'basketball', gender: 'unisex', releaseDate: '2022-11-19', retailPriceInr: 15300 },
   { brand: 'Nike', model: 'Air Max 90', silhouette: 'OG', colorway: 'White/Black/Cool Grey/Radiant Red (Infrared)', styleCode: 'CT1685-100', category: 'lifestyle', gender: 'unisex', releaseDate: '2020-11-09', retailPriceInr: 11900 },
   { brand: 'adidas', model: 'Yeezy Boost 350 V2', silhouette: null, colorway: 'Zebra (White/Core Black/Red)', styleCode: 'CP9654', category: 'lifestyle', gender: 'unisex', releaseDate: '2017-02-25', retailPriceInr: 18700 },
@@ -63,7 +64,7 @@ const SNEAKERS: NewSneaker[] = [
 // seed style). Not every sneaker has a Myntra candidate — same as the
 // launch five, where Superkicks/VegNonVeg only covered 2 of 5; a source
 // genuinely not carrying a model isn't a fuzzy-match failure.
-const FLIPKART_TITLES: Record<string, string> = {
+export const FLIPKART_TITLES: Record<string, string> = {
   'DZ5485-612': 'Nike Air Jordan 1 Retro High OG Chicago Lost and Found',
   'CT1685-100': 'Nike Air Max 90 Infrared OG White Black Red',
   'CP9654': 'adidas Yeezy Boost 350 V2 Zebra White Black Red',

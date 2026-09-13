@@ -45,6 +45,27 @@ const FIXTURES: Record<string, { price: number; delivery: number; stock: string 
   ENDFIXTURE003: { price: 120.0, delivery: 12.5, stock: 'out of stock' },
   ENDFIXTURE004: { price: 110.0, delivery: 12.5, stock: 'in stock' },
   ENDFIXTURE005: { price: 135.0, delivery: 15.0, stock: 'in stock' },
+  // Day 30 — the 17 Day 28 models whose candidate title cleared the
+  // mapping-assist tool's confidence floor against END. Clothing (see
+  // scripts/generate-day30-ajio-end-mappings.ts's report). GBP, same as
+  // the launch five — END. is UK-based (Day 7's own comment).
+  ENDFIXTURE008: { price: 147.0, delivery: 12.5, stock: 'in stock' }, // Yeezy Boost 350 V2 Zebra
+  ENDFIXTURE009: { price: 117.0, delivery: 12.5, stock: 'in stock' }, // NB 990v5 Grey
+  ENDFIXTURE010: { price: 57.0, delivery: 12.5, stock: 'in stock' }, // Chuck 70 Hi Black
+  ENDFIXTURE012: { price: 67.0, delivery: 12.5, stock: 'in stock' }, // Gazelle Core Black
+  ENDFIXTURE013: { price: 70.0, delivery: 12.5, stock: 'in stock' }, // Blazer Mid 77 Vintage
+  ENDFIXTURE015: { price: 47.0, delivery: 12.5, stock: 'in stock' }, // Vans Old Skool
+  ENDFIXTURE016: { price: 54.0, delivery: 12.5, stock: 'out of stock' }, // Puma Suede Classic
+  ENDFIXTURE017: { price: 100.0, delivery: 15.0, stock: 'in stock' }, // NB 2002R Protection Pack
+  ENDFIXTURE018: { price: 74.0, delivery: 12.5, stock: 'in stock' }, // Dunk Low Grey Fog
+  ENDFIXTURE021: { price: 100.0, delivery: 12.5, stock: 'in stock' }, // ASICS Gel-Kayano 14
+  ENDFIXTURE022: { price: 77.0, delivery: 12.5, stock: 'in stock' }, // Dunk High Panda
+  ENDFIXTURE023: { price: 43.0, delivery: 12.5, stock: 'in stock' }, // Vans Sk8-Hi
+  ENDFIXTURE024: { price: 74.0, delivery: 12.5, stock: 'in stock' }, // Samba OG Core Black
+  ENDFIXTURE025: { price: 127.0, delivery: 15.0, stock: 'in stock' }, // Ultraboost Light Core Black
+  ENDFIXTURE026: { price: 74.0, delivery: 12.5, stock: 'in stock' }, // NB 550 White/Grey
+  ENDFIXTURE027: { price: 67.0, delivery: 12.5, stock: 'in stock' }, // Chuck 70 Hi Parchment
+  ENDFIXTURE028: { price: 77.0, delivery: 12.5, stock: 'in stock' }, // Air Force 1 '07 LV8
 };
 
 @Injectable()

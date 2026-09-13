@@ -45,6 +45,21 @@ const FIXTURES: Record<string, { mrp: number; offer: number; shipping: number; s
   AJIOFIXTURE003: { mrp: 11999, offer: 9749, shipping: 0, stock: 'Y' },
   AJIOFIXTURE004: { mrp: 12499, offer: 10999, shipping: 99, stock: 'N' },
   AJIOFIXTURE005: { mrp: 14999, offer: 12749, shipping: 0, stock: 'Y' },
+  // Day 30 — the 11 Day 28 models whose candidate title cleared the
+  // mapping-assist tool's confidence floor against Ajio (see
+  // scripts/generate-day30-ajio-end-mappings.ts's report). The other 12
+  // are deliberately not mapped to Ajio this round.
+  AJIOFIXTURE008: { mrp: 18700, offer: 15999, shipping: 0, stock: 'Y' }, // Yeezy Boost 350 V2 Zebra
+  AJIOFIXTURE009: { mrp: 14875, offer: 12499, shipping: 0, stock: 'Y' }, // NB 990v5 Grey
+  AJIOFIXTURE010: { mrp: 7225, offer: 5999, shipping: 0, stock: 'Y' }, // Chuck 70 Hi Black
+  AJIOFIXTURE013: { mrp: 8925, offer: 7499, shipping: 99, stock: 'Y' }, // Blazer Mid 77 Vintage
+  AJIOFIXTURE015: { mrp: 5950, offer: 4999, shipping: 0, stock: 'Y' }, // Vans Old Skool
+  AJIOFIXTURE018: { mrp: 9350, offer: 7799, shipping: 0, stock: 'Y' }, // Dunk Low Grey Fog
+  AJIOFIXTURE021: { mrp: 12750, offer: 10499, shipping: 0, stock: 'Y' }, // ASICS Gel-Kayano 14
+  AJIOFIXTURE023: { mrp: 5525, offer: 4599, shipping: 0, stock: 'N' }, // Vans Sk8-Hi
+  AJIOFIXTURE025: { mrp: 16150, offer: 13499, shipping: 149, stock: 'Y' }, // Ultraboost Light Core Black
+  AJIOFIXTURE026: { mrp: 9350, offer: 7799, shipping: 0, stock: 'Y' }, // NB 550 White/Grey
+  AJIOFIXTURE027: { mrp: 8500, offer: 6999, shipping: 0, stock: 'Y' }, // Chuck 70 Hi Parchment
 };
 
 @Injectable()
