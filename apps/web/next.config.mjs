@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs/config';
+
 // Day 16 task 9 — real findings from a local OWASP ZAP baseline scan
 // (see apps/web/src/lib/auth/README.md's Verification section for the
 // actual before/after alert counts): CSP and X-Frame-Options were
@@ -11,9 +13,27 @@ function apiOrigin() {
   return { http: `${protocol}//${host}`, ws: `${wsProtocol}//${host}` };
 }
 
+/** Day 33 — the browser SDK reports errors directly to Sentry's ingest
+ * endpoint, which is a different origin from api.http, so it needs its
+ * own connect-src entry or the CSP blocks every error report. Derived
+ * from the DSN itself rather than hardcoded, since the ingest host is
+ * region-specific (this org's is ingest.us.sentry.io, but that's not
+ * guaranteed for every Sentry account). Returns null when no DSN is
+ * set, same as every other conditional CSP entry here. */
+function sentryIngestOrigin() {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return null;
+  try {
+    return new URL(dsn).host ? `https://${new URL(dsn).host}` : null;
+  } catch {
+    return null;
+  }
+}
+
 function cspHeaderValue() {
   const api = apiOrigin();
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+  const sentryHost = sentryIngestOrigin();
 
   const directives = {
     'default-src': ["'self'"],
@@ -42,7 +62,7 @@ function cspHeaderValue() {
     'style-src': ["'self'", "'unsafe-inline'"], // Next's App Router injects some CSS as inline <style>; far lower risk than inline script
     'img-src': ["'self'", 'data:'], // data: for the TOTP QR code (lib/auth/totp.ts) and any future data-URI placeholder art
     'font-src': ["'self'"], // next/font self-hosts every face at build time (layout.tsx's own comment) — no fonts.gstatic.com needed at runtime
-    'connect-src': ["'self'", api.http, api.ws, posthogHost],
+    'connect-src': ["'self'", api.http, api.ws, posthogHost, ...(sentryHost ? [sentryHost] : [])],
     'frame-ancestors': ["'none'"], // the actual CSP-level anti-clickjacking directive — X-Frame-Options below is the same protection for older browsers that don't read this
     'base-uri': ["'self'"],
     'form-action': ["'self'"],
@@ -111,13 +131,29 @@ const nextConfig = {
   },
 };
 
-// Sentry was removed from the browser bundle deliberately. It reported
-// nowhere — no NEXT_PUBLIC_SENTRY_DSN was ever set — while still costing
-// ~111KB of JavaScript downloaded and executed on every visit, which was
-// the single largest remaining item in the Lighthouse performance budget.
-//
-// Server-side error tracking is unaffected: apps/api still runs
-// @sentry/node, which is where the price-pipeline dead-letter alerts go.
-// To restore browser tracking at launch, reinstall @sentry/nextjs and
-// wrap this config with withSentryConfig again.
-export default nextConfig;
+// Day 33 — reinstalled, now that a real DSN exists (chosn-web, its own
+// Sentry project separate from the API's chosn-api). The runtime SDK
+// (instrumentation.ts / instrumentation-client.ts) no-ops on its own
+// with no DSN set, same as every other optional integration here — this
+// wrapper is only about the *build-time* plugin (creates a release,
+// uploads source maps), which is a different risk: it fails the build
+// outright ('Project not found') without a real org/project/token,
+// rather than no-op'ing quietly. Same guard this file carried before
+// removal (see git history on this line) — hard-disabled unless
+// SENTRY_AUTH_TOKEN is actually set, since a Vercel↔Sentry integration
+// was once observed injecting one unprompted even when nothing here
+// asked for it. Flip both `disable*WebpackPlugin` toward `false`
+// yourself once SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN are all
+// real — until then this still ships working error reporting via the
+// runtime SDK alone, just without source-mapped stack traces.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+  widenClientFileUpload: true,
+  // disableLogger deliberately not set — it's deprecated in this SDK
+  // version and unsupported under Turbopack (this app's default build
+  // mode as of Next.js 16) anyway; would be dead config either way.
+  disableServerWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
+  disableClientWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
+});
