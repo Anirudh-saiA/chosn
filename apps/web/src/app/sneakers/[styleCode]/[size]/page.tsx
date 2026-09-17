@@ -5,8 +5,10 @@ import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import { Masthead } from '@/components/Masthead';
 import { SiteFooter } from '@/components/SiteFooter';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
+import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
 import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
 import { fetchDropForSneaker } from '@/lib/drops';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
 interface PageProps {
   params: Promise<{ styleCode: string; size: string }>;
@@ -76,29 +78,44 @@ export default async function SneakerPricePage({ params }: PageProps) {
   ]);
   if (!data) notFound();
 
-  const { sneaker, variant } = data;
+  const { sneaker, variant, offers } = data;
+  // The one page with real per-retailer offer data (search/drops only
+  // ever have the canonical tier) — the only place the retailer-
+  // fallback tier of resolveSneakerImage() actually has something to
+  // read from.
+  const imageUrl = resolveSneakerImage(sneaker.primaryImageUrl, offers);
 
   return (
     <main>
       <Masthead />
       <div className="mx-auto max-w-5xl px-6 py-10 lg:py-12">
-        <header className="mb-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
-              {sneaker.styleCode} · UK {formatSize(variant.size)}
-            </p>
-            {/* Most sneakers have no drop_event yet — this is the normal
-                case, not a loading state, so it renders nothing rather
-                than a placeholder. */}
-            {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="w-24 shrink-0 sm:w-28">
+            <SneakerPlaceholderArt
+              brand={sneaker.brand}
+              model={sneaker.model}
+              colorway={sneaker.colorway}
+              imageUrl={imageUrl}
+            />
           </div>
-          <h1 className="mt-1 font-display text-display-section font-semibold text-text">
-            {sneaker.brand} {sneaker.model}
-          </h1>
-          <p className="text-body text-text-soft">{sneaker.colorway}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
+                {sneaker.styleCode} · UK {formatSize(variant.size)}
+              </p>
+              {/* Most sneakers have no drop_event yet — this is the normal
+                  case, not a loading state, so it renders nothing rather
+                  than a placeholder. */}
+              {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}
+            </div>
+            <h1 className="mt-1 font-display text-display-section font-semibold text-text">
+              {sneaker.brand} {sneaker.model}
+            </h1>
+            <p className="text-body text-text-soft">{sneaker.colorway}</p>
 
-          <div className="mt-4">
-            <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+            <div className="mt-4">
+              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+            </div>
           </div>
         </header>
 

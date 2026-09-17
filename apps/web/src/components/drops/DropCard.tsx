@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatInr } from '@/lib/catalog';
 import { formatReleaseTime, type DropListItem } from '@/lib/drops';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 import { DropStatusBadge } from './DropStatusBadge';
 import { NotifyToggle } from './NotifyToggle';
 import { SneakerPlaceholderArt } from './SneakerPlaceholderArt';
@@ -22,7 +23,7 @@ export function DropCard({ drop }: { drop: DropListItem }) {
           brand={sneaker.brand}
           model={sneaker.model}
           colorway={sneaker.colorway}
-          imageUrl={sneaker.primaryImageUrl}
+          imageUrl={resolveSneakerImage(sneaker.primaryImageUrl)}
         />
       </Link>
 

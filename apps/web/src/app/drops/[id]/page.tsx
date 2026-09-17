@@ -15,6 +15,7 @@ import { formatInr } from '@/lib/catalog';
 import { listPosts } from '@/lib/community';
 import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo } from '@/lib/drops';
 import { getChatRoomByDrop } from '@/lib/chat';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -87,7 +88,7 @@ export default async function DropDetailPage({ params }: PageProps) {
               brand={sneaker.brand}
               model={sneaker.model}
               colorway={sneaker.colorway}
-              imageUrl={sneaker.primaryImageUrl}
+              imageUrl={resolveSneakerImage(sneaker.primaryImageUrl)}
               aspect="wide"
               className="h-full"
             />

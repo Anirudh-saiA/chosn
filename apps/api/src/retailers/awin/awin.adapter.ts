@@ -36,6 +36,7 @@ interface AwinProductResponse {
     inStock?: number | boolean;
     awDeepLink?: string;
     merchantDeepLink?: string;
+    imageUrl?: string;
   };
 }
 
@@ -106,6 +107,7 @@ export class AwinAdapter extends HttpRetailerAdapter {
       currency: (product.price?.currency ?? 'GBP').toUpperCase(),
       inStock: this.readStock(product),
       listingUrl: product.awDeepLink ?? product.merchantDeepLink ?? target.retailerProductUrl,
+      imageUrl: product.imageUrl ?? null,
     };
   }
 

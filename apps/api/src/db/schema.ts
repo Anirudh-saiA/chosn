@@ -190,6 +190,8 @@ export const priceSnapshots = pgTable(
     inStock: boolean('in_stock').notNull(),
     /** Deep link to this exact size — what "View Deal" opens. */
     listingUrl: text('listing_url').notNull(),
+    /** This retailer's own listing image, captured at fetch time — the fallback tier below sneakers.primaryImageUrl. See 0018_price_snapshot_image_url.sql. */
+    imageUrl: text('image_url'),
     authenticityVerified: boolean('authenticity_verified').notNull().default(false),
     /** Fast current-price lookup without scanning history. */
     isLatest: boolean('is_latest').notNull().default(true),
@@ -387,6 +389,8 @@ export const manualPriceEntries = pgTable(
     condition: conditionEnum('condition').notNull().default('new'),
     inStock: boolean('in_stock').notNull().default(true),
     listingUrl: text('listing_url').notNull(),
+    /** Whoever checked the shop can paste the listing's own photo URL — optional, unlike everything else here nobody has filled one in yet. See 0018_price_snapshot_image_url.sql. */
+    imageUrl: text('image_url'),
     /** Who checked the shop — accountability for a manual process. */
     recordedBy: text('recorded_by').notNull(),
     recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),

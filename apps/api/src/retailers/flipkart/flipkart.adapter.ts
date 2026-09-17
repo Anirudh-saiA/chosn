@@ -32,6 +32,8 @@ interface FlipkartProductResponse {
     flipkartSellingPrice?: { amount?: number; currency?: string };
     inStock?: boolean;
     productUrl?: string;
+    /** Flipkart's affiliate feed nests images under productImages, largest first — not a single flat field like most of the other sources. */
+    productImages?: { imageUrl?: string[] };
   };
   productShippingInfoV1?: { shippingCharges?: { amount?: number } };
 }
@@ -110,6 +112,7 @@ export class FlipkartAdapter extends HttpRetailerAdapter {
       currency: (base.flipkartSellingPrice?.currency ?? 'INR').toUpperCase(),
       inStock: base.inStock ?? false,
       listingUrl: base.productUrl ?? target.retailerProductUrl,
+      imageUrl: base.productImages?.imageUrl?.[0] ?? null,
     };
   }
 

@@ -38,6 +38,8 @@ export interface CatalogOffer {
   condition: string;
   inStock: boolean;
   listingUrl: string;
+  /** This retailer's own listing photo — the fallback tier resolve-sneaker-image.ts reads. Null more often than not; see its own comment. */
+  imageUrl: string | null;
   fetchedAt: string;
   fetchFrequencyMinutes: number;
   isStale: boolean;
@@ -52,6 +54,7 @@ export interface CatalogSneaker {
   colorway: string;
   silhouette: string | null;
   gender: string;
+  primaryImageUrl: string | null;
 }
 
 export interface CatalogVariant {

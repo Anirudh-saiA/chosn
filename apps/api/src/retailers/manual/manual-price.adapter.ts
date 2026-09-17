@@ -103,6 +103,7 @@ export class ManualPriceAdapter extends BaseRetailerAdapter {
       inStock: entry.inStock,
       condition: entry.condition,
       listingUrl: entry.listingUrl,
+      imageUrl: entry.imageUrl,
       // Boutiques stock deadstock retail; they don't run an authentication
       // programme the way StockX or GOAT do, so nothing is claimed here.
       authenticityVerified: false,
