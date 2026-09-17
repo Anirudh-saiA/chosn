@@ -1,12 +1,12 @@
 # Health checks
 
-Two endpoints, both on `apps/api`, both public and unauthenticated
+Three endpoints, all on `apps/api`, all public and unauthenticated
 (deliberately — see each controller's own comment on why exposing them
-doesn't leak anything sensitive). Written down here (Day 36) because
-they've been used constantly for real deploy verification since Day 27
-and the knowledge of what each field actually means had only ever lived
-in conversation history, not anywhere a future engineer (including a
-future Claude Code session) could find it.
+doesn't leak anything sensitive). Written down here (Day 36, extended
+Day 37) because they've been used constantly for real deploy
+verification since Day 27 and the knowledge of what each field actually
+means had only ever lived in conversation history, not anywhere a
+future engineer (including a future Claude Code session) could find it.
 
 ## `GET /health`
 
@@ -87,6 +87,59 @@ source (Superkicks, VegNonVeg) can legitimately show a `lastSuccessAt`
 several days old without anything being wrong; check `stale` and
 `failures24h`, not raw recency, before concluding something needs
 fixing.
+
+## `GET /health/fetch/status`
+
+```json
+// healthy
+{ "ok": true }
+
+// degraded — HTTP 503
+{
+  "ok": false,
+  "degraded": [
+    { "slug": "superkicks", "reason": "stale_and_failing", "lastSuccessAt": "2026-09-07T07:17:42.395Z", "failures24h": 2 }
+  ]
+}
+```
+
+Day 37 — purpose-built for **external, non-sandboxed monitoring**
+(cron-job.org and similar). The attempt to verify the Superkicks/
+VegNonVeg fix's natural-cycle durability via a scheduled Claude Code
+`RemoteTrigger` failed for a real, unfixable-from-here reason: that
+sandbox's network egress policy blocks it from reaching
+`chosnapi-production.up.railway.app` at all (confirmed via both
+`curl` and `WebFetch`, both returned `EGRESS_BLOCKED`). An external
+cron service has no such restriction, but a generic "does this URL
+return 200" check isn't enough here — `GET /health/fetch` always
+returns 200 even when a retailer is degraded (`ok: false` lives *inside*
+the body), so a naive uptime pinger would report this project healthy
+straight through a real incident like Day 29's.
+
+This endpoint exists so the pass/fail decision is the HTTP status
+itself, not something the external tool needs to parse:
+
+- Same underlying data and the exact same `isDegraded()` check as
+  `GET /health/fetch` (`fetch-health.service.ts`) — the two endpoints
+  share one function specifically so they can never quietly disagree
+  about what counts as healthy.
+- **200 `{ "ok": true }`** when every retailer is neither `stale` nor
+  has `failures24h > 0`.
+- **503** with a `degraded` array when at least one isn't — each entry
+  names the retailer, a `reason` (`"stale"`, `"failing"`, or
+  `"stale_and_failing"`), and the raw `lastSuccessAt`/`failures24h` so
+  a human reading the cron-job.org failure alert doesn't need a second
+  hop into `/health/fetch` to see what actually happened.
+
+**This is the endpoint wired to the external cron-job.org monitor** —
+`/health/fetch` remains the detailed, human-readable diagnostic view
+for when you're already looking at it, not something external tooling
+should poll directly.
+
+Verified (`fetch-health.controller.spec.ts`) against the real shape
+Day 29's incident had — this endpoint would have returned 503 naming
+both `superkicks` and `vegnonveg` at the time, not just in a
+hypothetical.
 
 ## Using both for real deploy verification
 
