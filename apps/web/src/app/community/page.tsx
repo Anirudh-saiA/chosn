@@ -9,7 +9,10 @@ import { listPosts } from '@/lib/community';
 
 export const metadata: Metadata = {
   title: 'Community | CHOSN',
-  description: 'Price Check, Cop or Drop, Legit Check, and Drop Talk — the CHOSN community feed.',
+  // Legit Check omitted here too, same reasoning as new/page.tsx's
+  // POST_TYPES — no point advertising a post type creation is hidden
+  // for right now.
+  description: 'Price Check, Cop or Drop, and Drop Talk — the CHOSN community feed.',
 };
 
 /**
@@ -45,8 +48,8 @@ export default async function CommunityFeedPage() {
         </div>
 
         <p className="mt-4 max-w-[65ch] text-body text-text-soft">
-          Price Check, Cop or Drop, Legit Check, and Drop Talk — real collectors on real decisions. CHOSN never sells
-          anything here; this is discussion, not a marketplace.
+          Price Check, Cop or Drop, and Drop Talk — real collectors on real decisions. CHOSN never sells anything
+          here; this is discussion, not a marketplace.
         </p>
 
         <div className="mt-8 flex flex-col gap-5">
