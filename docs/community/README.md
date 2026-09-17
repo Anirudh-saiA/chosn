@@ -1,5 +1,14 @@
 # Community: structured posts + live drop chat (Day 21/22)
 
+> **Status update (Day 36):** Legit Check as described below is still
+> fully built and correct — the code hasn't regressed. It's currently
+> **hidden from post creation** behind `FEATURE_LEGIT_CHECK_ENABLED`
+> (`apps/web/src/lib/feature-flags.ts`), a Day 35 product decision:
+> photo uploads need real object storage (Cloudflare R2), which remains
+> deferred. Everything else in this document is still accurate; treat
+> every "Legit Check" reference below as "true once the flag is on,"
+> not as current live behavior.
+
 Day 21's actual deliverables (the generic post-type template, the feed,
 Price Check, and wiring Day 17's safety infrastructure into it) didn't
 exist before today — an earlier session pasted the Day 17 brief a second
@@ -71,7 +80,7 @@ out to invite abuse (someone uploading unrelated/bad photos to another
 person's thread) — the fix is an `authorUserId === post.authorUserId`
 check in `PostImagesService.attach`, not a schema change.
 
-### 3. Object storage for uploaded images (Day 26 — resolved)
+### 3. Object storage for uploaded images (Day 26 code-complete; real bucket still Day 36-pending)
 
 Originally local disk (`apps/api/uploads/`, served via
 `useStaticAssets`) — flagged here as not surviving a real deploy
@@ -85,6 +94,16 @@ adds two checks ahead of the existing ones: `file-type` magic-byte
 sniffing (the declared `Content-Type` is trivially spoofable) and an
 EXIF-stripping re-encode via `sharp` before the classifier or the bucket
 ever see the bytes.
+
+**Correction (Day 36):** this section previously said "resolved"
+without qualification, which was only true of the code — no real
+`STORAGE_*` credentials were ever actually set anywhere (Day 30
+confirmed this the hard way: `StorageService` used to throw at boot
+when unconfigured, which crash-looped the entire API in production for
+days before that constructor was fixed). Real R2 credentials still
+don't exist as of Day 36; that's the direct reason Day 35 hid Legit
+Check from creation (see the status note at the top of this file)
+rather than shipping a feature that can't accept a photo.
 
 ### 4. Comment threading is flat, not nested
 
