@@ -203,10 +203,14 @@ quota before assuming a second Postgres-with-volume just works.
   applies that itself; `cd`-ing into `apps/web` first doubles the path.
 - `NEXT_PUBLIC_API_URL` on Vercel points at the Railway URL above, not
   `localhost`.
-- Sentry and PostHog are still genuinely unconfigured (no DSN/key set
-  anywhere) — the no-op guards mean nothing breaks, they just don't
-  report anything yet. Setting them up is a "when needed," not a
-  blocker.
+- Sentry is real as of Day 33 — two separate projects, `chosn-api`
+  (backend, confirmed receiving real errors earlier) and `chosn-web`
+  (frontend, reinstalled this same day after an earlier deliberate
+  removal — see `apps/web/next.config.mjs`'s own comment on that
+  history — and verified with a real flushed test event before this
+  note was written). PostHog remains unconfigured — no key set
+  anywhere. The no-op guards mean that stays harmless, it just doesn't
+  report anything yet.
 
 ## Verified
 
