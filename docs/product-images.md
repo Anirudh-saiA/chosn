@@ -88,3 +88,20 @@ credentials exist and it starts reporting real image URLs, those flow
 in automatically on the very next fetch cycle — there's no separate
 backfill step needed the way Day 28's catalog expansion needed one for
 prices.
+
+## A real bug this found: CSP silently blocked every image
+
+The very first real curated image (`DD1391-100`, a real Nike.in-sourced
+photo — see the curation script's own history) rendered as a broken
+image icon on the live site despite the API correctly returning the
+URL. Cause: `next.config.mjs`'s Content-Security-Policy had `img-src
+'self' data:` — no external image host was ever allowed, so the browser
+silently refused to load it. Nothing in local verification caught this
+(a curl check confirms the URL is *reachable*; it says nothing about
+whether the *page* is allowed to load it — that only shows up by
+actually looking at a rendered page, which is exactly how this was
+found). Fixed: `img-src` now allows any `https:` origin, since the
+retailer-fallback tier can point at any of 6+ different CDNs and a
+curated canonical image can come from wherever its real license
+actually lives — there's no fixed, enumerable allowlist the way
+`connect-src`'s API/PostHog/Sentry origins have.
