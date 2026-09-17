@@ -15,21 +15,19 @@ import {
   type SearchResultItem,
 } from '@/lib/community';
 import { fetchDropsList, type DropListItem } from '@/lib/drops';
+import { FEATURE_LEGIT_CHECK_ENABLED } from '@/lib/feature-flags';
 
-// Legit Check hidden from creation for this version (product decision,
-// not a removal) — it needs real object storage for photo uploads
-// (Day 26), and that was deliberately deferred (Cloudflare R2, still
-// pending real credentials as of this change). Nothing backend-side
-// changed: the post type, its endpoints, and every rendering component
-// still handle a legit_check post correctly if one exists — this only
-// closes the one entry point that would let a user start a flow that
-// currently can't accept a photo. Re-add the POST_TYPES entry once R2
-// is live to bring it back with zero other changes needed.
-const POST_TYPES: { value: PostType; label: string; hint: string }[] = [
+// Day 36 — driven by FEATURE_LEGIT_CHECK_ENABLED (lib/feature-flags.ts)
+// instead of the Day 35 hardcoded omission, so every consumer of "is
+// Legit Check on" reads one shared source of truth. See that file for
+// why it's off.
+const ALL_POST_TYPES: { value: PostType; label: string; hint: string }[] = [
   { value: 'price_check', label: 'Price Check', hint: 'Is this worth it right now?' },
   { value: 'cop_or_drop', label: 'Cop or Drop', hint: 'Put it to a vote.' },
+  { value: 'legit_check', label: 'Legit Check', hint: 'Get eyes on it before you buy or sell.' },
   { value: 'drop_talk', label: 'Drop Talk', hint: 'Talk about an upcoming or live drop.' },
 ];
+const POST_TYPES = ALL_POST_TYPES.filter((t) => t.value !== 'legit_check' || FEATURE_LEGIT_CHECK_ENABLED);
 
 const VISIBLE_POST_TYPES = new Set(POST_TYPES.map((t) => t.value));
 

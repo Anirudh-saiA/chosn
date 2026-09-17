@@ -3,6 +3,19 @@ import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
+/**
+ * The one definition of "is this retailer actually healthy" — both
+ * `GET /health/fetch` (human-readable diagnostic) and
+ * `GET /health/fetch/status` (Day 37 — machine-readable pass/fail for
+ * external monitoring) call this, so the two can never quietly disagree
+ * about what counts as degraded. Stale OR failing, not either alone —
+ * see this file's own header comment on why checking staleness by
+ * itself once reported false-green through a real outage.
+ */
+export function isDegraded(r: RetailerHealth): boolean {
+  return r.stale || r.failures24h > 0;
+}
+
 export interface RetailerHealth {
   slug: string;
   name: string;
