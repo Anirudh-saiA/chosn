@@ -20,6 +20,8 @@ export interface CatalogOffer {
   condition: string;
   inStock: boolean;
   listingUrl: string;
+  /** This retailer's own listing photo — the fallback tier in the frontend's image resolution (lib/resolve-sneaker-image.ts). Null far more often than not today; see price_snapshots.image_url's own comment. */
+  imageUrl: string | null;
   fetchedAt: string;
   fetchFrequencyMinutes: number;
   /** Older than 2x the retailer's own cadence — same rule Day 9's ranking uses. */
@@ -47,6 +49,8 @@ export interface CatalogSneaker {
   colorway: string;
   silhouette: string | null;
   gender: string;
+  /** The canonical, curated photo — top of the resolution priority (lib/resolve-sneaker-image.ts). Missing from this endpoint's query until now; search/drops already select it, the price comparison page never did. */
+  primaryImageUrl: string | null;
 }
 
 export interface SiblingSize {
@@ -119,6 +123,7 @@ interface VariantRow {
   colorway: string;
   silhouette: string | null;
   gender: string;
+  primary_image_url: string | null;
   variant_id: string;
   size: string;
   size_system: string;
@@ -138,6 +143,7 @@ interface OfferRow {
   condition: string;
   in_stock: boolean;
   listing_url: string;
+  image_url: string | null;
   fetched_at: string;
   effective_price_inr: string | null;
 }
@@ -164,6 +170,7 @@ export class CatalogService {
   async getVariantPage(styleCode: string, size: number): Promise<CatalogResponse> {
     const { rows } = await this.db.execute(sql`
       SELECT s.id AS sneaker_id, s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.gender,
+             s.primary_image_url,
              v.id AS variant_id, v.size, v.size_system, v.region
       FROM sneakers s
       JOIN sneaker_variants v ON v.sneaker_id = s.id
@@ -189,6 +196,7 @@ export class CatalogService {
         colorway: variantRow.colorway,
         silhouette: variantRow.silhouette,
         gender: variantRow.gender,
+        primaryImageUrl: variantRow.primary_image_url,
       },
       variant: {
         id: variantRow.variant_id,
@@ -219,7 +227,7 @@ export class CatalogService {
       SELECT r.slug AS retailer_slug, r.name AS retailer_name, r.logo_url AS retailer_logo_url,
              r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
-             ps.listing_url, ps.fetched_at,
+             ps.listing_url, ps.image_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
       FROM price_snapshots ps
       JOIN retailers r ON r.id = ps.retailer_id
@@ -241,6 +249,7 @@ export class CatalogService {
         condition: r.condition,
         inStock: r.in_stock,
         listingUrl: r.listing_url,
+        imageUrl: r.image_url,
         fetchedAt: fetchedAt.toISOString(),
         fetchFrequencyMinutes: r.fetch_frequency_minutes,
         isStale: Date.now() - fetchedAt.getTime() > staleCutoffMs,

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Badge, Card, PriceFigure } from '@chosn/ui';
 import { formatInr, formatSize, SIGNAL_COPY, type SearchResultItem } from '@/lib/catalog';
+import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
 export interface SneakerCardProps {
   item: SearchResultItem;
@@ -17,26 +19,24 @@ export interface SneakerCardProps {
 export function SneakerCard({ item }: SneakerCardProps) {
   const href = `/sneakers/${encodeURIComponent(item.styleCode)}/${formatSize(item.defaultSize)}`;
   const copy = item.signal ? SIGNAL_COPY[item.signal] : null;
+  // Search results have no per-offer image data (this endpoint returns
+  // one row per sneaker, not per retailer) — resolveSneakerImage()
+  // still applies correctly with just the canonical tier; the retailer
+  // fallback tier simply never triggers here, same as before this
+  // function existed.
+  const imageUrl = resolveSneakerImage(item.primaryImageUrl);
 
   return (
     <Link href={href} className="group block">
       <Card className="flex h-full flex-col gap-4 p-6 transition-colors duration-150 ease-chosn group-hover:border-moss">
-        <div className="flex aspect-square items-center justify-center border border-moss/15 bg-vault-recessed">
-          {item.primaryImageUrl ? (
-            // Plain <img>, not next/image — the catalog has no real
-            // images yet, so there's no known remote domain to allow-list
-            // in next.config.mjs; revisit once real image URLs exist.
-            <img
-              src={item.primaryImageUrl}
-              alt={`${item.brand} ${item.model} ${item.colorway}`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
-              {item.styleCode}
-            </span>
-          )}
-        </div>
+        <SneakerPlaceholderArt
+          brand={item.brand}
+          model={item.model}
+          colorway={item.colorway}
+          imageUrl={imageUrl}
+          aspect="square"
+          className="border-moss/15"
+        />
 
         <div className="flex flex-1 flex-col gap-1">
           <p className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">

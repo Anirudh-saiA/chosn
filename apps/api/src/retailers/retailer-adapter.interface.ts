@@ -52,6 +52,15 @@ export interface RawRetailerOffer {
   condition: Condition;
   /** Deep link to this exact size — what "View Deal" opens. */
   listingUrl: string;
+  /**
+   * This retailer's own product photo, as reported by its own listing
+   * (field name varies wildly per source — see each adapter's parse()).
+   * Null is a real, common value, not a bug: several sources genuinely
+   * don't expose one in the payload this app reads, and every fixture
+   * adapter returns null here deliberately (see FIXTURES' own comment)
+   * rather than inventing a photo no real listing actually has.
+   */
+  imageUrl: string | null;
   authenticityVerified: boolean;
   fetchedAt: Date;
   raw: unknown;
@@ -68,6 +77,7 @@ export interface PriceSnapshotInput {
   priceType: PriceType;
   inStock: boolean;
   listingUrl: string;
+  imageUrl: string | null;
   authenticityVerified: boolean;
   fetchedAt: Date;
 }

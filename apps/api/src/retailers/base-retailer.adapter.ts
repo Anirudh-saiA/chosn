@@ -72,6 +72,14 @@ export abstract class BaseRetailerAdapter implements RetailerAdapter {
       priceType: this.priceType,
       inStock: offer.inStock,
       listingUrl: offer.listingUrl,
+      // Basic format check only (task 5's "at minimum") — a real HEAD
+      // request here would add latency/failure surface to the price
+      // pipeline itself for a field nothing has ever populated with
+      // real data yet (every adapter below is fixture-mode or manual,
+      // and none report a real photo — see RawRetailerOffer's own
+      // comment). Revisit once a live retailer integration actually
+      // starts sending real image URLs worth spot-checking.
+      imageUrl: offer.imageUrl && /^https:\/\/\S+$/.test(offer.imageUrl) ? offer.imageUrl : null,
       authenticityVerified: offer.authenticityVerified,
       fetchedAt: offer.fetchedAt,
     };

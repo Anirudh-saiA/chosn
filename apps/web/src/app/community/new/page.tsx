@@ -15,6 +15,7 @@ import {
   type SearchResultItem,
 } from '@/lib/community';
 import { fetchDropsList, type DropListItem } from '@/lib/drops';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
 // Legit Check hidden from creation for this version (product decision,
 // not a removal) — it needs real object storage for photo uploads
@@ -254,21 +255,34 @@ function NewPostForm() {
                     />
                     {results.length > 0 && (
                       <ul className="mt-1 border border-moss/20">
-                        {results.map((r) => (
-                          <li key={`${r.styleCode}`}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelected(r);
-                                setResults([]);
-                                setQuery('');
-                              }}
-                              className="block w-full px-3 py-2 text-left text-body text-text hover:bg-vault"
-                            >
-                              {r.brand} {r.model} — {r.colorway}
-                            </button>
-                          </li>
-                        ))}
+                        {results.map((r) => {
+                          // No offer data at this search granularity, same
+                          // as the browse grid — canonical tier only.
+                          const thumbUrl = resolveSneakerImage(r.primaryImageUrl);
+                          return (
+                            <li key={`${r.styleCode}`}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelected(r);
+                                  setResults([]);
+                                  setQuery('');
+                                }}
+                                className="flex w-full items-center gap-3 px-3 py-2 text-left text-body text-text hover:bg-vault"
+                              >
+                                <span className="h-8 w-8 shrink-0 overflow-hidden border border-moss/15 bg-vault-recessed">
+                                  {thumbUrl && (
+                                    // Plain <img>, same convention as every other sneaker photo on this site.
+                                    <img src={thumbUrl} alt="" className="h-full w-full object-cover" />
+                                  )}
+                                </span>
+                                <span>
+                                  {r.brand} {r.model} — {r.colorway}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </>

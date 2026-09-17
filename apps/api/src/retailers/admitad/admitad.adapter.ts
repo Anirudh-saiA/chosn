@@ -28,6 +28,8 @@ interface AdmitadProductResponse {
     availability?: string;
     url?: string;
     delivery_cost?: string;
+    /** Admitad's product feed reports one flat image field, unlike Flipkart's nested array. */
+    image?: string;
   }>;
 }
 
@@ -89,6 +91,7 @@ export class AdmitadAdapter extends HttpRetailerAdapter {
       // stock — see the Awin adapter for why we don't guess upward.
       inStock: product.availability?.trim().toLowerCase() === 'available',
       listingUrl: product.url ?? target.retailerProductUrl,
+      imageUrl: product.image ?? null,
     };
   }
 

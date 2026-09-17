@@ -36,6 +36,7 @@ interface InrdealsProductResponse {
     shipping_charge?: number | string;
     deeplink?: string;
     product_url?: string;
+    image_url?: string;
   };
 }
 
@@ -110,6 +111,7 @@ export class InrdealsAdapter extends HttpRetailerAdapter {
       currency: (data.currency ?? 'INR').toUpperCase(),
       inStock: this.readStock(data.in_stock),
       listingUrl: data.deeplink ?? data.product_url ?? target.retailerProductUrl,
+      imageUrl: data.image_url ?? null,
     };
   }
 

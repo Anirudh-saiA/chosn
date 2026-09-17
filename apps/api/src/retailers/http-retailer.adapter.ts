@@ -40,7 +40,7 @@ export abstract class HttpRetailerAdapter extends BaseRetailerAdapter {
   protected abstract parse(
     payload: unknown,
     target: FetchTarget,
-  ): Pick<RawRetailerOffer, 'price' | 'shippingCost' | 'currency' | 'inStock' | 'listingUrl'>;
+  ): Pick<RawRetailerOffer, 'price' | 'shippingCost' | 'currency' | 'inStock' | 'listingUrl' | 'imageUrl'>;
 
   /** Deterministic stand-in used until credentials exist. */
   protected abstract fixture(target: FetchTarget): unknown;
