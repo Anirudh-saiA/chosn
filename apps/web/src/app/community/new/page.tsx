@@ -16,12 +16,22 @@ import {
 } from '@/lib/community';
 import { fetchDropsList, type DropListItem } from '@/lib/drops';
 
+// Legit Check hidden from creation for this version (product decision,
+// not a removal) — it needs real object storage for photo uploads
+// (Day 26), and that was deliberately deferred (Cloudflare R2, still
+// pending real credentials as of this change). Nothing backend-side
+// changed: the post type, its endpoints, and every rendering component
+// still handle a legit_check post correctly if one exists — this only
+// closes the one entry point that would let a user start a flow that
+// currently can't accept a photo. Re-add the POST_TYPES entry once R2
+// is live to bring it back with zero other changes needed.
 const POST_TYPES: { value: PostType; label: string; hint: string }[] = [
   { value: 'price_check', label: 'Price Check', hint: 'Is this worth it right now?' },
   { value: 'cop_or_drop', label: 'Cop or Drop', hint: 'Put it to a vote.' },
-  { value: 'legit_check', label: 'Legit Check', hint: 'Get eyes on it before you buy or sell.' },
   { value: 'drop_talk', label: 'Drop Talk', hint: 'Talk about an upcoming or live drop.' },
 ];
+
+const VISIBLE_POST_TYPES = new Set(POST_TYPES.map((t) => t.value));
 
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
   { id: 'box_label', label: 'Box label' },
@@ -37,7 +47,12 @@ function NewPostForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [postType, setPostType] = useState<PostType>((searchParams.get('type') as PostType) ?? 'price_check');
+  // Guards the ?type= URL param the same way the selector itself is
+  // hidden — a direct link to ?type=legit_check shouldn't bypass this.
+  const presetType = searchParams.get('type') as PostType | null;
+  const [postType, setPostType] = useState<PostType>(
+    presetType && VISIBLE_POST_TYPES.has(presetType) ? presetType : 'price_check',
+  );
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
