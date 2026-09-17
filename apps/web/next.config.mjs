@@ -60,7 +60,22 @@ function cspHeaderValue() {
         ? ["'self'", "'unsafe-inline'"]
         : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
     'style-src': ["'self'", "'unsafe-inline'"], // Next's App Router injects some CSS as inline <style>; far lower risk than inline script
-    'img-src': ["'self'", 'data:'], // data: for the TOTP QR code (lib/auth/totp.ts) and any future data-URI placeholder art
+    // Day 37 bug, found by actually looking at a real deployed page, not
+    // caught by any local check: 'self' data: alone silently blocked
+    // every product image resolveSneakerImage() can point at — both the
+    // per-retailer fallback tier (up to 6 different retailer/affiliate
+    // CDNs, a new one whenever a source goes live) and admin-curated
+    // canonical images (docs/product-images.md — sourced from wherever
+    // a real, licensed photo actually lives, not one fixed domain).
+    // There's no finite allowlist to enumerate up front the same way
+    // api.http/posthogHost/sentryHost below can be, since the whole
+    // point of the retailer-fallback tier is "whichever of 6+ sources
+    // actually has a live listing" — so this opens img-src to any HTTPS
+    // origin, the standard, narrow way sites handle this exact problem
+    // (an <img> load can't execute script the way a script-src or
+    // connect-src opening would; the realistic residual risk is a
+    // tracking-pixel-style information leak via image request, not XSS).
+    'img-src': ["'self'", 'data:', 'https:'],
     'font-src': ["'self'"], // next/font self-hosts every face at build time (layout.tsx's own comment) — no fonts.gstatic.com needed at runtime
     'connect-src': ["'self'", api.http, api.ws, posthogHost, ...(sentryHost ? [sentryHost] : [])],
     'frame-ancestors': ["'none'"], // the actual CSP-level anti-clickjacking directive — X-Frame-Options below is the same protection for older browsers that don't read this
