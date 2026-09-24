@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Bell, Check } from 'lucide-react';
 import { requestPushPermission, subscribe, unsubscribe, type SubscriptionScope } from '@/lib/notifications';
 import { useSubscriptionsState } from './subscriptions-context';
 
@@ -133,11 +134,14 @@ function ToggleChip({
       disabled={pending}
       onClick={onClick}
       className={
-        'rounded-chip border px-3 py-1.5 font-mono text-data-delta font-semibold transition-colors duration-150 ease-chosn disabled:opacity-60 ' +
-        (on ? 'border-brass bg-brass text-vault' : 'border-moss text-text-soft hover:border-text')
+        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-left font-mono text-[0.7rem] font-semibold leading-tight transition-colors duration-200 ease-chosn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60 sm:min-h-[36px] ' +
+        (on
+          ? 'border-brass-bright/60 bg-brass/15 text-brass-bright'
+          : 'border-text/[0.15] text-text-soft hover:border-brass/50 hover:text-text')
       }
     >
-      {pending ? 'Updating…' : on ? `✓ ${label}` : label}
+      {on ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <Bell className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+      {pending ? 'Updating…' : label}
     </button>
   );
 }

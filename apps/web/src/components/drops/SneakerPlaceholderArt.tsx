@@ -1,13 +1,11 @@
+import { SneakerArt } from '@/components/ui/SneakerArt';
+import { paletteFor } from '@/lib/sneaker/palette';
+
 /**
- * The catalog has no real product photography yet (same gap
- * `SneakerCard.tsx` already documents for the search grid) — this page
- * is meant to be imagery-forward regardless, so rather than reusing the
- * search grid's plain styleCode-in-a-box treatment, this leans into it:
- * the brand/model set in the display face, large, centered, doing the
- * job a photo would in an editorial layout. Not a disguised placeholder
- * — an intentional typographic one, replaced outright the day a real
- * image pipeline exists (`primaryImageUrl` already flows through
- * untouched wherever one is set — see the `imageUrl` prop below).
+ * The catalog has no product photography yet, so the fallback is the
+ * designed SneakerArt illustration tinted from the colourway, sitting on a
+ * colourway-coloured spotlight. A real `imageUrl` (from
+ * resolveSneakerImage / primaryImageUrl) always wins when present.
  */
 export function SneakerPlaceholderArt({
   brand,
@@ -26,22 +24,27 @@ export function SneakerPlaceholderArt({
 }) {
   if (imageUrl) {
     return (
-      // Plain <img>, not next/image — no known remote domain to
-      // allow-list yet, same as SneakerCard.tsx.
-      <img
-        src={imageUrl}
-        alt={`${brand} ${model} ${colorway}`}
-        className={`h-full w-full object-cover ${className}`}
-      />
+      // Plain <img>, not next/image — no known remote domain to allow-list yet.
+      <img src={imageUrl} alt={`${brand} ${model} ${colorway}`} className={`h-full w-full object-cover ${className}`} />
     );
   }
 
+  const p = paletteFor(colorway, brand);
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-1 border border-moss/15 bg-vault-recessed px-6 text-center ${aspect === 'square' ? 'aspect-square' : 'aspect-[16/9]'} ${className}`}
+      className={`relative flex items-center justify-center overflow-hidden border border-text/[0.08] bg-vault-deep/70 ${aspect === 'square' ? 'aspect-square' : 'aspect-[16/9]'} ${className}`}
     >
-      <p className="font-mono text-meta uppercase tracking-[0.1em] text-text-faint">{brand}</p>
-      <p className="font-display text-display-section leading-tight text-text-soft">{model}</p>
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{ background: `radial-gradient(60% 70% at 50% 65%, ${p.glow}50, transparent 75%)` }}
+      />
+      <SneakerArt
+        colorway={colorway}
+        brand={brand}
+        palette={p}
+        className="relative h-[82%] w-[82%]"
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Cookie } from 'lucide-react';
 import { buttonVariantClass } from '@chosn/ui';
 import { getConsent, setConsent } from '@/lib/consent';
 import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
@@ -11,6 +12,7 @@ import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
  * decline option is not a greyed-out afterthought next to a bright
  * "Accept all", and dismissing the banner without choosing leaves
  * consent undecided — which analytics.ts treats as "don't load."
+ * Both buttons deliberately share one style.
  *
  * Deliberately not a blocking modal. Nothing on CHOSN requires
  * analytics to work, so holding the page hostage until someone answers
@@ -47,24 +49,29 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label="Analytics consent"
-      className={`fixed inset-x-0 z-50 border-t border-moss/30 bg-vault-raised px-6 py-5 ${
-        LOCAL_HERO_IMAGE ? 'bottom-8' : 'bottom-0'
+      className={`fixed inset-x-3 z-50 sm:inset-x-auto sm:left-4 sm:w-[min(30rem,calc(100vw-2rem))] ${
+        LOCAL_HERO_IMAGE ? 'bottom-11 sm:bottom-12' : 'bottom-3 sm:bottom-4'
       }`}
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-[70ch] text-data-inline text-text-soft">
-          We&apos;d like to use PostHog analytics to understand which parts of CHOSN people
-          actually use. It&apos;s off unless you turn it on, and nothing here needs it to
-          work.{' '}
-          <Link href="/privacy" className="text-brass underline underline-offset-2">
-            Privacy Policy
-          </Link>
-        </p>
-        <div className="flex shrink-0 gap-3">
-          <button type="button" onClick={() => choose('denied')} className={buttonVariantClass('secondary')}>
+      <div className="glass ticks p-4 shadow-lift sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+            <Cookie aria-hidden className="h-4 w-4" />
+          </span>
+          <p className="text-data-inline leading-relaxed text-text-soft">
+            We&apos;d like to use PostHog analytics to understand which parts of CHOSN people
+            actually use. It&apos;s off unless you turn it on, and nothing here needs it to
+            work.{' '}
+            <Link href="/privacy" className="link-underline text-brass-bright">
+              Privacy Policy
+            </Link>
+          </p>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => choose('denied')} className={buttonVariantClass('secondary', 'min-h-[44px]')}>
             Decline
           </button>
-          <button type="button" onClick={() => choose('granted')} className={buttonVariantClass('primary')}>
+          <button type="button" onClick={() => choose('granted')} className={buttonVariantClass('secondary', 'min-h-[44px]')}>
             Allow analytics
           </button>
         </div>

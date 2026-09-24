@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { buttonVariantClass, Input } from '@chosn/ui';
+import { Trash2 } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, Spinner, TextField } from './fields';
 
 /**
  * Day 19 task 6 — the user-facing half of erasure. Deliberately a
@@ -37,12 +39,17 @@ export function DeleteAccount() {
 
   if (!open) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <p className="max-w-[60ch] text-body text-text-soft">
           Deletes your account, your notification subscriptions, any push registrations, your blocks,
           and your waitlist entry. Permanent — there&apos;s no undo and no recovery window.
         </p>
-        <button type="button" onClick={() => setOpen(true)} className={buttonVariantClass('secondary', 'w-fit')}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={buttonVariantClass('secondary', 'w-fit min-h-[44px] !border-rust/50 !text-rust hover:!border-rust hover:!bg-rust/10')}
+        >
+          <Trash2 aria-hidden className="h-4 w-4" />
           Delete my account
         </button>
       </div>
@@ -50,24 +57,29 @@ export function DeleteAccount() {
   }
 
   return (
-    <div className="flex max-w-[46ch] flex-col gap-3 border-l-2 border-rust pl-4">
+    <div className="flex max-w-[46ch] flex-col gap-4">
       <p className="text-body text-text">
-        Type <span className="font-mono font-semibold">DELETE</span> to confirm. This cannot be undone.
+        Type <span className="font-mono font-semibold text-rust">DELETE</span> to confirm. This cannot be undone.
       </p>
-      <Input
+      <TextField
+        label="Confirmation"
         type="text"
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
         placeholder="DELETE"
+        autoComplete="off"
         aria-label="Type DELETE to confirm account deletion"
+        className="font-mono tracking-widest"
       />
-      <div className="flex gap-3">
+      {error && <FormAlert>{error}</FormAlert>}
+      <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={handleDelete}
           disabled={busy || confirm !== 'DELETE'}
-          className={buttonVariantClass('primary', 'w-fit')}
+          className="inline-flex min-h-[44px] items-center justify-center gap-2 border border-rust bg-rust px-5 py-[11px] text-ui-label font-semibold text-vault-deep transition-all hover:shadow-glow-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40"
         >
+          {busy && <Spinner />}
           {busy ? 'Deleting…' : 'Permanently delete'}
         </button>
         <button
@@ -77,16 +89,11 @@ export function DeleteAccount() {
             setConfirm('');
             setError('');
           }}
-          className={buttonVariantClass('secondary', 'w-fit')}
+          className={buttonVariantClass('secondary', 'w-fit min-h-[44px]')}
         >
           Cancel
         </button>
       </div>
-      {error && (
-        <p role="alert" className="text-data-inline text-rust">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

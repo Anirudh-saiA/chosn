@@ -19,10 +19,13 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
  */
 export function buttonVariantClass(variant: ButtonVariant = 'secondary', className?: string) {
   return cx(
-    'inline-flex items-center justify-center border px-5 py-[11px] font-sans text-ui-label font-semibold transition-colors duration-150 ease-chosn disabled:pointer-events-none disabled:opacity-40',
-    variant === 'primary' && 'border-brass bg-brass text-vault hover:bg-brass/90',
-    variant === 'secondary' && 'border-moss/40 bg-vault-raised text-text hover:border-moss',
-    variant === 'ghost' && 'border-transparent bg-transparent text-text hover:border-moss/40',
+    'group/btn relative inline-flex select-none items-center justify-center gap-2 overflow-hidden border px-5 py-[11px] font-sans text-ui-label font-semibold transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40',
+    // v2: primary is a lit brass slab — gradient + inner highlight, glow on hover.
+    variant === 'primary' &&
+      'border-brass-bright/40 bg-brass-gradient text-vault-deep shadow-inset hover:-translate-y-px hover:shadow-glow-brass active:translate-y-0',
+    variant === 'secondary' &&
+      'border-text/15 bg-vault-raised/70 text-text backdrop-blur hover:border-chrome/50 hover:bg-vault-high hover:text-white',
+    variant === 'ghost' && 'border-transparent bg-transparent text-text-soft hover:border-text/15 hover:text-text',
     className,
   );
 }

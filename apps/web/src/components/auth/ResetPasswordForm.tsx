@@ -2,7 +2,8 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input, buttonVariantClass } from '@chosn/ui';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, PasswordField, Spinner } from './fields';
 
 export function ResetPasswordForm({ email, token }: { email: string; token: string }) {
   const router = useRouter();
@@ -32,32 +33,25 @@ export function ResetPasswordForm({ email, token }: { email: string; token: stri
     router.push('/login');
   }
 
+  const busy = status === 'submitting';
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-[40ch] flex-col gap-4" noValidate>
-      <div>
-        <label htmlFor={passwordId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-          New password
-        </label>
-        <Input
-          id={passwordId}
-          type="password"
-          required
-          minLength={10}
-          autoComplete="new-password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="mt-2"
-        />
-        <p className="mt-1 text-meta text-text-faint">At least 10 characters.</p>
-      </div>
-      <button type="submit" disabled={status === 'submitting'} className={buttonVariantClass('primary')}>
-        {status === 'submitting' ? 'Updating…' : 'Update password'}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <PasswordField
+        id={passwordId}
+        label="New password"
+        required
+        minLength={10}
+        autoComplete="new-password"
+        hint="At least 10 characters."
+        meter
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+      />
+      {error && <FormAlert>{error}</FormAlert>}
+      <button type="submit" disabled={busy} className={buttonVariantClass('primary', 'min-h-[48px]')}>
+        {busy && <Spinner />}
+        {busy ? 'Updating…' : 'Update password'}
       </button>
-      {error && (
-        <p role="alert" className="text-data-inline text-rust">
-          {error}
-        </p>
-      )}
     </form>
   );
 }

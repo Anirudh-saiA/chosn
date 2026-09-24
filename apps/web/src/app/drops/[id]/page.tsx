@@ -1,15 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
 import { DropLiveProvider } from '@/components/drops/drop-live-context';
 import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
 import { LivePricePreview } from '@/components/drops/LivePricePreview';
 import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import { OfficialPurchaseLinks } from '@/components/drops/OfficialPurchaseLinks';
 import { RaffleNotice } from '@/components/drops/RaffleNotice';
+import { releaseInstant } from '@/components/drops/drop-instant';
+import { Countdown } from '@/components/drops/drop-time';
 import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
+import { SneakerViewer } from '@/components/ui/SneakerViewer';
+import { PageShell } from '@/components/ui/PageShell';
+import { Reveal } from '@/components/fx/Reveal';
+import { paletteFor } from '@/lib/sneaker/palette';
+import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { formatInr } from '@/lib/catalog';
 import { listPosts } from '@/lib/community';
@@ -56,11 +61,11 @@ async function loadChatRoom(dropEventId: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const drop = await loadDrop(id);
-  if (!drop) return { title: 'Not found | CHOSN' };
+  if (!drop) return { title: 'Not found' };
 
   const { sneaker } = drop;
   return {
-    title: `${sneaker.brand} ${sneaker.model} "${sneaker.colorway}" drop | CHOSN`,
+    title: `${sneaker.brand} ${sneaker.model} "${sneaker.colorway}" drop`,
     description: `${sneaker.brand} ${sneaker.model} "${sneaker.colorway}" (${sneaker.styleCode}) — release info, official retailer links${drop.status === 'live' ? ', and where it\'s already reselling' : ''}.`,
   };
 }
@@ -78,90 +83,138 @@ export default async function DropDetailPage({ params }: PageProps) {
   const raffle = parseRaffleInfo(drop.raffleInfo);
   const regionText = formatRegions(drop.regions);
 
-  return (
-    <main>
-      <Masthead />
-      <DropLiveProvider>
-        <div className="mx-auto max-w-3xl px-6 py-10 lg:py-14">
-          <div className="mb-8 aspect-[16/9] w-full">
-            <SneakerPlaceholderArt
-              brand={sneaker.brand}
-              model={sneaker.model}
-              colorway={sneaker.colorway}
-              imageUrl={resolveSneakerImage(sneaker.primaryImageUrl)}
-              aspect="wide"
-              className="h-full"
-            />
-          </div>
+  const iso = releaseInstant(drop.releaseDate, drop.releaseTime, drop.releaseTimezone);
+  const realImage = resolveSneakerImage(sneaker.primaryImageUrl);
+  const palette = paletteFor(sneaker.colorway, sneaker.brand);
+  const releaseDateLabel = new Date(`${drop.releaseDate}T00:00:00`).toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
-          <header className="mb-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
+  const specs = [
+    { icon: CalendarDays, label: 'Release date', value: releaseDateLabel },
+    { icon: Clock, label: 'Time', value: drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA' },
+    { icon: MapPin, label: 'Regions', value: regionText || '—' },
+    ...(drop.retailPrice ? [{ icon: Tag, label: 'Retail price', value: formatInr(Number(drop.retailPrice)) }] : []),
+  ];
+
+  return (
+    <PageShell width="7xl">
+      <DropLiveProvider>
+        <Link
+          href="/drops"
+          className="mb-8 inline-flex min-h-[44px] items-center gap-2 font-mono text-meta uppercase tracking-[0.14em] text-text-soft transition-colors hover:text-brass-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Drop calendar
+        </Link>
+
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+          <Reveal>
+            <div className="edge-glow ticks panel relative h-[320px] overflow-hidden sm:h-[420px] lg:sticky lg:top-24 lg:h-[560px]">
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(55% 60% at 50% 60%, ${palette.glow}55, transparent 75%)` }}
+              />
+              <div aria-hidden className="grid-lines absolute inset-0 opacity-40" />
+              {realImage ? (
+                <SneakerPlaceholderArt
+                  brand={sneaker.brand}
+                  model={sneaker.model}
+                  colorway={sneaker.colorway}
+                  imageUrl={realImage}
+                  aspect="wide"
+                  className="!absolute !inset-0 !aspect-auto h-full w-full !object-contain p-6"
+                />
+              ) : (
+                <SneakerViewer brand={sneaker.brand} model={sneaker.model} colorway={sneaker.colorway} className="absolute inset-0" />
+              )}
+              <p className="pointer-events-none absolute left-4 top-4 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass sm:left-6 sm:top-6">
                 {sneaker.styleCode}
               </p>
-              <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />
             </div>
-            <h1 className="mt-1 font-display text-display-hero font-semibold leading-[1.05] text-text">
-              {sneaker.brand} {sneaker.model}
-            </h1>
-            <p className="mt-1 text-body text-text-soft">{sneaker.colorway}</p>
+          </Reveal>
 
-            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-moss/20 pt-5 sm:grid-cols-4">
-              <div>
-                <dt className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">Release date</dt>
-                <dd className="mt-0.5 font-mono text-data-inline text-text">
-                  {new Date(`${drop.releaseDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">Time</dt>
-                <dd className="mt-0.5 font-mono text-data-inline text-text">
-                  {drop.releaseTime ? formatReleaseTime(drop.releaseTime) : 'TBA'}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">Regions</dt>
-                <dd className="mt-0.5 font-mono text-data-inline text-text">{regionText || '—'}</dd>
-              </div>
-              {drop.retailPrice && (
-                <div>
-                  <dt className="font-mono text-meta uppercase tracking-[0.06em] text-text-faint">Retail price</dt>
-                  <dd className="mt-0.5 font-mono text-data-inline text-text">
-                    {formatInr(Number(drop.retailPrice))}
-                  </dd>
+          <div className="flex flex-col gap-8">
+            <header>
+              <Reveal>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-brass">{sneaker.brand}</p>
+                  <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />
                 </div>
-              )}
-            </dl>
+              </Reveal>
+              <Reveal delay={0.05}>
+                <h1 className="mt-3 font-display text-[clamp(2.4rem,5.5vw,4rem)] font-bold leading-[0.98] tracking-tight text-text">
+                  {sneaker.model}
+                </h1>
+                <p className="mt-2 text-xl text-text-soft">{sneaker.colorway}</p>
+              </Reveal>
+            </header>
 
-            <div className="mt-6">
-              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
-            </div>
-          </header>
-
-          <div className="flex flex-col gap-6">
-            {raffle ? <RaffleNotice raffle={raffle} /> : <OfficialPurchaseLinks links={purchaseLinks} />}
-
-            {drop.status === 'live' && drop.defaultVariant && (
-              <LivePricePreview styleCode={sneaker.styleCode} size={drop.defaultVariant.size} />
+            {drop.status === 'upcoming' && (
+              <Reveal delay={0.1}>
+                <p className="eyebrow mb-3 flex items-center gap-2">
+                  <span className="live-dot text-rust" aria-hidden /> Drops in
+                </p>
+                <Countdown iso={iso} size="lg" />
+              </Reveal>
             )}
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">Community</p>
+            <Reveal delay={0.12}>
+              <dl className="grid grid-cols-2 gap-px border border-text/[0.08] bg-text/[0.08]">
+                {specs.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="bg-vault-raised p-4">
+                    <dt className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
+                      <Icon className="h-3 w-3 text-brass" aria-hidden /> {label}
+                    </dt>
+                    <dd className="mt-1.5 font-mono text-data-inline text-text">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Reveal>
+
+            <Reveal delay={0.14}>
+              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+            </Reveal>
+
+            <Reveal delay={0.16}>
+              {raffle ? <RaffleNotice raffle={raffle} /> : <OfficialPurchaseLinks links={purchaseLinks} />}
+            </Reveal>
+          </div>
+        </div>
+
+        <div className="mt-14 flex flex-col gap-10 lg:mt-20">
+          {drop.status === 'live' && drop.defaultVariant && (
+            <LivePricePreview styleCode={sneaker.styleCode} size={drop.defaultVariant.size} />
+          )}
+
+          <div className="grid gap-10 lg:grid-cols-2">
+            <section aria-labelledby="community-h">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 id="community-h" className="flex items-center gap-2 font-display text-2xl font-bold text-text">
+                  <MessageSquare className="h-5 w-5 text-brass" aria-hidden /> Community
+                </h2>
                 <Link
                   href={`/community/new?type=drop_talk&dropEventId=${drop.id}`}
-                  className="font-mono text-meta text-brass hover:underline"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 font-mono text-meta text-brass-bright underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                 >
-                  Start a Drop Talk post →
+                  Start a Drop Talk post <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                 </Link>
               </div>
               {dropTalkPosts.length > 0 && (
-                <ul className="mb-4 flex flex-col divide-y divide-moss/15 border-y border-moss/15">
+                <ul className="mb-4 flex flex-col gap-2">
                   {dropTalkPosts.map((post) => (
-                    <li key={post.id} className="py-2.5">
-                      <Link href={`/community/${post.id}`} className="flex items-center justify-between gap-3 text-body text-text hover:text-brass">
+                    <li key={post.id}>
+                      <Link
+                        href={`/community/${post.id}`}
+                        className="panel flex min-h-[48px] items-center justify-between gap-3 px-4 py-3 text-body text-text transition-colors hover:bg-vault-high hover:text-brass-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                      >
                         <span>{post.title ?? '(untitled Drop Talk post)'}</span>
-                        <span className="shrink-0 font-mono text-meta text-text-faint">{post.commentCount} comment{post.commentCount === 1 ? '' : 's'}</span>
+                        <span className="shrink-0 font-mono text-meta text-text-faint">
+                          {post.commentCount} comment{post.commentCount === 1 ? '' : 's'}
+                        </span>
                       </Link>
                     </li>
                   ))}
@@ -170,40 +223,39 @@ export default async function DropDetailPage({ params }: PageProps) {
               {chatRoom ? (
                 <ChatRoom room={chatRoom} />
               ) : (
-                <p className="text-meta text-text-faint">
-                  Live chat opens automatically an hour before release.
-                </p>
+                <p className="panel px-4 py-5 text-meta text-text-soft">Live chat opens automatically an hour before release.</p>
               )}
-            </div>
+            </section>
 
-            {drop.relatedNews.length > 0 ? (
-              <div>
-                <p className="mb-2 font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
-                  Related coverage
-                </p>
-                <ul className="flex flex-col divide-y divide-moss/15 border-y border-moss/15">
+            <section aria-labelledby="coverage-h">
+              <h2 id="coverage-h" className="mb-4 flex min-h-[44px] items-center gap-2 font-display text-2xl font-bold text-text">
+                <Newspaper className="h-5 w-5 text-brass" aria-hidden /> Related coverage
+              </h2>
+              {drop.relatedNews.length > 0 ? (
+                <ul className="flex flex-col gap-2">
                   {drop.relatedNews.map((n) => (
-                    <li key={n.id} className="py-3">
+                    <li key={n.id}>
                       <Link
                         href={`/news/${n.id}`}
-                        className="flex items-center justify-between gap-3 text-body text-text hover:text-brass"
+                        className="panel group flex min-h-[48px] items-center justify-between gap-3 px-4 py-3 text-body text-text transition-colors hover:bg-vault-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                       >
-                        <span>{n.title}</span>
+                        <span className="group-hover:text-brass-bright">{n.title}</span>
                         {n.isBreaking && (
-                          <span className="shrink-0 font-mono text-meta uppercase tracking-[0.06em] text-brass">Breaking</span>
+                          <span className="inline-flex shrink-0 items-center gap-1.5 border border-rust/50 bg-rust/10 px-2 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-wider text-rust">
+                            <span className="live-dot !h-1.5 !w-1.5" aria-hidden /> Breaking
+                          </span>
                         )}
                       </Link>
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : (
-              <p className="text-meta text-text-faint">No coverage yet — check back once this gets closer.</p>
-            )}
+              ) : (
+                <p className="panel px-4 py-5 text-meta text-text-soft">No coverage yet — check back once this gets closer.</p>
+              )}
+            </section>
           </div>
         </div>
       </DropLiveProvider>
-      <SiteFooter />
-    </main>
+    </PageShell>
   );
 }

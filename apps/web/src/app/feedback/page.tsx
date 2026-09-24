@@ -1,12 +1,19 @@
 import type { Metadata } from 'next';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import { Crosshair, Eye, MessageSquareText } from 'lucide-react';
+import { PageShell } from '@/components/ui/PageShell';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { FeedbackForm } from '@/components/FeedbackForm';
 
 export const metadata: Metadata = {
-  title: 'Send feedback | CHOSN',
+  title: 'Send feedback',
   description: 'Tell us what works, what doesn’t, and what confused you.',
 };
+
+const WANTED = [
+  { icon: Crosshair, title: 'Did you believe the numbers?', text: 'Price accuracy is the whole product.' },
+  { icon: Eye, title: 'How does it feel?', text: 'Look, motion, speed on your device.' },
+  { icon: MessageSquareText, title: 'Was it clear?', text: 'CHOSN compares — it never sells.' },
+];
 
 /**
  * Day 19 task 8. The three prompts below aren't generic "how are we
@@ -25,20 +32,36 @@ export const metadata: Metadata = {
  */
 export default function FeedbackPage() {
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-3xl px-6 py-10 lg:py-14">
-        <p className="font-mono text-ui-label uppercase tracking-[0.06em] text-text-faint">Soft launch</p>
-        <h1 className="mt-2 font-display text-display-section font-semibold text-text">Send feedback</h1>
-        <p className="mt-4 max-w-[60ch] text-body text-text-soft">
-          CHOSN is in soft launch with a small group. Blunt is more useful than polite — especially
-          about anything that confused you or that you didn&apos;t believe.
-        </p>
-        <div className="mt-8">
+    <PageShell width="6xl">
+      <PageHeader
+        eyebrow="Soft launch"
+        title="Send feedback"
+        description={
+          <>
+            CHOSN is in soft launch with a small group. Blunt is more useful than polite — especially
+            about anything that confused you or that you didn&apos;t believe.
+          </>
+        }
+      />
+      <div className="grid gap-8 lg:grid-cols-[1fr_20rem] lg:items-start">
+        <div className="panel ticks p-5 sm:p-8">
           <FeedbackForm />
         </div>
+        <aside aria-label="What we most want to hear" className="space-y-3">
+          <p className="eyebrow">What we most want to hear</p>
+          {WANTED.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex gap-3 border border-text/10 bg-vault-raised/50 p-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+                <Icon aria-hidden className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-ui-label font-semibold text-text">{title}</p>
+                <p className="mt-0.5 text-meta text-text-soft">{text}</p>
+              </div>
+            </div>
+          ))}
+        </aside>
       </div>
-      <SiteFooter />
-    </main>
+    </PageShell>
   );
 }

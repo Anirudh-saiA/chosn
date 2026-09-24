@@ -4,7 +4,8 @@ import { useId, useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Input, buttonVariantClass } from '@chosn/ui';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, GoogleGlyph, PasswordField, Spinner, TextField } from './fields';
 
 type Status = 'idle' | 'submitting' | 'needs-totp' | 'error';
 
@@ -60,91 +61,70 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     router.refresh();
   }
 
+  const busy = status === 'submitting';
   return (
-    <div className="flex max-w-[40ch] flex-col gap-6">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <div>
-          <label htmlFor={emailId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-            Email
-          </label>
-          <Input
-            id={emailId}
-            type="email"
-            required
-            autoComplete="email"
-            disabled={status === 'needs-totp'}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-2"
-          />
-        </div>
-        <div>
-          <label htmlFor={passwordId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-            Password
-          </label>
-          <Input
-            id={passwordId}
-            type="password"
-            required
-            autoComplete="current-password"
-            disabled={status === 'needs-totp'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2"
-          />
-        </div>
-
-        {status === 'needs-totp' && (
-          <div>
-            <label htmlFor={totpId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-              Authenticator code
-            </label>
-            <Input
-              id={totpId}
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              autoFocus
-              required
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value)}
-              className="mt-2"
-            />
-            <p className="mt-1 text-meta text-text-faint">The 6-digit code from your authenticator app.</p>
-          </div>
-        )}
-
-        <button type="submit" disabled={status === 'submitting'} className={buttonVariantClass('primary')}>
-          {status === 'submitting' ? 'Signing in…' : status === 'needs-totp' ? 'Verify code' : 'Sign in'}
-        </button>
-
-        {error && (
-          <p role="alert" className="text-data-inline text-rust">
-            {error}
-          </p>
-        )}
-      </form>
-
+    <div className="flex flex-col gap-6">
       {googleEnabled && (
         <>
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-moss/20" />
-            <span className="font-mono text-meta uppercase text-text-faint">or</span>
-            <div className="h-px flex-1 bg-moss/20" />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => signIn('google', { callbackUrl: '/' })}
-            className={buttonVariantClass('secondary')}
-          >
+          <button type="button" onClick={() => signIn('google', { callbackUrl: '/' })} className={buttonVariantClass('secondary', 'w-full min-h-[48px]')}>
+            <GoogleGlyph />
             Continue with Google
           </button>
+          <div className="flex items-center gap-3" aria-hidden>
+            <div className="h-px flex-1 bg-text/10" />
+            <span className="font-mono text-meta uppercase tracking-[0.2em] text-text-faint">or with email</span>
+            <div className="h-px flex-1 bg-text/10" />
+          </div>
         </>
       )}
 
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+        <TextField
+          id={emailId}
+          label="Email"
+          type="email"
+          required
+          autoComplete="email"
+          disabled={status === 'needs-totp'}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <PasswordField
+          id={passwordId}
+          label="Password"
+          required
+          autoComplete="current-password"
+          disabled={status === 'needs-totp'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        {status === 'needs-totp' && (
+          <TextField
+            id={totpId}
+            label="Authenticator code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            required
+            hint="The 6-digit code from your authenticator app."
+            value={totpCode}
+            onChange={(e) => setTotpCode(e.target.value)}
+            className="font-mono tracking-[0.3em]"
+          />
+        )}
+
+        {error && <FormAlert>{error}</FormAlert>}
+
+        <button type="submit" disabled={busy} className={buttonVariantClass('primary', 'min-h-[48px]')}>
+          {busy && <Spinner />}
+          {busy ? 'Signing in…' : status === 'needs-totp' ? 'Verify code' : 'Sign in'}
+        </button>
+      </form>
+
       <p className="text-meta text-text-faint">
-        <Link href="/forgot-password" className="underline decoration-moss/40 underline-offset-4 hover:text-text-soft">
+        <Link href="/forgot-password" className="link-underline inline-flex min-h-[44px] items-center text-text-soft hover:text-text">
           Forgot your password?
         </Link>
       </p>

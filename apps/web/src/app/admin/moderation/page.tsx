@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
 import { auth } from '@/auth';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import { PageShell } from '@/components/ui/PageShell';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ReportsQueue } from '@/components/admin/ReportsQueue';
 import { fetchReports } from '@/lib/moderation';
 
-export const metadata: Metadata = { title: 'Moderation | CHOSN' };
+export const metadata: Metadata = { title: 'Moderation' };
 
 /**
  * Task 5 — deliberately minimal: a queue, the reported content's raw
@@ -33,23 +34,17 @@ export default async function ModerationPage() {
   const { reports } = await fetchReports(apiToken);
 
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-5xl px-6 py-10 lg:py-14">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="font-display text-display-section font-semibold text-text">Moderation queue</h1>
-          <Link href="/admin/community-health" className="font-mono text-meta text-brass hover:underline">
-            Community health →
-          </Link>
-        </div>
-        <p className="mt-2 max-w-[60ch] text-body text-text-soft">
-          Reports filed via the generic reportEntity API — pending first, newest first.
-        </p>
-        <div className="mt-8">
-          <ReportsQueue initialReports={reports} apiToken={apiToken} />
-        </div>
-      </div>
-      <SiteFooter />
-    </main>
+    <PageShell width="6xl">
+      <PageHeader
+        eyebrow="Admin · Terminal"
+        title="Moderation queue"
+        description="Reports filed via the generic reportEntity API — pending first, newest first."
+      >
+        <Link href="/admin/community-health" className="link-underline inline-flex min-h-[44px] items-center gap-2 font-mono text-meta uppercase tracking-[0.14em] text-brass-bright">
+          Community health <ArrowRight aria-hidden className="h-4 w-4" />
+        </Link>
+      </PageHeader>
+      <ReportsQueue initialReports={reports} apiToken={apiToken} />
+    </PageShell>
   );
 }

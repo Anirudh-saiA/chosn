@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react';
 import { AFFILIATE_DISCLOSURE_LONG } from '@/lib/legal-copy';
 
 /**
@@ -11,6 +12,9 @@ import { AFFILIATE_DISCLOSURE_LONG } from '@/lib/legal-copy';
  */
 export function AffiliateDisclosure() {
   return (
-    <p className="mt-3 max-w-[70ch] text-meta text-text-faint">{AFFILIATE_DISCLOSURE_LONG}</p>
+    <aside className="mt-4 flex max-w-[80ch] gap-3 border-l-2 border-brass/60 bg-brass/[0.05] px-4 py-3">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-brass-bright" aria-hidden />
+      <p className="text-meta leading-relaxed text-text-soft">{AFFILIATE_DISCLOSURE_LONG}</p>
+    </aside>
   );
 }

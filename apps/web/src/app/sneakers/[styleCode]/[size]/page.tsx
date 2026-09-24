@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
 import { NotifyToggle } from '@/components/drops/NotifyToggle';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
-import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt';
 import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
@@ -33,10 +33,10 @@ async function loadVariant(styleCode: string, sizeParam: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { styleCode, size } = await params;
   const data = await loadVariant(styleCode, size);
-  if (!data) return { title: 'Not found | CHOSN' };
+  if (!data) return { title: 'Not found' };
 
   const { sneaker, variant, marketIntelligence } = data;
-  const title = `${sneaker.brand} ${sneaker.model} "${sneaker.colorway}" · UK ${formatSize(variant.size)} price comparison | CHOSN`;
+  const title = `${sneaker.brand} ${sneaker.model} "${sneaker.colorway}" · UK ${formatSize(variant.size)} price comparison`;
   const priceLine =
     marketIntelligence?.bestAvailablePrice != null
       ? `Best available: ${formatInr(marketIntelligence.bestAvailablePrice)}.`
@@ -86,42 +86,28 @@ export default async function SneakerPricePage({ params }: PageProps) {
   const imageUrl = resolveSneakerImage(sneaker.primaryImageUrl, offers);
 
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-5xl px-6 py-10 lg:py-12">
-        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="w-24 shrink-0 sm:w-28">
-            <SneakerPlaceholderArt
-              brand={sneaker.brand}
-              model={sneaker.model}
-              colorway={sneaker.colorway}
-              imageUrl={imageUrl}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
-                {sneaker.styleCode} · UK {formatSize(variant.size)}
-              </p>
-              {/* Most sneakers have no drop_event yet — this is the normal
-                  case, not a loading state, so it renders nothing rather
-                  than a placeholder. */}
-              {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}
-            </div>
-            <h1 className="mt-1 font-display text-display-section font-semibold text-text">
-              {sneaker.brand} {sneaker.model}
-            </h1>
-            <p className="text-body text-text-soft">{sneaker.colorway}</p>
+    <PageShell width="7xl">
+      <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-meta text-text-soft">
+        <Link href="/sneakers" className="link-underline inline-flex min-h-[44px] items-center gap-1.5 hover:text-text sm:min-h-0">
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> All sneakers
+        </Link>
+        <span aria-hidden className="text-text-faint">/</span>
+        <span className="text-text-faint">
+          {sneaker.styleCode} · UK {formatSize(variant.size)}
+        </span>
+      </nav>
 
-            <div className="mt-4">
-              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
-            </div>
-          </div>
-        </header>
-
-        <PriceComparisonView styleCode={styleCode} initialData={data} />
-      </div>
-      <SiteFooter />
-    </main>
+      <PriceComparisonView
+        styleCode={styleCode}
+        initialData={data}
+        imageUrl={imageUrl}
+        // Most sneakers have no drop_event yet — this is the normal
+        // case, not a loading state, so it renders nothing.
+        badges={drop ? <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} /> : null}
+        notify={
+          <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+        }
+      />
+    </PageShell>
   );
 }

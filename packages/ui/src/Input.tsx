@@ -2,26 +2,18 @@ import { forwardRef, type InputHTMLAttributes } from 'react';
 import { cx } from './cx';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  /** Which of Day 2's two surfaces this input sits on. Defaults to Vault. */
+  /** Which surface this input sits on. Defaults to Vault. */
   surface?: 'vault' | 'chalk';
 }
 
-/**
- * For the waitlist form and anywhere else CHOSN collects text. Focus
- * state uses the text color, not Signal — Signal stays reserved for
- * actual buy/positive states, not generic interaction feedback.
- */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ surface = 'vault', className, ...props }, ref) => (
     <input
       ref={ref}
       className={cx(
-        'w-full border px-4 py-3 font-sans text-body outline-none transition-colors duration-150 ease-chosn',
-        // moss/40 reads fine on Vault's dark ground but drops under the
-        // 3:1 non-text contrast minimum on Chalk's light one — Chalk
-        // gets full-strength moss instead of a weaker opacity step.
+        'w-full border px-4 py-3 font-sans text-body outline-none transition-all duration-200 ease-out',
         surface === 'vault' &&
-          'border-moss/40 bg-vault text-text placeholder:text-text-faint focus-visible:border-text',
+          'border-text/15 bg-vault-deep/70 text-text placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:bg-vault-deep focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)]',
         surface === 'chalk' &&
           'border-moss bg-chalk text-text-chalk placeholder:text-text-chalk-soft focus-visible:border-text-chalk',
         className,

@@ -3,43 +3,345 @@
 @tailwind utilities;
 
 /*
- * Anything Tailwind's config can't express directly — lifted straight
- * from the Day 2 design tokens doc, §05 "Signature motion."
+ * CHOSN v2 — "Obsidian Luxe". Base tokens, atmosphere (aurora, grain,
+ * hairline grid), and the few things Tailwind config can't express.
+ * Keyframes shared with tailwind-preset (marquee, shimmer, float).
  */
 :root {
   --ease-chosn: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ticker-duration: 26s;
+  --focus-outline-color: theme('colors.ice');
 }
 
 @layer base {
+  html {
+    background: theme('colors.vault-deep');
+    scroll-behavior: auto; /* Lenis owns smooth scrolling */
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-vault font-sans text-text;
+    @apply bg-vault-deep font-sans text-text antialiased;
+    min-height: 100svh;
+    overflow-x: clip;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 
   ::selection {
-    @apply bg-signal/20;
+    background: rgba(255,168,0, 0.32);
+    color: #fff;
   }
 
-  /* Was specified in the Day 2 doc, never carried into the shipped
-     app CSS until now — every interactive element needs a visible
-     keyboard-focus state. Color is a variable, not a flat value:
-     `text` (near-white) is unreadable against Chalk's light ground —
-     any `.bg-chalk` section repoints it to `text-chalk` for every
-     focusable element inside. */
-  :root {
-    --focus-outline-color: theme('colors.text');
+  :focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 3px;
   }
 
   .bg-chalk {
     --focus-outline-color: theme('colors.text-chalk');
   }
 
-  :focus-visible {
-    outline: 2px solid var(--focus-outline-color);
-    outline-offset: 2px;
+  /* slim, on-brand scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(108, 115, 134, 0.5) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(108, 115, 134, 0.45);
+    border: 2px solid theme('colors.vault-deep');
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* tabular figures anywhere a number is set in mono */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  button,
+  [role='button'],
+  a,
+  select,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
   }
 }
 
+/* -------- Lenis -------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@layer components {
+  /* -------- Atmosphere -------- */
+
+  /* Fixed film-grain over the whole app: kills gradient banding, adds tactility. */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.055;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: overlay;
+  }
+
+  /* Ambient aurora: amber ember + electric-violet blooms that sit behind page content. */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .aurora::before,
+  .aurora::after {
+    content: '';
+    position: absolute;
+    width: 60vmax;
+    height: 60vmax;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.5;
+  }
+  .aurora::before {
+    top: -28vmax;
+    right: -16vmax;
+    background: radial-gradient(closest-side, rgba(255,168,0, 0.13), transparent);
+  }
+  .aurora::after {
+    bottom: -30vmax;
+    left: -20vmax;
+    background: radial-gradient(closest-side, rgba(124,92,255, 0.22), transparent);
+  }
+
+  /* Hairline engineering grid, fading out toward the edges. */
+  .grid-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(230,232,236, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(230,232,236, 0.045) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 78%);
+  }
+
+  /* -------- Surfaces -------- */
+
+  .glass {
+    background: linear-gradient(180deg, rgba(19,26,42, 0.62), rgba(7,10,18, 0.55));
+    border: 1px solid rgba(230,232,236, 0.09);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .panel {
+    position: relative;
+    background: linear-gradient(180deg, rgba(12,17,29, 0.92), rgba(7,10,18, 0.92));
+    border: 1px solid rgba(230,232,236, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* HUD corner brackets — the "stamped tag" signature, on featured surfaces. */
+  .ticks {
+    position: relative;
+  }
+  .ticks::before,
+  .ticks::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+    border: 0 solid theme('colors.brass');
+    transition: all 0.4s var(--ease-out);
+  }
+  .ticks::before {
+    top: -1px;
+    left: -1px;
+    border-top-width: 1px;
+    border-left-width: 1px;
+  }
+  .ticks::after {
+    right: -1px;
+    bottom: -1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+  }
+  .ticks:hover::before,
+  .ticks:hover::after {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* HUD glass card: 60% navy + blur, 1px violet->ice hairline at 30% opacity. */
+  .hud-card {
+    position: relative;
+    background: rgba(15, 23, 42, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .hud-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.3), rgba(143, 214, 255, 0.3));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  @keyframes laser-dash {
+    to {
+      stroke-dashoffset: -24;
+    }
+  }
+  .laser-line {
+    stroke-dasharray: 4 8;
+    animation: laser-dash 1.4s linear infinite;
+  }
+
+  /* Gradient hairline that lights up on hover. */
+  .edge-glow {
+    position: relative;
+  }
+  .edge-glow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,210,77, 0.65), transparent 40%, transparent 60%, rgba(230,232,236, 0.4));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-chosn);
+  }
+  .edge-glow:hover::before,
+  .edge-glow:focus-within::before {
+    opacity: 1;
+  }
+
+  /* -------- Type effects -------- */
+  .text-brass-gradient {
+    background: linear-gradient(120deg, #ffd24d 0%, #fff1c2 22%, #ffa800 50%, #e07a00 78%, #ffd24d 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-signal-gradient {
+    background: linear-gradient(120deg, #8ffad4 0%, #2ef2a6 55%, #14b87c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-chrome {
+    background: linear-gradient(120deg, #ffffff 0%, #e0e5ff 30%, #a7b0d6 55%, #e0e5ff 80%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-glow-violet {
+    text-shadow: 0 0 48px rgba(124, 92, 255, 0.42), 0 0 2px rgba(230, 232, 236, 0.25);
+  }
+  .text-outline {
+    -webkit-text-stroke: 1px rgba(230,232,236, 0.35);
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-brass;
+  }
+
+  /* -------- Loading -------- */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(230,232,236, 0.04) 25%, rgba(230,232,236, 0.1) 50%, rgba(230,232,236, 0.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  /* -------- Live dot -------- */
+  .live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: pulseDot 1.8s ease-out infinite;
+  }
+
+  /* -------- Marquee -------- */
+  .marquee-shell {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  }
+  .marquee-shell:hover .marquee-track {
+    animation-play-state: paused;
+  }
+  .marquee-track {
+    animation: marquee var(--marquee-duration, 40s) linear infinite;
+  }
+  .marquee-track.reverse {
+    animation-direction: reverse;
+  }
+
+  /* -------- Page-level helpers -------- */
+  .page-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    transition: background-size 0.35s var(--ease-out);
+  }
+  .link-underline:hover {
+    background-size: 100% 1px;
+  }
+}
+
+/* Legacy ticker (kept — used by the design-system page). */
 @keyframes ticker-scroll {
   from {
     transform: translateX(0);
@@ -48,18 +350,48 @@
     transform: translateX(-50%);
   }
 }
-
-/* Content inside .ticker-track must be duplicated ×2 for a seamless wrap. */
 .ticker-track {
   animation: ticker-scroll var(--ticker-duration) linear infinite;
 }
-
 .ticker-shell:hover .ticker-track {
   animation-play-state: paused;
 }
 
+/* View transitions between routes (progressive enhancement). */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-old(root) {
+    animation: 180ms var(--ease-chosn) both vt-out;
+  }
+  ::view-transition-new(root) {
+    animation: 380ms var(--ease-out) both vt-in;
+  }
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ticker-track {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ticker-track,
+  .marquee-track {
     animation: none;
     transform: none;
   }

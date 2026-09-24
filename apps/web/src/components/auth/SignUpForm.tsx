@@ -4,7 +4,8 @@ import { useId, useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Input, buttonVariantClass } from '@chosn/ui';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, PasswordField, Spinner, TextField } from './fields';
 
 type Status = 'idle' | 'submitting' | 'error';
 
@@ -58,38 +59,29 @@ export function SignUpForm() {
     }
   }
 
+  const busy = status === 'submitting';
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-[40ch] flex-col gap-4" noValidate>
-      <div>
-        <label htmlFor={emailId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-          Email
-        </label>
-        <Input
-          id={emailId}
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-2"
-        />
-      </div>
-      <div>
-        <label htmlFor={passwordId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-          Password
-        </label>
-        <Input
-          id={passwordId}
-          type="password"
-          required
-          minLength={10}
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-2"
-        />
-        <p className="mt-1 text-meta text-text-faint">At least 10 characters.</p>
-      </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <TextField
+        id={emailId}
+        label="Email"
+        type="email"
+        required
+        autoComplete="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <PasswordField
+        id={passwordId}
+        label="Password"
+        required
+        minLength={10}
+        autoComplete="new-password"
+        hint="At least 10 characters. A passphrase works well."
+        meter
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
       {/*
         Day 19 task 5 — the age statement and terms acceptance sit above
@@ -105,27 +97,24 @@ export function SignUpForm() {
         parental consent, which CHOSN doesn't implement, so those
         accounts simply aren't offered.
       */}
-      <p className="max-w-[46ch] text-meta text-text-faint">
+      <p className="border-l-2 border-brass/50 pl-3 text-meta leading-relaxed text-text-soft">
         You must be 13 or older to create a CHOSN account. By creating one you agree to our{' '}
-        <Link href="/terms" className="text-brass underline underline-offset-2">
+        <Link href="/terms" className="text-brass-bright underline underline-offset-2">
           Terms of Service
         </Link>{' '}
         and{' '}
-        <Link href="/privacy" className="text-brass underline underline-offset-2">
+        <Link href="/privacy" className="text-brass-bright underline underline-offset-2">
           Privacy Policy
         </Link>
         .
       </p>
 
-      <button type="submit" disabled={status === 'submitting'} className={buttonVariantClass('primary')}>
-        {status === 'submitting' ? 'Creating account…' : 'Create account'}
-      </button>
+      {error && <FormAlert>{error}</FormAlert>}
 
-      {error && (
-        <p role="alert" className="text-data-inline text-rust">
-          {error}
-        </p>
-      )}
+      <button type="submit" disabled={busy} className={buttonVariantClass('primary', 'min-h-[48px]')}>
+        {busy && <Spinner />}
+        {busy ? 'Creating account…' : 'Create account'}
+      </button>
     </form>
   );
 }

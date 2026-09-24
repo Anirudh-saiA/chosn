@@ -1,24 +1,23 @@
 import type { Metadata } from 'next';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import Link from 'next/link';
+import { AuthShell } from '@/components/auth/AuthShell';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
-export const metadata: Metadata = { title: 'Reset password | CHOSN' };
+export const metadata: Metadata = { title: 'Reset password' };
 
 export default function ForgotPasswordPage() {
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-4xl px-6 py-10 lg:py-14">
-        <h1 className="font-display text-display-section font-semibold text-text">Reset your password</h1>
-        <p className="mt-2 max-w-[46ch] text-body text-text-soft">
-          We'll email you a link to set a new one — nothing changes until you use it.
-        </p>
-        <div className="mt-8">
-          <ForgotPasswordForm />
-        </div>
-      </div>
-      <SiteFooter />
-    </main>
+    <AuthShell
+      eyebrow="Account recovery"
+      title="Reset your password"
+      description="We'll email you a link to set a new one — nothing changes until you use it."
+      footer={
+        <Link href="/login" className="link-underline font-semibold text-brass-bright">
+          Back to sign in
+        </Link>
+      }
+    >
+      <ForgotPasswordForm />
+    </AuthShell>
   );
 }

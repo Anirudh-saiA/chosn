@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { buttonVariantClass, Input } from '@chosn/ui';
+import { Check, RefreshCw } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
 import { AvatarIdenticon } from '@/components/AvatarIdenticon';
+import { Spinner, TextField } from './fields';
 
 interface ProfileSettingsProps {
   initialDisplayName: string | null;
@@ -46,41 +48,44 @@ export function ProfileSettings({ initialDisplayName, initialAvatarSeed }: Profi
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <AvatarIdenticon seed={avatarSeed} size={56} />
-        <button type="button" onClick={rerollAvatar} disabled={busy} className={buttonVariantClass('secondary', 'w-fit')}>
+    <div className="grid gap-8 md:grid-cols-[auto_1fr]">
+      <div className="flex items-center gap-4 md:flex-col md:items-start">
+        <span className="rounded-full border border-brass/40 p-1 shadow-glow-brass">
+          <AvatarIdenticon seed={avatarSeed} size={72} />
+        </span>
+        <button type="button" onClick={rerollAvatar} disabled={busy} className={buttonVariantClass('secondary', 'w-fit min-h-[44px]')}>
+          <RefreshCw aria-hidden className="h-4 w-4" />
           {busy ? 'Generating…' : 'New avatar'}
         </button>
       </div>
-      <p className="max-w-[46ch] text-meta text-text-faint">
-        Generated, not a photo — nothing here can be uploaded or shown to anyone as your real picture.
-      </p>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="display-name" className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
-          Display name
-        </label>
-        <p className="max-w-[46ch] text-meta text-text-faint">
-          What CHOSN shows other members — never your real name or email.
-        </p>
-        <div className="flex max-w-sm items-center gap-3">
-          <Input
-            id="display-name"
-            type="text"
-            placeholder="e.g. Collector4f2a"
-            value={displayName}
-            onChange={(e) => {
-              setDisplayName(e.target.value);
-              setSaved(false);
-            }}
-            maxLength={40}
-          />
-          <button type="button" onClick={saveDisplayName} disabled={busy} className={buttonVariantClass('primary', 'w-fit')}>
+      <div className="flex flex-col gap-4">
+        <TextField
+          id="display-name"
+          label="Display name"
+          type="text"
+          placeholder="e.g. Collector4f2a"
+          hint="What CHOSN shows other members — never your real name or email. Avatars are generated, never a photo."
+          value={displayName}
+          onChange={(e) => {
+            setDisplayName(e.target.value);
+            setSaved(false);
+          }}
+          maxLength={40}
+          wrapperClassName="max-w-md"
+        />
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={saveDisplayName} disabled={busy} className={buttonVariantClass('primary', 'w-fit min-h-[44px]')}>
+            {busy && <Spinner />}
             {busy ? 'Saving…' : 'Save'}
           </button>
+          {saved && (
+            <p role="status" className="flex items-center gap-1.5 text-meta text-signal">
+              <Check aria-hidden className="h-4 w-4" />
+              Saved
+            </p>
+          )}
         </div>
-        {saved && <p className="text-meta text-moss">Saved.</p>}
       </div>
     </div>
   );

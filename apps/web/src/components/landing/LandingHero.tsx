@@ -1,205 +1,117 @@
 'use client';
 
-import { useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
-import { LOCAL_HERO_IMAGE } from '@/lib/local-preview';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, ArrowUpRight, Command, Search } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
+import { WordReveal } from '@/components/fx/Reveal';
+import { Magnetic } from '@/components/fx/Magnetic';
+import { HudOverlay, type HeroChip } from './HudOverlay';
 
-const HEADLINE_LINES = ['Every price.', 'One place.'];
+export type { HeroChip };
 
-/**
- * Local-only hero photography (Day 19). See lib/local-preview.ts for
- * the flag itself.
- *
- * Set `NEXT_PUBLIC_LOCAL_HERO_IMAGE` in `.env.local` to a path under
- * `/local-preview/` to preview the hero against an unlicensed
- * reference photo. Unset — which is the case in CI and on every
- * deployed build — falls back to the real, licensed photo below, so
- * this file is safe to commit while any local-preview image never is:
- * `apps/web/public/local-preview/` is gitignored precisely because the
- * repo and the Vercel deployment are both public.
- */
-
-/**
- * The one screen the whole brief's motion language gets defined on —
- * every other section reuses this same fade/scale/stagger vocabulary
- * rather than inventing its own.
- *
- * `useReducedMotion()` (Framer Motion's own hook, reads
- * prefers-reduced-motion) gates every animated prop below: reduced
- * users get the final state immediately, no entrance, no tilt — not a
- * cosmetic toggle, the actual initial/animate values collapse to the
- * same value when it's true.
- */
-export function LandingHero() {
-  const prefersReducedMotion = useReducedMotion();
-  const imageRef = useRef<HTMLDivElement>(null);
-
-  // Magnetic tilt — a few degrees max, spring-smoothed so it settles
-  // rather than snapping. Hero image only, per the brief.
-  const tiltX = useMotionValue(0);
-  const tiltY = useMotionValue(0);
-  const springTiltX = useSpring(tiltX, { stiffness: 120, damping: 20 });
-  const springTiltY = useSpring(tiltY, { stiffness: 120, damping: 20 });
-  const rotateX = useTransform(springTiltY, [-0.5, 0.5], [4, -4]);
-  const rotateY = useTransform(springTiltX, [-0.5, 0.5], [-4, 4]);
-
-  function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
-    if (prefersReducedMotion) return;
-    const rect = imageRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    tiltX.set((event.clientX - rect.left) / rect.width - 0.5);
-    tiltY.set((event.clientY - rect.top) / rect.height - 0.5);
-  }
-
-  function handleMouseLeave() {
-    tiltX.set(0);
-    tiltY.set(0);
-  }
+/** Hero copy + search + floating "live price" chips over the 3D stage. */
+export function LandingHero({
+  catalogSize,
+  retailerCount,
+  chips,
+}: {
+  catalogSize: number;
+  retailerCount: number;
+  chips: HeroChip[];
+}) {
+  const reduce = useReducedMotion();
+  const fade = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] as const },
+        };
 
   return (
-    <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-ink">
-      {/* Full-bleed as of Day 19 — the image now fills the entire
-          section at every breakpoint, not just the right half on large
-          screens. The earlier right-confined layout existed because the
-          generated placeholder mark needed a light gradient floor and a
-          left half of solid ink for the headline to sit on; a real
-          photo can carry the whole frame, so the text now sits directly
-          on top of it (see the scrim overlay just below, which is what
-          keeps it legible over a full photo instead of a plain
-          background). */}
-      <motion.div
-        ref={imageRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        initial={{ opacity: 0, scale: 1.05 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        style={{ rotateX, rotateY }}
-        className="absolute inset-0 h-full w-full"
-      >
-        {LOCAL_HERO_IMAGE ? (
-          // Local-preview branch — see the constant's own comment. A
-          // plain <img>, not next/image: a gitignored, local-only asset
-          // that's never part of a real build for next/image to optimize.
-          <img
-            src={LOCAL_HERO_IMAGE}
-            alt=""
-            className="h-full w-full object-cover object-center"
+    <section data-stage="hero" className="relative flex min-h-[100svh] items-center pb-24 pt-[46svh] sm:pt-10">
+      <div className="mx-auto w-full max-w-[90rem] px-5 sm:px-8">
+        <div className="max-w-[58rem]">
+          <motion.p
+            {...fade(0.05)}
+            className="inline-flex items-center gap-2.5 border border-chrome/30 bg-white/[0.04] px-3.5 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.2em] text-chrome-mid backdrop-blur-md"
+          >
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_10px_2px_rgba(46,242,166,.75)]" />
+            India&apos;s sneaker price intelligence
+          </motion.p>
+
+          <div className="relative">
+            <span aria-hidden className="pointer-events-none absolute -inset-x-10 -inset-y-6 -z-10 bg-[radial-gradient(60%_60%_at_35%_50%,rgba(124,92,255,0.28),transparent_70%)] blur-2xl" />
+          <WordReveal
+            as="h1"
+            immediate
+            delay={0.15}
+            text="Every price. One place."
+            className="mt-6 font-display text-[clamp(3.6rem,9vw,8.5rem)] font-bold leading-[0.86] tracking-[-0.015em] [filter:drop-shadow(0_8px_28px_rgba(0,0,0,0.55))_drop-shadow(0_0_1px_rgba(230,232,236,0.35))] text-text"
           />
-        ) : (
-          // Day 19: the real, committed hero photo — not a placeholder
-          // anymore. AI-generated (ChatGPT) skate-park composite,
-          // provided directly by the account holder — no third-party
-          // trademark or photographer's copyright involved, unlike the
-          // real-photo candidates rejected earlier this session. Only
-          // 1672×941 source — soft once stretched past ~1700px wide;
-          // swap for a higher-resolution regeneration if that shows on
-          // a large monitor. The image carries its own baked-in copy
-          // (its own wordmark, headline, nav); deliberately NOT hiding
-          // our real Masthead/headline/CTA over it the way local-preview
-          // mode does for images like this — losing the real "Sign in"
-          // link and a working "Compare now" button from the live site
-          // would be a bigger loss than some visual overlap with the
-          // image's own decorative text. `priority` because it's the
-          // largest above-the-fold image on the site's most visited
-          // route.
-          <Image
-            src="/images/hero-skatepark.png"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        )}
-      </motion.div>
-
-      {LOCAL_HERO_IMAGE && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-rust px-4 py-1.5 text-center font-mono text-meta font-semibold uppercase tracking-[0.06em] text-vault"
-        >
-          Local preview only — unlicensed reference image, never committed or deployed
-        </div>
-      )}
-
-      {/* Both scrims below exist only to keep our own headline/CTA
-          legible over a photo. When the local-preview image is standing
-          in as a complete, self-contained hero (its own copy baked into
-          the pixels — see the text block's own comment further down),
-          there's no overlaid text to protect, so skip them and let the
-          photo show at full clarity. */}
-      {!LOCAL_HERO_IMAGE && (
-        <>
-          {/* Left-side scrim — for the full-bleed image. With the photo
-              running edge-to-edge instead of confined to the right
-              half, the headline has nothing but the image itself behind
-              it on the left, where it used to sit on solid `bg-ink`.
-              Darkens the left ~2/3 and fades out before the right edge,
-              so the photo still reads clearly over there. */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 h-full w-full bg-gradient-to-r from-ink/95 via-ink/55 to-transparent sm:from-ink/90 sm:via-ink/40 sm:to-transparent" />
-
-          {/* Gradient floor so the headline reads over the placeholder/photo regardless of what's underneath. */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
-        </>
-      )}
-
-      {/* Day 19: when the local-preview image already has a complete
-          hero composition baked in (its own wordmark, headline, and
-          CTA-less footer copy — see page.tsx's Masthead comment), our
-          own headline/paragraph/CTA stack is hidden rather than
-          rendered on top of it a second time. This only ever fires in
-          local preview — unset in every real build, where the mark or
-          a licensed photo needs this text same as always. */}
-      {!LOCAL_HERO_IMAGE && (
-        <div className="relative z-10 w-full px-6 pb-14 sm:px-10 sm:pb-20 lg:pb-24">
-          <div className="mx-auto max-w-[90rem] lg:max-w-[52rem]">
-            <h1 className="font-editorial text-[3.25rem] font-black leading-[0.95] tracking-tight text-bone sm:text-[5.5rem] lg:text-[6rem]">
-              {HEADLINE_LINES.map((line, i) => (
-                <span key={line} className="block overflow-hidden">
-                  <motion.span
-                    initial={{ y: '110%', opacity: 0 }}
-                    animate={{ y: '0%', opacity: 1 }}
-                    transition={
-                      prefersReducedMotion
-                        ? { duration: 0 }
-                        : { duration: 0.7, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }
-                    }
-                    className="block"
-                  >
-                    {line}
-                  </motion.span>
-                </span>
-              ))}
-            </h1>
-
-            <motion.p
-              initial={{ y: 16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.3 }}
-              className="mt-5 max-w-[32ch] font-grotesk text-base text-bone/70 sm:text-lg"
-            >
-              Real-time price intelligence across every retailer and resale marketplace.
-            </motion.p>
-
-            <motion.div
-              initial={{ y: 16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.42 }}
-              className="mt-8"
-            >
-              <Link
-                href="/sneakers"
-                className="inline-flex items-center border border-ember bg-ember px-8 py-3.5 font-grotesk text-sm font-medium uppercase tracking-[0.08em] text-bone transition-colors duration-200 hover:bg-transparent hover:text-ember"
-              >
-                Compare now
-              </Link>
-            </motion.div>
           </div>
+
+          <motion.p {...fade(0.7)} className="mt-7 max-w-[34rem] text-[1.0625rem] leading-relaxed text-text-soft sm:text-lg">
+            We compare {catalogSize > 0 ? `${catalogSize}+ ` : ''}sneakers across {retailerCount} Indian retailers and global resale,
+            tell you when it&apos;s the right time to buy — and send you straight to the best price. We never sell a thing.
+          </motion.p>
+
+          <motion.form
+            {...fade(0.85)}
+            action="/sneakers"
+            method="get"
+            role="search"
+            className="group mt-9 flex max-w-xl items-stretch border border-text/15 bg-vault-deep/60 backdrop-blur-md transition-all duration-300 focus-within:border-ice focus-within:shadow-[0_0_0_4px_rgba(143,214,255,.14)]"
+          >
+            <label htmlFor="hero-q" className="sr-only">
+              Search sneakers
+            </label>
+            <Search className="my-auto ml-4 h-4 w-4 shrink-0 text-brass" aria-hidden />
+            <input
+              id="hero-q"
+              name="q"
+              type="search"
+              autoComplete="off"
+              placeholder="Try “Dunk Low”, “Samba”, DD1391-100…"
+              className="min-w-0 flex-1 bg-transparent px-3 py-4 font-sans text-body text-text outline-none placeholder:text-text-faint"
+            />
+            <kbd
+              aria-hidden
+              className="my-auto mr-2 hidden items-center gap-1 border border-violet/60 bg-violet/15 px-2 py-1 font-mono text-[0.68rem] text-violet-light shadow-[0_0_16px_-2px_rgba(124,92,255,0.7)] sm:flex"
+            >
+              <Command className="h-3 w-3" aria-hidden />K
+            </kbd>
+            <button type="submit" className={buttonVariantClass('primary', 'm-1.5 px-5')}>
+              Compare
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" aria-hidden />
+            </button>
+          </motion.form>
+
+          <motion.div {...fade(1)} className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Magnetic>
+              <Link href="/drops" className="link-underline inline-flex items-center gap-1.5 font-sans text-ui-label font-semibold text-text">
+                Upcoming drops <ArrowUpRight className="h-3.5 w-3.5 text-brass" aria-hidden />
+              </Link>
+            </Magnetic>
+            <Magnetic>
+              <Link href="/community" className="link-underline inline-flex items-center gap-1.5 font-sans text-ui-label font-semibold text-text">
+                Join the community <ArrowUpRight className="h-3.5 w-3.5 text-brass" aria-hidden />
+              </Link>
+            </Magnetic>
+          </motion.div>
         </div>
-      )}
+      </div>
+
+      <HudOverlay chips={chips} />
+
+      <div aria-hidden className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex">
+        <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em] text-text-faint">Scroll</span>
+        <span className="relative h-9 w-px overflow-hidden bg-text/15">
+          <span className="absolute inset-x-0 top-0 h-3 animate-[float_1.8s_ease-in-out_infinite] bg-brass-bright" />
+        </span>
+      </div>
     </section>
   );
 }

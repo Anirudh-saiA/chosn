@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { buttonVariantClass, Input } from '@chosn/ui';
+import { Check, Copy, ShieldCheck } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, Spinner, TextField } from './fields';
 
 type Status = 'loading' | 'off' | 'enrolling' | 'on';
 
@@ -18,6 +20,7 @@ export function TotpSetup() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/totp/status')
@@ -25,6 +28,17 @@ export function TotpSetup() {
       .then((body) => setStatus(body.enabled ? 'on' : 'off'))
       .catch(() => setStatus('off'));
   }, []);
+
+  async function copySecret() {
+    if (!secretBase32) return;
+    try {
+      await navigator.clipboard.writeText(secretBase32);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — the key stays selectable on screen */
+    }
+  }
 
   async function startEnrollment() {
     setBusy(true);
@@ -67,13 +81,26 @@ export function TotpSetup() {
     setStatus('off');
   }
 
-  if (status === 'loading') return <p className="text-body text-text-soft">Loading…</p>;
+  if (status === 'loading') {
+    return (
+      <div className="space-y-3" aria-busy="true" aria-label="Loading two-factor status">
+        <div className="skeleton h-5 w-64" />
+        <div className="skeleton h-11 w-56" />
+      </div>
+    );
+  }
 
   if (status === 'on') {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-body text-text-soft">Two-factor authentication is on for this account.</p>
-        <button type="button" onClick={disable} disabled={busy} className={buttonVariantClass('secondary', 'w-fit')}>
+      <div className="flex flex-col gap-4">
+        <p className="flex items-center gap-3 text-body text-text">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal">
+            <ShieldCheck aria-hidden className="h-4 w-4" />
+          </span>
+          Two-factor authentication is on for this account.
+        </p>
+        <button type="button" onClick={disable} disabled={busy} className={buttonVariantClass('secondary', 'w-fit min-h-[44px]')}>
+          {busy && <Spinner />}
           {busy ? 'Turning off…' : 'Turn off two-factor authentication'}
         </button>
       </div>
@@ -82,53 +109,69 @@ export function TotpSetup() {
 
   if (status === 'enrolling') {
     return (
-      <div className="flex max-w-[46ch] flex-col gap-4">
-        <p className="text-body text-text-soft">
-          Scan this with your authenticator app (Google Authenticator, 1Password, Authy — anything that speaks TOTP), then enter the 6-digit code it shows.
-        </p>
-        {/* Plain <img>, not next/image — a locally-generated data: URI, not a remote image next/image would have anything to optimize. */}
-        {qrCodeDataUrl && (
-          <img src={qrCodeDataUrl} alt="Scan this QR code with your authenticator app" className="h-48 w-48 border border-moss/25" />
-        )}
-        {secretBase32 && (
-          <p className="font-mono text-meta text-text-faint">
-            Can't scan it? Enter this key manually: <span className="text-text">{secretBase32}</span>
+      <div className="grid gap-8 md:grid-cols-[auto_1fr]">
+        <div className="flex flex-col gap-3">
+          <p className="font-mono text-meta uppercase tracking-[0.18em] text-brass">Step 1 · Scan</p>
+          {/* Plain <img>, not next/image — a locally-generated data: URI, not a remote image next/image would have anything to optimize. */}
+          {qrCodeDataUrl && (
+            <div className="ticks w-fit border border-text/10 bg-white p-3">
+              <img src={qrCodeDataUrl} alt="Scan this QR code with your authenticator app" className="h-44 w-44" />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-5">
+          <p className="max-w-[46ch] text-body text-text-soft">
+            Scan the code with your authenticator app (Google Authenticator, 1Password, Authy — anything that speaks TOTP), then enter the 6-digit code it shows.
           </p>
-        )}
-        <Input
-          type="text"
-          inputMode="numeric"
-          placeholder="123456"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          autoFocus
-        />
-        <button type="button" onClick={confirmEnrollment} disabled={busy || code.length < 6} className={buttonVariantClass('primary', 'w-fit')}>
-          {busy ? 'Verifying…' : 'Turn on two-factor authentication'}
-        </button>
-        {error && (
-          <p role="alert" className="text-data-inline text-rust">
-            {error}
-          </p>
-        )}
+          {secretBase32 && (
+            <div>
+              <p className="font-mono text-meta uppercase tracking-[0.18em] text-text-soft">Can&apos;t scan it? Enter this key</p>
+              <div className="mt-2 flex max-w-md items-stretch border border-text/15 bg-vault-deep/70">
+                <code className="min-w-0 flex-1 break-all px-3 py-2.5 font-mono text-data-inline tracking-wider text-text">{secretBase32}</code>
+                <button
+                  type="button"
+                  onClick={copySecret}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 border-l border-text/15 px-3 text-meta text-text-soft transition-colors hover:text-brass-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                >
+                  {copied ? <Check aria-hidden className="h-4 w-4 text-signal" /> : <Copy aria-hidden className="h-4 w-4" />}
+                  <span className="sr-only sm:not-sr-only">{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+          <TextField
+            label="Step 2 · Verification code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoFocus
+            wrapperClassName="max-w-xs"
+            className="font-mono tracking-[0.3em]"
+          />
+          {error && <FormAlert>{error}</FormAlert>}
+          <button type="button" onClick={confirmEnrollment} disabled={busy || code.length < 6} className={buttonVariantClass('primary', 'w-fit min-h-[48px]')}>
+            {busy && <Spinner />}
+            {busy ? 'Verifying…' : 'Turn on two-factor authentication'}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="max-w-[46ch] text-body text-text-soft">
+    <div className="flex flex-col gap-4">
+      <p className="max-w-[54ch] text-body text-text-soft">
         Not required — but recommended, since your account holds
         notification preferences and (later) your community identity.
       </p>
-      <button type="button" onClick={startEnrollment} disabled={busy} className={buttonVariantClass('primary', 'w-fit')}>
+      {error && <FormAlert>{error}</FormAlert>}
+      <button type="button" onClick={startEnrollment} disabled={busy} className={buttonVariantClass('primary', 'w-fit min-h-[48px]')}>
+        {busy && <Spinner />}
         {busy ? 'Starting…' : 'Set up two-factor authentication'}
       </button>
-      {error && (
-        <p role="alert" className="text-data-inline text-rust">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

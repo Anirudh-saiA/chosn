@@ -20,14 +20,14 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0F1613',
+          background: '#030407',
           color: '#EDEFE7',
           fontSize: 20,
           fontWeight: 700,
           fontFamily: 'Georgia, serif',
         }}
       >
-        C<span style={{ color: '#C6963C' }}>O</span>
+        C<span style={{ color: '#ffd24d' }}>O</span>
       </div>
     ),
     { ...size },

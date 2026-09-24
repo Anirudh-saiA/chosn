@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import { ShieldCheck, TriangleAlert, UserRound } from 'lucide-react';
 import { auth } from '@/auth';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import { PageShell } from '@/components/ui/PageShell';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { DeleteAccount } from '@/components/auth/DeleteAccount';
 import { ProfileSettings } from '@/components/auth/ProfileSettings';
 import { TotpSetup } from '@/components/auth/TotpSetup';
 
-export const metadata: Metadata = { title: 'Account security | CHOSN' };
+export const metadata: Metadata = { title: 'Account security' };
 
 /**
  * Inherently per-visitor (it's someone's own account settings) — no
@@ -20,44 +22,58 @@ export default async function AccountSecurityPage() {
   const session = await auth();
   if (!session?.user) redirect('/login');
 
+  const user = session.user as typeof session.user & { displayName?: string | null; avatarSeed?: string };
+
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-4xl px-6 py-10 lg:py-14">
-        <h1 className="font-display text-display-section font-semibold text-text">Security</h1>
-        <p className="mt-2 text-body text-text-soft">Signed in as {session.user.email}</p>
+    <PageShell width="4xl">
+      <PageHeader
+        eyebrow="Account"
+        title="Security"
+        description={
+          <>
+            Signed in as <span className="font-mono text-text">{session.user.email}</span>
+          </>
+        }
+      />
 
-        <section className="mt-10">
-          <h2 className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
-            Profile
-          </h2>
-          <div className="mt-3">
-            <ProfileSettings
-              initialDisplayName={(session.user as typeof session.user & { displayName?: string | null }).displayName ?? null}
-              initialAvatarSeed={(session.user as typeof session.user & { avatarSeed?: string }).avatarSeed ?? session.user.id ?? ''}
-            />
-          </div>
-        </section>
+      <div className="space-y-6">
+        <AccountSection icon={<UserRound aria-hidden className="h-4 w-4" />} title="Profile" note="What other members see.">
+          <ProfileSettings initialDisplayName={user.displayName ?? null} initialAvatarSeed={user.avatarSeed ?? session.user.id ?? ''} />
+        </AccountSection>
 
-        <section className="mt-10">
-          <h2 className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
-            Two-factor authentication
-          </h2>
-          <div className="mt-3">
-            <TotpSetup />
-          </div>
-        </section>
+        <AccountSection icon={<ShieldCheck aria-hidden className="h-4 w-4" />} title="Two-factor authentication" note="An extra step at sign-in.">
+          <TotpSetup />
+        </AccountSection>
 
-        <section className="mt-10">
-          <h2 className="font-mono text-ui-label font-semibold uppercase tracking-[0.06em] text-text-faint">
-            Delete account
+        <section aria-labelledby="danger-zone" className="border border-rust/40 bg-rust/[0.04] p-6 sm:p-8">
+          <h2 id="danger-zone" className="flex items-center gap-2 font-mono text-ui-label font-semibold uppercase tracking-[0.18em] text-rust">
+            <TriangleAlert aria-hidden className="h-4 w-4" />
+            Danger zone
           </h2>
-          <div className="mt-3">
+          <p className="mt-1 font-display text-2xl font-bold text-text">Delete account</p>
+          <div className="mt-4">
             <DeleteAccount />
           </div>
         </section>
       </div>
-      <SiteFooter />
-    </main>
+    </PageShell>
+  );
+}
+
+function AccountSection({ icon, title, note, children }: { icon: ReactNode; title: string; note: string; children: ReactNode }) {
+  const id = `sec-${title.toLowerCase().replace(/[^a-z]+/g, '-')}`;
+  return (
+    <section aria-labelledby={id} className="panel ticks p-6 sm:p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">{icon}</span>
+        <div>
+          <h2 id={id} className="font-display text-2xl font-bold leading-none text-text">
+            {title}
+          </h2>
+          <p className="mt-1 text-meta text-text-faint">{note}</p>
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }

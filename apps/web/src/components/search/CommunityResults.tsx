@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ArrowUpRight, MessagesSquare } from 'lucide-react';
+import { Reveal } from '@/components/fx/Reveal';
 import type { CommunityPostSearchResult } from '@/lib/catalog';
 
 const POST_TYPE_LABEL: Record<string, string> = {
@@ -9,36 +11,39 @@ const POST_TYPE_LABEL: Record<string, string> = {
 };
 
 /**
- * Day 24 task 1 — a clearly separate, clearly labeled group under the
- * sneaker results grid, not merged into it: this is a forum post, not a
- * price comparison page, and the whole point of the task was "a user
- * should be able to tell at a glance" which one they're looking at.
+ * A clearly separate, clearly labeled group under the sneaker results
+ * grid, not merged into it: these are forum posts, not price pages.
  */
 export function CommunityResults({ posts }: { posts: CommunityPostSearchResult[] }) {
   if (posts.length === 0) return null;
 
   return (
-    <div className="mt-10 border-t border-moss/20 pt-8">
-      <p className="font-mono text-ui-label uppercase tracking-[0.08em] text-text-faint">
-        Community discussion
-      </p>
-      <ul className="mt-3 flex flex-col divide-y divide-moss/15 border-y border-moss/15">
+    <Reveal className="mt-16 border-t border-text/[0.08] pt-10">
+      <div className="flex items-center gap-2.5">
+        <MessagesSquare className="h-4 w-4 text-brass" aria-hidden />
+        <h2 className="eyebrow">Community discussion</h2>
+      </div>
+      <ul className="mt-5 grid gap-px border border-text/[0.08] bg-text/[0.08] md:grid-cols-2">
         {posts.map((post) => (
-          <li key={post.id} className="py-3">
-            <Link href={`/community/${post.id}`} className="flex flex-col gap-0.5 hover:text-brass">
-              <span className="flex items-center gap-2">
-                <span className="font-mono text-meta uppercase tracking-[0.06em] text-brass">
-                  {POST_TYPE_LABEL[post.postType] ?? post.postType}
+          <li key={post.id} className="bg-vault">
+            <Link
+              href={`/community/${post.id}`}
+              className="group flex h-full min-h-[44px] flex-col gap-1.5 p-5 transition-colors hover:bg-vault-high focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brass-bright"
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2.5">
+                  <span className="border border-brass/30 bg-brass/[0.07] px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-brass-bright">
+                    {POST_TYPE_LABEL[post.postType] ?? post.postType}
+                  </span>
+                  <span className="text-meta text-text-faint">{post.authorDisplayName ?? 'Collector'}</span>
                 </span>
-                <span className="text-meta text-text-faint">
-                  {post.authorDisplayName ?? 'Collector'}
-                </span>
+                <ArrowUpRight className="h-4 w-4 text-text-faint transition-colors group-hover:text-brass-bright" aria-hidden />
               </span>
-              <span className="text-body text-text">{post.preview}</span>
+              <span className="line-clamp-2 text-body text-text">{post.preview}</span>
             </Link>
           </li>
         ))}
       </ul>
-    </div>
+    </Reveal>
   );
 }

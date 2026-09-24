@@ -1,7 +1,9 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { Input, buttonVariantClass } from '@chosn/ui';
+import { MailCheck } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
+import { Spinner, TextField } from './fields';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -28,27 +30,33 @@ export function ForgotPasswordForm() {
   }
 
   if (status === 'done') {
-    return <p className="max-w-[46ch] text-body text-text-soft">{message}</p>;
+    return (
+      <div className="flex flex-col items-start gap-4">
+        <span className="flex h-12 w-12 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal">
+          <MailCheck aria-hidden className="h-6 w-6" />
+        </span>
+        <p role="status" className="max-w-[46ch] text-body text-text-soft">
+          {message}
+        </p>
+      </div>
+    );
   }
 
+  const busy = status === 'submitting';
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-[40ch] flex-col gap-4" noValidate>
-      <div>
-        <label htmlFor={emailId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-          Email
-        </label>
-        <Input
-          id={emailId}
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-2"
-        />
-      </div>
-      <button type="submit" disabled={status === 'submitting'} className={buttonVariantClass('primary')}>
-        {status === 'submitting' ? 'Sending…' : 'Send reset link'}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <TextField
+        id={emailId}
+        label="Email"
+        type="email"
+        required
+        autoComplete="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button type="submit" disabled={busy} className={buttonVariantClass('primary', 'min-h-[48px]')}>
+        {busy && <Spinner />}
+        {busy ? 'Sending…' : 'Send reset link'}
       </button>
     </form>
   );

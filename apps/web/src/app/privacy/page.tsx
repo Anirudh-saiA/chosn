@@ -1,29 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Masthead } from '@/components/Masthead';
-import { SiteFooter } from '@/components/SiteFooter';
+import { LegalCallout, LegalLayout, LegalSection } from '@/components/legal/Legal';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | CHOSN',
+  title: 'Privacy Policy',
   description: 'What data CHOSN collects, why, how long it is kept, and how to get it deleted.',
 };
 
 export const revalidate = 3600;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-10">
-      <h2 className="font-display text-display-card font-semibold text-text">{title}</h2>
-      <div className="mt-3 flex max-w-[75ch] flex-col gap-3 text-body text-text-soft [&_strong]:text-text [&_a]:text-brass [&_a]:underline [&_a]:underline-offset-2">
-        {children}
-      </div>
-    </section>
-  );
-}
-
 function DataRow({ what, why, kept }: { what: string; why: string; kept: string }) {
   return (
-    <tr className="border-t border-moss/20 align-top">
+    <tr className="border-t border-text/10 align-top">
       <td className="py-3 pr-4 text-data-inline text-text">{what}</td>
       <td className="py-3 pr-4 text-data-inline text-text-soft">{why}</td>
       <td className="py-3 text-data-inline text-text-soft">{kept}</td>
@@ -33,33 +21,25 @@ function DataRow({ what, why, kept }: { what: string; why: string; kept: string 
 
 export default function PrivacyPage() {
   return (
-    <main>
-      <Masthead />
-      <div className="mx-auto max-w-3xl px-6 py-10 lg:py-14">
-        <p className="font-mono text-ui-label uppercase tracking-[0.06em] text-text-faint">Legal</p>
-        <h1 className="mt-2 font-display text-display-section font-semibold text-text">Privacy Policy</h1>
-        <p className="mt-4 text-meta text-text-faint">Last updated: September 2026</p>
-
-        <div className="mt-6 border-l-2 border-rust pl-4">
-          <p className="max-w-[75ch] text-data-inline text-text-soft">
+    <LegalLayout eyebrow="Legal" title="Privacy Policy" updated="September 2026">
+        <LegalCallout>
             <strong className="text-text">Pending legal review.</strong> Drafted in-house, not yet
             reviewed by a lawyer qualified on India&apos;s Digital Personal Data Protection Act 2023.
             The DPDP-specific sections below (consent basis, Data Principal rights, grievance
             officer, cross-border transfer) are the ones most likely to need correction before public
             launch — see <code className="font-mono">docs/legal/README.md</code>.
-          </p>
-        </div>
+          </LegalCallout>
 
-        <Section title="Who this applies to">
+        <LegalSection title="Who this applies to">
           <p>
             CHOSN is operated from India and primarily serves users in India, so this policy is
             written against the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong>.
             If you are in the EU/UK, the rights described below are broadly equivalent to those under
             GDPR, but CHOSN has not yet completed a separate GDPR compliance review.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="What we collect, why, and for how long">
+        <LegalSection title="What we collect, why, and for how long">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-left">
               <thead>
@@ -124,9 +104,9 @@ export default function PrivacyPage() {
               </tbody>
             </table>
           </div>
-        </Section>
+        </LegalSection>
 
-        <Section title="Legal basis">
+        <LegalSection title="Legal basis">
           <p>
             Under the DPDP Act, we process your personal data on the basis of your <strong>consent</strong>,
             given when you join the waitlist, create an account, subscribe to notifications, or accept
@@ -137,9 +117,9 @@ export default function PrivacyPage() {
             You can withdraw consent at any time — by unsubscribing, declining analytics, or deleting
             your account.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Who we share data with">
+        <LegalSection title="Who we share data with">
           <p>These are the actual third parties in use today, not a generic list:</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
@@ -188,9 +168,9 @@ export default function PrivacyPage() {
             Some of these providers store data outside India. The DPDP Act permits cross-border
             transfer except to countries specifically restricted by the Government of India.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Cookies and similar technologies">
+        <LegalSection title="Cookies and similar technologies">
           <p>
             <strong>Essential:</strong> your login session cookie (set by Auth.js), and local storage
             used to remember your notification subscriber ID and your analytics consent choice. These
@@ -202,9 +182,9 @@ export default function PrivacyPage() {
             Declining, or simply ignoring the banner, means PostHog is never loaded and sets nothing.
           </p>
           <p>CHOSN runs no advertising or retargeting pixels of any kind.</p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Your rights">
+        <LegalSection title="Your rights">
           <p>Under the DPDP Act you have the right to:</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
@@ -230,41 +210,39 @@ export default function PrivacyPage() {
               behalf in the event of death or incapacity. Email us to do this.
             </li>
           </ul>
-        </Section>
+        </LegalSection>
 
-        <Section title="Children">
+        <LegalSection title="Children">
           <p>
             CHOSN is not intended for anyone under 13, and we do not knowingly collect data from
             children under 13. Under the DPDP Act, processing a child&apos;s data requires verifiable
             parental consent; CHOSN does not currently offer accounts to under-13s for that reason. If
             you believe a child has created an account, email us and we will delete it.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Security">
+        <LegalSection title="Security">
           <p>
             Passwords are hashed with bcrypt and never stored in plain text. Two-factor secrets are
             encrypted at rest. Sessions use signed, httpOnly, secure cookies. Login, signup, and
             password-reset endpoints are rate-limited against credential-stuffing.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Grievance officer">
+        <LegalSection title="Grievance officer">
           <p>
             The DPDP Act requires a named contact for data complaints. For now this is the founder,
             reachable at <a href="mailto:privacy@chosn.app">privacy@chosn.app</a>. We aim to respond
             within 7 days and resolve within 30.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Changes">
+        <LegalSection title="Changes">
           <p>
             We&apos;ll date any material change here and notify registered users by email where the
             change meaningfully affects them.
           </p>
-        </Section>
-      </div>
-      <SiteFooter />
-    </main>
+        </LegalSection>
+    </LegalLayout>
   );
 }

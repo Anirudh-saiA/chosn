@@ -1,7 +1,9 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { Input, buttonVariantClass, cx } from '@chosn/ui';
+import { AlertCircle, Check, Loader2 } from 'lucide-react';
+import { Input, buttonVariantClass } from '@chosn/ui';
+import { labelClass } from '@/components/auth/fields';
 import { capture } from '@/lib/analytics';
 
 // Mirrors apps/api/src/waitlist/dto/join-waitlist.dto.ts ALLOWED_INTERESTS —
@@ -80,22 +82,26 @@ export function WaitlistForm() {
 
   if (joined) {
     return (
-      <div role="status" id={statusId} className="max-w-[46ch] border border-brass px-6 py-5">
-        <p className="font-sans text-body font-semibold text-text-chalk">
-          {status === 'joined'
-            ? "You're on the list."
-            : "You're already on the list."}
-        </p>
-        <p className="mt-1 text-data-inline text-text-chalk-soft">
-          We'll email you the moment early access opens — no spam before then.
-        </p>
+      <div role="status" id={statusId} className="panel ticks flex max-w-[46ch] items-start gap-4 px-6 py-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal">
+          <Check aria-hidden className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="font-display text-xl font-bold text-text">
+            {status === 'joined' ? "You're on the list." : "You're already on the list."}
+          </p>
+          <p className="mt-1 text-data-inline text-text-soft">
+            We&apos;ll email you the moment early access opens — no spam before then.
+          </p>
+        </div>
       </div>
     );
   }
 
+  const busy = status === 'submitting';
   return (
     <form onSubmit={handleSubmit} className="max-w-[46ch]" noValidate>
-      <label htmlFor={emailId} className="block font-sans text-ui-label font-semibold uppercase text-text-chalk">
+      <label htmlFor={emailId} className={labelClass}>
         Email address
       </label>
       <div className="mt-2 flex flex-col gap-3 sm:flex-row">
@@ -103,7 +109,6 @@ export function WaitlistForm() {
           id={emailId}
           type="email"
           name="email"
-          surface="chalk"
           required
           autoComplete="email"
           placeholder="you@example.com"
@@ -111,22 +116,19 @@ export function WaitlistForm() {
           onChange={(e) => setEmail(e.target.value)}
           aria-describedby={status === 'error' ? statusId : undefined}
           aria-invalid={status === 'error'}
-          className="sm:flex-1"
+          className="min-h-[48px] sm:flex-1"
         />
-        <button
-          type="submit"
-          disabled={status === 'submitting'}
-          className={buttonVariantClass('primary', 'sm:w-auto')}
-        >
-          {status === 'submitting' ? 'Joining…' : 'Notify me at launch'}
+        <button type="submit" disabled={busy} className={buttonVariantClass('primary', 'min-h-[48px] sm:w-auto')}>
+          {busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
+          {busy ? 'Joining…' : 'Notify me at launch'}
         </button>
       </div>
 
       <fieldset className="mt-5">
-        <legend className="font-sans text-ui-label font-semibold uppercase text-text-chalk">
-          What should we tell you about? <span className="normal-case text-text-chalk-soft">(optional)</span>
+        <legend className={labelClass}>
+          What should we tell you about? <span className="normal-case tracking-normal text-text-faint">(optional)</span>
         </legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {INTERESTS.map((tag) => {
             const selected = interests.includes(tag);
             return (
@@ -136,13 +138,10 @@ export function WaitlistForm() {
                 aria-pressed={selected}
                 onClick={() => toggleInterest(tag)}
                 className={
-                  'rounded-chip border px-3 py-1.5 font-mono text-data-delta font-semibold transition-colors duration-150 ease-chosn ' +
+                  'min-h-[44px] rounded-chip border px-4 py-2 font-mono text-data-delta font-semibold transition-colors duration-150 ease-chosn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice ' +
                   (selected
-                    ? 'border-brass bg-brass text-vault'
-                    // Full-strength moss, not /40 — the lighter opacity
-                    // used on Vault falls under 3:1 against Chalk's
-                    // light ground.
-                    : 'border-moss text-text-chalk-soft hover:border-text-chalk')
+                    ? 'border-brass-bright bg-brass-gradient text-vault-deep'
+                    : 'border-text/15 bg-vault-raised/60 text-text-soft hover:border-brass/60 hover:text-text')
                 }
               >
                 {tag}
@@ -152,22 +151,15 @@ export function WaitlistForm() {
         </div>
       </fieldset>
 
-      {/*
-        Rust marks the error as an accent (border), not as the text
-        color — rust-on-chalk body text sits under 4.5:1, and Day 2's
-        rule is that Rust stays non-decorative besides. The message
-        itself reads in text-chalk, which has full contrast either way.
-      */}
-      <p
-        id={statusId}
-        role="alert"
-        className={cx(
-          'mt-3 min-h-[1.25em] text-data-inline text-text-chalk',
-          status === 'error' && 'border-l-2 border-rust pl-2',
+      {/* Live region stays mounted (empty) so screen readers announce the message when it appears. */}
+      <div id={statusId} role="alert" className="mt-4 min-h-[1.25em]">
+        {status === 'error' && (
+          <p className="flex items-start gap-2 border border-rust/40 bg-rust/[0.08] px-3 py-2.5 text-data-inline text-rust">
+            <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </p>
         )}
-      >
-        {status === 'error' ? errorMessage : ''}
-      </p>
+      </div>
     </form>
   );
 }

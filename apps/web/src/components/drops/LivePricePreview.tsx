@@ -29,14 +29,14 @@ export async function LivePricePreview({ styleCode, size }: { styleCode: string;
     data.offers.find((o) => o.retailerSlug === mi.bestRetailerSlug)?.retailerName ?? mi.bestRetailerSlug ?? null;
 
   return (
-    <div>
-      <p className="mb-2 font-mono text-meta uppercase tracking-[0.08em] text-text-faint">
-        This just dropped — here's where it's already reselling
+    <div className="panel ticks p-5 sm:p-6">
+      <p className="eyebrow mb-4 flex items-center gap-2">
+        <span className="live-dot text-signal" aria-hidden /> This just dropped — here's where it's already reselling
       </p>
       <MarketIntelligenceCard data={mi} bestRetailerName={bestRetailerName} />
       <Link
         href={`/sneakers/${encodeURIComponent(styleCode)}/${formatSize(size)}`}
-        className={buttonVariantClass('secondary', 'mt-4 w-full sm:w-auto')}
+        className={buttonVariantClass('secondary', 'mt-5 min-h-[44px] w-full sm:w-auto')}
       >
         Compare every retailer
       </Link>

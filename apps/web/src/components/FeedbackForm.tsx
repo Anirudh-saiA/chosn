@@ -2,7 +2,9 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { usePathname } from 'next/navigation';
-import { buttonVariantClass, Input } from '@chosn/ui';
+import { Check, Send } from 'lucide-react';
+import { buttonVariantClass } from '@chosn/ui';
+import { FormAlert, Spinner, TextField, labelClass } from '@/components/auth/fields';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -76,22 +78,22 @@ export function FeedbackForm() {
 
   if (status === 'sent') {
     return (
-      <div role="status" className="max-w-[46ch] border border-brass px-6 py-5">
-        <p className="font-sans text-body font-semibold text-text">Got it — thank you.</p>
-        <p className="mt-1 text-data-inline text-text-soft">
-          Every one of these gets read during soft launch.
-        </p>
+      <div role="status" className="flex flex-col items-start gap-4 py-4">
+        <span className="flex h-14 w-14 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal">
+          <Check aria-hidden className="h-7 w-7" />
+        </span>
+        <p className="font-display text-3xl font-bold text-text">Got it — thank you.</p>
+        <p className="max-w-[46ch] text-body text-text-soft">Every one of these gets read during soft launch.</p>
       </div>
     );
   }
 
+  const busy = status === 'submitting';
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-[52ch] flex-col gap-5" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <fieldset>
-        <legend className="font-sans text-ui-label font-semibold uppercase text-text">
-          What&apos;s this about?
-        </legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <legend className={labelClass}>What&apos;s this about?</legend>
+        <div className="mt-3 flex flex-wrap gap-2">
           {TOPICS.map((t) => (
             <button
               key={t.value}
@@ -99,10 +101,10 @@ export function FeedbackForm() {
               aria-pressed={topic === t.value}
               onClick={() => setTopic(t.value)}
               className={
-                'rounded-chip border px-3 py-1.5 font-mono text-data-delta font-semibold transition-colors duration-150 ease-chosn ' +
+                'min-h-[44px] rounded-chip border px-4 py-2 font-mono text-data-delta font-semibold transition-colors duration-150 ease-chosn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice ' +
                 (topic === t.value
-                  ? 'border-brass bg-brass text-vault'
-                  : 'border-moss/40 text-text-soft hover:border-text')
+                  ? 'border-brass-bright bg-brass-gradient text-vault-deep'
+                  : 'border-text/15 bg-vault-raised/60 text-text-soft hover:border-brass/60 hover:text-text')
               }
             >
               {t.label}
@@ -112,49 +114,41 @@ export function FeedbackForm() {
       </fieldset>
 
       <div>
-        <label htmlFor={messageId} className="block font-sans text-ui-label font-semibold uppercase text-text">
+        <label htmlFor={messageId} className="block text-body font-semibold leading-snug text-text">
           {activePrompt}
         </label>
         <textarea
           id={messageId}
           required
-          rows={6}
+          rows={7}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={4000}
-          className="mt-2 w-full border border-moss/40 bg-vault-recessed px-3 py-2 text-body text-text placeholder:text-text-faint focus:border-brass focus:outline-none"
+          aria-describedby={`${messageId}-count`}
+          className="mt-3 w-full border border-text/15 bg-vault-deep/70 px-4 py-3 text-body text-text outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus:border-ice focus:bg-vault-deep focus:shadow-[0_0_0_3px_rgba(143,214,255,.18)]"
           placeholder="Be blunt."
         />
-      </div>
-
-      <div>
-        <label htmlFor={emailId} className="block font-sans text-ui-label font-semibold uppercase text-text">
-          Email <span className="normal-case text-text-faint">(optional — only if you want a reply)</span>
-        </label>
-        <Input
-          id={emailId}
-          type="email"
-          value={contactEmail}
-          onChange={(e) => setContactEmail(e.target.value)}
-          placeholder="you@example.com"
-          autoComplete="email"
-          className="mt-2"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={status === 'submitting' || message.trim().length === 0}
-        className={buttonVariantClass('primary', 'w-fit')}
-      >
-        {status === 'submitting' ? 'Sending…' : 'Send feedback'}
-      </button>
-
-      {error && (
-        <p role="alert" className="text-data-inline text-rust">
-          {error}
+        <p id={`${messageId}-count`} className="mt-1.5 text-right font-mono text-meta text-text-faint">
+          {message.length} / 4000
         </p>
-      )}
+      </div>
+
+      <TextField
+        id={emailId}
+        label="Email (optional, only if you want a reply)"
+        type="email"
+        value={contactEmail}
+        onChange={(e) => setContactEmail(e.target.value)}
+        placeholder="you@example.com"
+        autoComplete="email"
+      />
+
+      {error && <FormAlert>{error}</FormAlert>}
+
+      <button type="submit" disabled={busy || message.trim().length === 0} className={buttonVariantClass('primary', 'w-fit min-h-[48px]')}>
+        {busy ? <Spinner /> : <Send aria-hidden className="h-4 w-4" />}
+        {busy ? 'Sending…' : 'Send feedback'}
+      </button>
     </form>
   );
 }
