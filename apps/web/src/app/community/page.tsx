@@ -30,7 +30,15 @@ export default async function CommunityFeedPage() {
   const session = await auth();
   const apiToken = (session as unknown as { apiToken?: string } | null)?.apiToken;
 
-  const posts = await listPosts({ limit: 30 }, apiToken);
+  // An unreachable API shouldn't take the whole page down — show the shell
+  // with a notice instead of the framework error overlay.
+  let posts: Awaited<ReturnType<typeof listPosts>> = [];
+  let unavailable = false;
+  try {
+    posts = await listPosts({ limit: 30 }, apiToken);
+  } catch {
+    unavailable = true;
+  }
 
   return (
     <PageShell width="6xl">
@@ -55,7 +63,13 @@ export default async function CommunityFeedPage() {
       </PageHeader>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <FeedList posts={posts} signedIn={!!apiToken} />
+        {unavailable ? (
+          <p role="status" className="panel p-6 text-body text-text-soft">
+            The community feed can&apos;t be reached right now. Please try again in a moment.
+          </p>
+        ) : (
+          <FeedList posts={posts} signedIn={!!apiToken} />
+        )}
 
         <aside className="hidden lg:block">
           <div className="sticky top-24 flex flex-col gap-5">

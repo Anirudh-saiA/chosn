@@ -99,7 +99,7 @@ export function Masthead() {
               type="button"
               onClick={() => setPaletteOpen(true)}
               aria-label="Search (Command K)"
-              className="group hidden h-9 items-center gap-2 border border-text/12 bg-text/[0.03] pl-3 pr-2 font-sans text-meta text-text-soft transition-all hover:border-brass/50 hover:bg-text/[0.06] hover:text-text sm:flex"
+              className="group hidden h-9 items-center gap-2 rounded-full border border-text/12 bg-text/[0.03] pl-3.5 pr-2 font-sans text-meta text-text-soft transition-all hover:border-brass/50 hover:bg-text/[0.06] hover:text-text sm:flex"
             >
               <Search className="h-3.5 w-3.5" aria-hidden />
               <span className="pr-6">Search…</span>

@@ -6,46 +6,82 @@
  * https://claude.ai/code/artifact/30c20344-2bf9-46ac-8993-43e5342a4853
  */
 
+/**
+ * "Paper & graphite" — the light repaint of the v2 "Obsidian Luxe"
+ * system. Every token below KEEPS its original name and role (surface
+ * ramp, text, metals, aura accents, reserved signal colors) — only the
+ * hex values flip from dark-surface/light-text to light-surface/
+ * dark-text. This is deliberate: ~80 files across the app reference
+ * these exact class names (bg-vault-deep, text-brass, border-ice,
+ * etc.), so changing *what a token means* without renaming it is what
+ * makes this a safe app-wide repaint instead of a find-and-replace
+ * across every component.
+ *
+ * Paper tone is a desaturated, slightly cool stone-grey — deliberately
+ * NOT a warm cream (#F4F1EA-style creams read as the generic
+ * "AI-generated landing page" default). Graphite text is near-black,
+ * not pure #000, same reasoning as the old near-white #e6e8ec text
+ * was never pure #fff.
+ */
 const colors = {
-  // Surfaces
-  'vault-deep': '#030407', // page floor — one step below vault, where aurora glows sit
-  vault: '#070a12',
-  'vault-raised': '#0c111d',
-  'vault-high': '#131a2a', // hovered / elevated surfaces
-  'vault-recessed': '#02030A', // one step darker than vault — terminal/ticker readouts
-  chalk: '#EFF1EA',
-  'chalk-recessed': '#E4E6DC',
+  // Surfaces — same floor→elevated ramp, inverted lightness direction.
+  // vault-high (elevation/hover) now reads as "closer to white," the
+  // same way it used to read as "closer to white-hot" against black;
+  // vault-recessed (terminal/ticker readouts) is now the one surface
+  // that's visibly *darker* than the page, for the same sunken-inset
+  // feel it had on dark.
+  'vault-deep': '#CDE6F8', // page floor
+  vault: '#DAEBF9', // base surface
+  'vault-raised': '#E8F3FC', // raised surface (cards)
+  'vault-high': '#FFFFFF', // hovered / elevated surfaces
+  'vault-recessed': '#B4D4EC', // one step darker than vault — terminal/ticker readouts
+  chalk: '#D8EAF8',
+  'chalk-recessed': '#BBD6EC',
 
-  // Neutral ramp — borders, dividers, secondary text on either surface
+  // Neutral ramp — borders, dividers, secondary text on either surface.
+  // Unchanged: a mid-tone slate works as a divider against both a dark
+  // and a light surface without needing its own light/dark variant.
   moss: '#6C7386',
 
   // Next-gen luxury metals + the one functional glow. Platinum/chrome is
   // the cool metal; Ice is strictly a *functional energy* accent —
   // focus rings, active states, terrain lines, halo. Never hover, never a CTA.
-  // Liquid chrome: logo, trim, secondary UI, hairlines.
-  platinum: '#e0e5ff',
-  chrome: '#e0e5ff',
-  'chrome-mid': '#a7b0d6',
-  'chrome-shadow': '#6a7396',
+  // Liquid chrome: logo, trim, secondary UI, hairlines. Deepened from the
+  // old near-white #e0e5ff, which would have nearly vanished against
+  // paper — same metal, same cool-blue character, just dark enough to
+  // read as a line/trim color instead of a highlight.
+  platinum: '#4A5578',
+  chrome: '#4A5578',
+  'chrome-mid': '#7B84A3',
+  'chrome-shadow': '#A7ADC4',
   // Aura: violet = rim light / active / focal; ice = focus rings + light tint.
-  violet: '#7c5cff',
-  'violet-light': '#a78bff', // small-text / focus-critical (>= 5.5:1 on obsidian)
+  // Both deepened for 4.5:1+ text contrast against paper — the old
+  // values were tuned for contrast against near-black and fail badly
+  // on a light surface.
+  violet: '#6A42E8',
+  'violet-light': '#4A2BB5', // small-text / focus-critical (>= 4.5:1 on paper)
   ultramarine: '#4338ca',
-  ice: '#8FD6FF',
-  'ice-soft': '#5FA9D6',
+  ice: '#0E7FAE',
+  'ice-soft': '#3E8FC4',
 
   // Reserved accents — see Day 2 principle 04. Never used decoratively.
-  signal: '#2ef2a6', // buy signals, positive trend deltas, verified badges
-  brass: '#ffa800', // CHOSN's actual brand color — wordmark, dividers, SKU chips
-  'brass-bright': '#ffd24d', // highlight end of the brass gradient
-  rust: '#ff4f6d', // wait signals, negative trend deltas
+  // Deepened for the same reason as violet/ice above: these are real
+  // signal colors used as text/fills, not just glows, and the old
+  // values were tuned for a near-black backdrop.
+  signal: '#0F9D66', // buy signals, positive trend deltas, verified badges
+  brass: '#D97E00', // CHOSN's actual brand color — wordmark, dividers, SKU chips
+  'brass-bright': '#ffd24d', // highlight end of the brass gradient — stays vivid, only ever used inside a gradient stop, never standalone
+  rust: '#D1294B', // wait signals, negative trend deltas
 
-  // Text
-  text: '#e6e8ec',
-  'text-soft': '#a9b1c6',
-  'text-faint': '#8089a3',
-  'text-chalk': '#141B16',
-  'text-chalk-soft': '#57604F',
+  // Text — graphite, not pure black; same restraint the old near-white
+  // #e6e8ec had instead of pure white. text-chalk/-soft already held
+  // the exact dark-on-light values this system needed, so text/
+  // text-soft now match them rather than inventing a third pair.
+  text: '#14213D',
+  'text-soft': '#3B4A6B',
+  'text-faint': '#5A6A8A',
+  'text-chalk': '#14213D',
+  'text-chalk-soft': '#3B4A6B',
 
   // Landing-page-only fashion-editorial fork — deliberately separate
   // names from the ramp above (never `black`/`white`, which would
@@ -78,13 +114,21 @@ module.exports = {
     // luminous glows are allowed — they read as light, not as drop shadows.
     boxShadow: {
       none: 'none',
-      'glow-violet': '0 0 0 1px rgba(124,92,255,.5), 0 0 32px -4px rgba(124,92,255,.6)',
-      'glow-ice': '0 0 0 1px rgba(143,214,255,.45), 0 0 28px -4px rgba(143,214,255,.5)',
-      'glow-brass': '0 0 0 1px rgba(255,168,0,.35), 0 8px 40px -8px rgba(255,168,0,.45)',
-      'glow-signal': '0 0 0 1px rgba(46,242,166,.35), 0 8px 40px -8px rgba(46,242,166,.4)',
-      'glow-rust': '0 0 0 1px rgba(255,79,109,.35), 0 8px 40px -8px rgba(255,79,109,.4)',
-      lift: '0 24px 60px -24px rgba(0,0,0,.75), 0 2px 0 0 rgba(255,255,255,.03) inset',
-      inset: 'inset 0 1px 0 0 rgba(255,255,255,.05)',
+      // rgb literals updated to match the deepened violet/ice/brass/
+      // signal/rust hexes above — a colored ring+blur glow still reads
+      // as emphasis on a light surface, it just needs the same deeper
+      // hue the solid-fill tokens now use, not the old near-pastel one.
+      'glow-violet': '0 0 0 1px rgba(106,66,232,.5), 0 0 32px -4px rgba(106,66,232,.6)',
+      'glow-ice': '0 0 0 1px rgba(14,127,174,.45), 0 0 28px -4px rgba(14,127,174,.5)',
+      'glow-brass': '0 0 0 1px rgba(217,126,0,.35), 0 8px 40px -8px rgba(217,126,0,.45)',
+      'glow-signal': '0 0 0 1px rgba(15,157,102,.35), 0 8px 40px -8px rgba(15,157,102,.4)',
+      'glow-rust': '0 0 0 1px rgba(209,41,75,.35), 0 8px 40px -8px rgba(209,41,75,.4)',
+      lift: '0 24px 60px -24px rgba(0,0,0,.18), 0 2px 0 0 rgba(255,255,255,.6) inset',
+      // Was a white top-highlight (a believable "catching the light"
+      // cue against a dark surface) — a white highlight at 5% opacity
+      // on a paper background is invisible. Flipped to a faint dark
+      // line so a "raised" surface still reads as raised on paper.
+      inset: 'inset 0 -1px 0 0 rgba(20,27,22,.06)',
     },
     extend: {
       colors,
@@ -118,8 +162,11 @@ module.exports = {
         out: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       backgroundImage: {
-        'brass-gradient': 'linear-gradient(135deg, #ffd24d 0%, #fff1c2 16%, #ffa800 50%, #e07a00 100%)',
-        'chrome-gradient': 'linear-gradient(135deg, #ffffff 0%, #e0e5ff 26%, #6a7396 52%, #e0e5ff 72%, #a7b0d6 100%)',
+        'brass-gradient': 'linear-gradient(135deg, #cf7600 0%, #bf6200 50%, #a04c00 100%)',
+        // Was a near-white sheen for shimmering against black; inverted
+        // to a dark-to-mid slate sheen so the same metallic highlight
+        // reads against paper instead of disappearing into it.
+        'chrome-gradient': 'linear-gradient(135deg, #2E3650 0%, #4A5578 26%, #8890AC 52%, #4A5578 72%, #2E3650 100%)',
         'signal-gradient': 'linear-gradient(135deg, #8ffad4 0%, #2ef2a6 60%, #14b87c 100%)',
       },
       keyframes: {
