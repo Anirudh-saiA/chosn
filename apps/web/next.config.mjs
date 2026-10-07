@@ -97,6 +97,21 @@ const nextConfig = {
   // Stops Next.js announcing itself via X-Powered-By — cheap, real fix
   // for the ZAP-flagged "Server Leaks Information" finding (10037).
   poweredByHeader: false,
+  // Pre-launch: only the landing page is live. Every other route shows the
+  // /coming-soon page (the URL stays as typed). Assets, the auth API and the
+  // page itself are excluded. Set COMING_SOON=off to open the whole site again.
+  async rewrites() {
+    if (process.env.COMING_SOON === 'off') return [];
+    return {
+      beforeFiles: [
+        {
+          source:
+            '/:path((?!_next|api|images|coming-soon|icon\\.png|apple-icon\\.png|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml).+)',
+          destination: '/coming-soon',
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {

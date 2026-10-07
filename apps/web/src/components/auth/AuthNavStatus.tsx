@@ -22,11 +22,17 @@ export function AuthNavStatus() {
       <div className="flex items-center gap-1.5">
         <Link
           href="/login"
-          className="px-3 py-2 font-sans text-ui-label font-medium text-text-soft transition-colors hover:text-text"
+          className="px-3 py-2 font-sans text-[0.72rem] font-bold uppercase tracking-[0.2em] text-[#0A0A0A]/70 transition-colors hover:text-[#0A0A0A]"
         >
           Sign in
         </Link>
-        <Link href="/sign-up" className={buttonVariantClass('primary', '!py-[7px] !px-4')}>
+        <Link
+          href="/sign-up"
+          className={buttonVariantClass(
+            'primary',
+            '!border-transparent !bg-none !bg-[#0A0A0A] !px-5 !py-[8px] !text-[0.72rem] !font-bold !uppercase !tracking-[0.2em] !text-white !shadow-none',
+          )}
+        >
           Join
         </Link>
       </div>

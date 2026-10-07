@@ -65,7 +65,7 @@ export function PageAmbient() {
           key={s.id}
           className="ambient-drift absolute -inset-[12%] transition-opacity duration-[1800ms] ease-in-out will-change-[opacity]"
           style={{
-            opacity: s.id === active ? 1 : 0,
+            opacity: s.id === active ? 0.38 : 0,
             background: [
               `radial-gradient(52% 48% at 88% 14%, ${s.glow}8c, transparent 72%)`,
               `radial-gradient(50% 46% at 8% 92%, ${s.glow}66, transparent 72%)`,

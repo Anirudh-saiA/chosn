@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Command, Menu, Search, X } from 'lucide-react';
+import { Bell, Menu, Search, X } from 'lucide-react';
 import { AuthNavStatus } from '@/components/auth/AuthNavStatus';
 import { CommandPalette } from '@/components/ui/CommandPalette';
+import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
 
 const NAV = [
@@ -61,10 +62,8 @@ export function Masthead() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 transition-all duration-500 ease-out ${
-          scrolled || menuOpen
-            ? 'border-b border-text/[0.08] bg-vault-deep/70 backdrop-blur-xl'
-            : 'border-b border-transparent bg-transparent'
+        className={`sticky top-0 z-50 rounded-b-[2rem] border-b border-[#0A0A0A]/10 transition-all duration-500 ease-out ${
+          scrolled || menuOpen ? 'bg-vault-deep/70 backdrop-blur-xl' : 'bg-transparent'
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8">
@@ -78,15 +77,15 @@ export function Masthead() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative px-3.5 py-2 font-sans text-ui-label font-medium transition-colors duration-200 ${
-                    active ? 'text-text' : 'text-text-soft hover:text-text'
+                  className={`relative px-4 py-2 font-sans text-[0.72rem] font-bold uppercase tracking-[0.2em] transition-colors duration-200 ${
+                    active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/55 hover:text-[#0A0A0A]'
                   }`}
                 >
                   {item.label}
                   {active && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-x-3.5 -bottom-px h-px bg-violet-light shadow-[0_0_14px_2px_rgba(124,92,255,.75)]"
+                      className="absolute inset-x-4 -bottom-px h-[2px] bg-[#0A0A0A]"
                     />
                   )}
                 </Link>
@@ -98,29 +97,18 @@ export function Masthead() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              aria-label="Search (Command K)"
-              className="group hidden h-9 items-center gap-2 rounded-full border border-text/12 bg-text/[0.03] pl-3.5 pr-2 font-sans text-meta text-text-soft transition-all hover:border-brass/50 hover:bg-text/[0.06] hover:text-text sm:flex"
+              aria-label="Search sneakers"
+              className="flex h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
             >
-              <Search className="h-3.5 w-3.5" aria-hidden />
-              <span className="pr-6">Search…</span>
-              <kbd className="flex items-center gap-0.5 border border-text/15 px-1.5 py-0.5 font-mono text-[0.65rem] text-text-faint">
-                <Command className="h-2.5 w-2.5" aria-hidden />K
-              </kbd>
+              <Search className="h-[20px] w-[20px]" strokeWidth={2.2} aria-hidden />
             </button>
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              aria-label="Search"
-              className="flex h-10 w-10 items-center justify-center text-text-soft transition-colors hover:text-text sm:hidden"
-            >
-              <Search className="h-[18px] w-[18px]" />
-            </button>
+            <WishlistNav />
             <Link
               href="/notifications"
               aria-label="Notifications"
-              className="hidden h-10 w-10 items-center justify-center text-text-soft transition-colors hover:text-text sm:flex"
+              className="hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
             >
-              <Bell className="h-[18px] w-[18px]" />
+              <Bell className="h-[20px] w-[20px]" strokeWidth={2.2} />
             </Link>
             <div className="hidden md:block">
               <AuthNavStatus />

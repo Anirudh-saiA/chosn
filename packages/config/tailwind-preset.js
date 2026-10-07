@@ -30,11 +30,11 @@ const colors = {
   // vault-recessed (terminal/ticker readouts) is now the one surface
   // that's visibly *darker* than the page, for the same sunken-inset
   // feel it had on dark.
-  'vault-deep': '#CDE6F8', // page floor
-  vault: '#DAEBF9', // base surface
-  'vault-raised': '#E8F3FC', // raised surface (cards)
+  'vault-deep': '#FFFFFF', // page floor
+  vault: '#FAFAFA', // base surface
+  'vault-raised': '#FFFFFF', // raised surface (cards)
   'vault-high': '#FFFFFF', // hovered / elevated surfaces
-  'vault-recessed': '#B4D4EC', // one step darker than vault — terminal/ticker readouts
+  'vault-recessed': '#EFEFEF', // one step darker than vault — terminal/ticker readouts
   chalk: '#D8EAF8',
   'chalk-recessed': '#BBD6EC',
 
@@ -134,11 +134,12 @@ module.exports = {
       colors,
       fontFamily: {
         // Populated by next/font's CSS variables in apps/web/src/app/layout.tsx
-        display: ['var(--font-display)', 'Georgia', 'serif'], // Fraunces
+        // Heading face: Futura Condensed Extra Bold when installed on the device, else Anton (free, same look).
+        display: ['"Futura Condensed ExtraBold"', '"Futura Bold Condensed"', '"Futura-CondensedExtraBold"', 'var(--font-impact)', 'Impact', 'sans-serif'],
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'], // Archivo
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'], // JetBrains Mono
         // Landing-page-only — see the `ink`/`bone`/`ember` comment above.
-        editorial: ['var(--font-display)', 'Georgia', 'serif'],
+        editorial: ['"Futura Condensed ExtraBold"', '"Futura Bold Condensed"', '"Futura-CondensedExtraBold"', 'var(--font-impact)', 'Impact', 'sans-serif'],
         grotesk: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       fontSize: {

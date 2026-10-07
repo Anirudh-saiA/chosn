@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { HERO_SHOE_EVENT } from './PageAmbient';
-import { SHOES, type ShoePrice } from './shoes';
+import { SHOES } from './shoes';
 
 const INTERVAL = 4800; // ms each shoe stays centred before the carousel slides on
 
@@ -15,13 +15,7 @@ const INTERVAL = 4800; // ms each shoe stays centred before the carousel slides 
  * sides, and the row slides along on its own (loops forever, swipe / arrows work,
  * and it keeps rotating even while the cursor is on it). The stage recolours as the centred shoe changes.
  */
-export function HeroSlider({
-  retailerCount,
-  prices,
-}: {
-  retailerCount: number;
-  prices: Record<string, ShoePrice | null>;
-}) {
+export function HeroSlider() {
   const n = SHOES.length;
   const [i, setI] = useState(0);
   const drag = useRef<number | null>(null);
@@ -38,7 +32,6 @@ export function HeroSlider({
   }, [i]);
 
   const s = SHOES[i]!;
-  const p = prices[s.id];
   const go = (d: number) => setI((k) => (k + d + n) % n);
 
   return (
@@ -66,23 +59,13 @@ export function HeroSlider({
           if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
         }}
       >
-        {/* eyebrow */}
-        <p className="relative z-20 pt-8 text-center font-mono text-[0.68rem] font-bold uppercase tracking-[0.34em] opacity-85 sm:text-[0.72rem]">
-          India&apos;s sneaker price intelligence
-        </p>
-
         {/* the wordmark: huge, behind the shoes so they overlap it */}
-        <h1 className="pointer-events-none absolute inset-x-0 top-[9%] z-0 flex justify-center">
-          <span className="sr-only">CHOSN</span>
-          <span
-            aria-hidden
-            className="logo-mask w-[min(88vw,60rem)]"
-            style={{ ['--m' as string]: 'url(/images/logo-word.png)', aspectRatio: 5.8 }}
-          />
+        <h1 className="pointer-events-none absolute inset-x-0 top-[9%] z-0 text-center font-display text-[clamp(7rem,21vw,19rem)] uppercase leading-[0.8] tracking-[0.01em] text-white [text-shadow:0_2px_30px_rgba(255,255,255,0.25)]">
+          CHOSN.
         </h1>
 
         {/* carousel: every slide sits at its offset from the centred one */}
-        <div className="absolute inset-x-0 bottom-[31%] top-[27%] z-10">
+        <div className="hero-track absolute inset-x-0 z-10">
           {SHOES.map((shoe, k) => {
             const d = ((k - i + n + Math.floor(n / 2)) % n) - Math.floor(n / 2); // -3 .. 2
             const abs = Math.abs(d);
@@ -117,24 +100,18 @@ export function HeroSlider({
         </div>
 
         {/* tagline + actions, centred under the shoe */}
-        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center px-5 pb-7 text-center sm:pb-9">
-          <p className="font-display text-[clamp(1.9rem,4.2vw,3.1rem)] font-semibold italic leading-none tracking-[-0.01em]">
-            Every price. One place.
-          </p>
-          <p className="mt-3 max-w-[34rem] text-[0.86rem] font-semibold leading-relaxed opacity-85 sm:text-[0.94rem]">
-            Compared across {retailerCount} Indian retailers and global resale — and we never sell a thing.
+        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center px-5 pb-4 text-center sm:pb-5">
+          <p className="font-display text-[clamp(1.9rem,4.6vw,3.6rem)] uppercase leading-[1.02] tracking-[0.02em]">
+            Where Sneaker Culture Comes Together.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={`/sneakers?q=${encodeURIComponent(s.keyword)}`}
               className="btn-shine btn-shine-idle [--shine:255_190_70] rounded-full bg-white px-8 py-3.5 font-sans text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-[#14213D] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_16px_30px_-10px_rgba(0,0,0,0.6)]"
             >
-              Compare prices
+              Compare now
             </Link>
-            <span className="rounded-full border border-white/25 bg-black/25 px-5 py-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.12em] backdrop-blur-sm">
-              {p ? `${s.model} · from ${p.price}` : s.label}
-            </span>
           </div>
 
           {/* Netflix-style segmented progress + arrows */}

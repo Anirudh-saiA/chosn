@@ -71,7 +71,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
 
           <div className="p-8 lg:p-16">
             <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em] opacity-90">Be first in</p>
-            <h2 id="join-h" className="mt-3 font-display text-[clamp(3rem,6vw,5rem)] font-bold leading-[0.95] tracking-[-0.02em] [-webkit-text-stroke:0.022em_currentColor]">
+            <h2 id="join-h" className="mt-3 font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]">
               join the waitlist.
             </h2>
             <p className="mt-5 max-w-md text-[1.02rem] font-semibold leading-relaxed opacity-90">
