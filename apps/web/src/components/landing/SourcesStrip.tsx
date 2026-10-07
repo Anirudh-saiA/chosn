@@ -20,7 +20,7 @@ function Group({ label, names }: { label: string; names: string[] }) {
       </span>
       {names.map((n) => (
         <span key={n} className="flex shrink-0 items-center">
-          <span className="px-6 font-display text-[1.7rem] font-bold leading-none tracking-tight text-text [-webkit-text-stroke:0.02em_currentColor]">
+          <span className="px-6 font-display text-[1.7rem] font-bold leading-none tracking-tight text-text">
             {n}
           </span>
           <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass" />

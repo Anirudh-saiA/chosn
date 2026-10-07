@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
+import { Anton, Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { SmoothScroll } from '@/components/fx/SmoothScroll';
-import { SplashGate } from '@/components/ui/SplashGate';
 import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
@@ -15,6 +14,14 @@ const display = Cormorant_Garamond({
   weight: ['300', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-display',
+  display: 'swap',
+});
+
+// Tall, heavy condensed caps (the Futura Condensed Extra Bold look athletic brands use) for the hero tagline.
+const impact = Anton({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-impact',
   display: 'swap',
 });
 
@@ -47,7 +54,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable}`}
+      suppressHydrationWarning
+      className={`${display.variable} ${impact.variable} ${sans.variable} ${mono.variable}`}
     >
       <body className="grain">
         <a
@@ -56,7 +64,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <SplashGate />
         <AuthSessionProvider>
           <SmoothScroll />
           <MonitoringProvider>{children}</MonitoringProvider>

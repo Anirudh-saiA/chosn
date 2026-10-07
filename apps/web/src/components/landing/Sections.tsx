@@ -24,7 +24,10 @@ function ShoeOnColour({ shoe, className = '', size = 'w-[88%]', glass = true }: 
 }
 
 const eyebrow = 'font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em]';
-const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-bold leading-[0.95] tracking-[-0.02em] [-webkit-text-stroke:0.022em_currentColor]';
+/* Premium section headers: a big Anton index number beside a black Manrope extra-bold title. */
+const sectionNum = 'font-display text-[clamp(4rem,8vw,6.5rem)] leading-[0.82] tracking-[0.01em] text-[#0A0A0A]';
+const sectionTitle = 'font-display text-[clamp(2.8rem,5.6vw,4.6rem)] font-normal uppercase leading-[0.92] tracking-[0.01em] text-[#0A0A0A]';
+const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]';
 
 /* ---------------------------------------------------------------- compare tiles */
 
@@ -32,10 +35,18 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
   return (
     <section id="compare" data-ambient="dunk" className="mx-auto w-full max-w-[90rem] px-5 py-20 sm:px-8">
       <Reveal>
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-text pb-5">
-          <div className="flex items-baseline gap-5">
-            <span className={`${eyebrow} text-text-soft`}>01 / Live prices</span>
-            <h2 className={`${bigTitle} text-text`}>compare.</h2>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
+          <div>
+            <div className="flex items-end gap-5">
+              <span aria-hidden className={sectionNum}>01</span>
+              <div className="pb-1">
+                <p className={`${eyebrow} text-[#0A0A0A]/60`}>Find the best price</p>
+                <h2 className={`${sectionTitle} mt-1`}>compare.</h2>
+              </div>
+            </div>
+            <p className="mt-5 max-w-md text-[1.05rem] font-bold leading-relaxed text-text-soft">
+              The same sneaker across every retailer, shipping included — so you see what you&apos;ll actually pay.
+            </p>
           </div>
           <Link href="/sneakers" className="inline-flex items-center gap-2 text-[0.78rem] font-extrabold uppercase tracking-[0.2em] text-text hover:opacity-60">
             View all sneakers <ArrowRight className="h-4 w-4" aria-hidden />
@@ -51,13 +62,13 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
             <Reveal key={id} delay={n * 0.08}>
               <Link
                 href={`/sneakers?q=${encodeURIComponent(s.keyword)}`}
-                className="glass-card group flex h-full flex-col justify-between p-7"
-                style={{ background: s.bg, color: s.fg }}
+                className="glass-card group flex h-full flex-col justify-between p-8"
+                style={{ background: s.bg, color: s.fg, ['--r' as string]: '1.25rem' }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className={`${eyebrow} opacity-80`}>{s.brand}</p>
-                    <h3 className="mt-1 font-display text-[2rem] font-bold leading-none tracking-tight [-webkit-text-stroke:0.02em_currentColor]">{s.model}</h3>
+                    <h3 className="mt-1 font-display text-[1.45rem] font-normal uppercase leading-none tracking-[0.01em]">{s.model}</h3>
                     <p className="mt-2 text-[0.85rem] font-bold opacity-85">{s.colourway}</p>
                   </div>
                   {p?.signal && (
@@ -67,7 +78,7 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
                   )}
                 </div>
 
-                <div className="relative my-8 aspect-[2/1] w-full">
+                <div className="relative mx-auto my-12 aspect-[2/1] w-[88%]">
                   <img
                     src={s.src}
                     alt={s.alt}
@@ -81,7 +92,7 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
                 <div className="flex items-end justify-between border-t-2 border-current pt-4">
                   <div>
                     <span className="block font-mono text-[0.62rem] font-bold uppercase tracking-[0.2em] opacity-80">Best price</span>
-                    <span className={`font-mono font-extrabold leading-tight ${p ? 'text-[1.6rem]' : 'text-[1.05rem]'}`}>{p ? p.price : 'Compare retailers'}</span>
+                    <span className={`font-mono font-extrabold leading-tight ${p ? 'text-[1.7rem]' : 'text-[1.05rem]'}`}>{p ? p.price : 'See live prices'}</span>
                   </div>
                   <span className="inline-flex items-center gap-1.5 text-[0.72rem] font-extrabold uppercase tracking-[0.18em]">
                     Compare <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
@@ -96,58 +107,6 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
   );
 }
 
-/* ---------------------------------------------------------------- editorial: image left / text right */
-
-export function CompareEditorial({ shoeId }: { shoeId: string }) {
-  const s = shoeById(shoeId);
-  const points = [
-    'Shipping included in every total',
-    'Out-of-stock rows never lead',
-    'Deep links to the exact size',
-  ];
-  return (
-    <section data-ambient={s.id} className="mx-auto w-full max-w-[90rem] px-5 py-12 sm:px-8">
-      <div className="grid items-stretch gap-8 lg:grid-cols-12">
-        <Reveal className="lg:col-span-7">
-          <ShoeOnColour shoe={s} className="min-h-[24rem] lg:min-h-[32rem]" />
-        </Reveal>
-        <div className="flex flex-col justify-center lg:col-span-5 lg:pl-6">
-          <Reveal>
-            <p className={eyebrow} style={{ color: s.accent }}>
-              Why chosn
-            </p>
-            <h2 className={`${bigTitle} mt-3`} style={{ color: s.accent }}>
-              landed price,
-              <br />
-              not sticker.
-            </h2>
-            <div className="my-6 h-[3px] w-20" style={{ background: s.accent }} />
-            <p className="max-w-md text-[1.05rem] font-bold leading-relaxed text-text-soft">
-              Shipping, stock and staleness are folded in, so the cheapest row is the cheapest you will actually pay. One
-              dense table, ranked, with a single clear way out to the retailer.
-            </p>
-            <ul className="mt-7 space-y-3">
-              {points.map((t) => (
-                <li key={t} className="flex items-start gap-3 text-[0.95rem] font-bold text-text">
-                  <span aria-hidden className="mt-[7px] h-2 w-2 shrink-0 rotate-45" style={{ background: s.accent }} />
-                  {t}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/sneakers"
-              className="btn-shine btn-shine-idle mt-9 inline-block rounded-full px-8 py-3.5 text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-white shadow-[0_12px_24px_-12px_rgba(0,0,0,0.55)] hover:shadow-[0_18px_30px_-12px_rgba(0,0,0,0.65)]"
-              style={{ background: s.accent }}
-            >
-              Start comparing
-            </Link>
-          </Reveal>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ---------------------------------------------------------------- split band */
 
 export function SplitBand({ shoeId }: { shoeId: string }) {
@@ -157,7 +116,7 @@ export function SplitBand({ shoeId }: { shoeId: string }) {
       <Reveal>
         <div className="glass-card glass-card-lg grid lg:grid-cols-2">
           <ShoeOnColour shoe={s} glass={false} className="min-h-[22rem] py-10" size="w-[84%]" />
-          <div className="flex flex-col justify-center bg-[#E9E5DC] p-10 lg:p-16">
+          <div className="flex flex-col justify-center bg-[#F3F3F3] p-10 lg:p-16">
             <p className={eyebrow} style={{ color: s.accent }}>
               Our one rule
             </p>
@@ -189,10 +148,13 @@ export function CommunityStrip({ ids }: { ids: string[] }) {
   return (
     <section id="community" data-ambient="jordan" className="mx-auto w-full max-w-[90rem] px-5 py-20 sm:px-8">
       <Reveal>
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-text pb-5">
-          <div className="flex items-baseline gap-5">
-            <span className={`${eyebrow} text-text-soft`}>02 / Kicks &amp; people</span>
-            <h2 className={`${bigTitle} text-text`}>community.</h2>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
+          <div className="flex items-end gap-5">
+            <span aria-hidden className={sectionNum}>03</span>
+            <div className="pb-1">
+              <p className={`${eyebrow} text-[#0A0A0A]/60`}>Join the community</p>
+              <h2 className={`${sectionTitle} mt-1`}>connect.</h2>
+            </div>
           </div>
           <Link href="/community" className="inline-flex items-center gap-2 text-[0.78rem] font-extrabold uppercase tracking-[0.2em] text-text hover:opacity-60">
             Enter the community <ArrowRight className="h-4 w-4" aria-hidden />
@@ -232,7 +194,7 @@ export function CommunityStrip({ ids }: { ids: string[] }) {
                 <f.icon className="h-6 w-6" aria-hidden />
               </span>
               <div>
-                <h3 className="font-display text-[1.75rem] font-bold leading-none text-text [-webkit-text-stroke:0.02em_currentColor]">{f.title}</h3>
+                <h3 className="font-display text-[1.75rem] font-normal uppercase leading-none text-text">{f.title}</h3>
                 <p className="mt-2 max-w-xs text-[0.95rem] font-bold leading-relaxed text-text-soft">{f.body}</p>
               </div>
             </div>

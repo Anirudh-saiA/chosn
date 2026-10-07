@@ -6,6 +6,7 @@ import { SneakerArt } from '@/components/ui/SneakerArt';
 import { formatInr, formatSize, SIGNAL_COPY, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
+import { WishlistButton } from '@/components/wishlist/WishlistButton';
 
 export interface SneakerCardProps {
   item: SearchResultItem;
@@ -24,6 +25,7 @@ export function SneakerCard({ item }: SneakerCardProps) {
 
   return (
     <TiltCard max={6}>
+      <div className="relative h-full">
       <Link
         href={href}
         className="edge-glow ticks panel group relative flex h-full flex-col overflow-hidden transition-colors duration-300 hover:bg-vault-high focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
@@ -59,7 +61,7 @@ export function SneakerCard({ item }: SneakerCardProps) {
           )}
           <span
             aria-hidden
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:text-brass-bright group-hover:opacity-100 group-focus-visible:opacity-100"
+            className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:text-brass-bright group-hover:opacity-100 group-focus-visible:opacity-100"
           >
             <ArrowUpRight className="h-4 w-4" />
           </span>
@@ -87,6 +89,19 @@ export function SneakerCard({ item }: SneakerCardProps) {
           </div>
         </div>
       </Link>
+      <WishlistButton
+        item={{
+          styleCode: item.styleCode,
+          size: String(formatSize(item.defaultSize)),
+          brand: item.brand,
+          model: item.model,
+          colorway: item.colorway,
+          imageUrl,
+          price: item.bestAvailablePrice,
+        }}
+        className="absolute right-3 top-3 z-10"
+      />
+      </div>
     </TiltCard>
   );
 }

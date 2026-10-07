@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Logo } from '@/components/ui/Logo';
 import { AFFILIATE_DISCLOSURE_SHORT, NOT_A_MARKETPLACE } from '@/lib/legal-copy';
 
 const COLUMNS = [
@@ -39,33 +38,25 @@ const COLUMNS = [
  */
 export function SiteFooter() {
   return (
-    <footer className="relative mt-32 overflow-hidden border-t border-text/[0.08] bg-vault-deep">
-      <div className="mx-auto max-w-[90rem] px-5 pb-10 pt-16 sm:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
-          <div>
-            <Logo />
-            <p className="mt-5 max-w-sm text-body text-text-soft">
-              Every sneaker price, tracked. We compare — we never sell. When you find the deal, we send you straight to the retailer.
-            </p>
-            <Link
-              href="/feedback"
-              className="link-underline mt-6 inline-block font-mono text-ui-label font-bold text-brass"
-            >
-              Send us feedback →
-            </Link>
-          </div>
+    <footer className="relative mt-24 overflow-hidden bg-vault-deep">
+      <div className="relative mx-auto flex min-h-[40rem] max-w-[90rem] flex-col items-center justify-center px-5 py-20 sm:px-8">
+        {/* outline-only wordmark, centred behind everything */}
+        <div
+          aria-hidden
+          className="logo-mask pointer-events-none absolute left-1/2 top-1/2 w-[min(94vw,76rem)] -translate-x-1/2 -translate-y-1/2 select-none text-[#0A0A0A]/35"
+          style={{ ['--m' as string]: 'url(/images/logo-word-outline.png)', aspectRatio: 5.8 }}
+        />
 
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+        {/* the content sits right on top of it */}
+        <div className="relative z-10 flex w-full flex-col items-center">
+          <nav aria-label="Footer" className="grid w-full max-w-3xl grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3">
             {COLUMNS.map((col) => (
-              <div key={col.title}>
+              <div key={col.title} className="text-center">
                 <h2 className="eyebrow">{col.title}</h2>
                 <ul className="mt-4 space-y-2.5">
                   {col.links.map(([href, label]) => (
                     <li key={href}>
-                      <Link
-                        href={href}
-                        className="font-sans text-ui-label text-text-soft transition-colors duration-200 hover:text-text"
-                      >
+                      <Link href={href} className="font-sans text-ui-label font-bold text-[#0A0A0A] transition-opacity duration-200 hover:opacity-60">
                         {label}
                       </Link>
                     </li>
@@ -74,19 +65,16 @@ export function SiteFooter() {
               </div>
             ))}
           </nav>
-        </div>
 
-        <div
-          aria-hidden
-          className="logo-mask pointer-events-none mx-auto mt-16 !block w-[min(80vw,60rem)] select-none text-text"
-          style={{ ['--m' as string]: 'url(/images/logo-word.png)', aspectRatio: 5.8 }}
-        />
-
-        <div className="mt-8 flex flex-col gap-3 border-t border-text/[0.08] pt-6 sm:flex-row sm:items-start sm:justify-between">
-          <p className="max-w-[80ch] text-meta text-text-faint">
-            {NOT_A_MARKETPLACE} {AFFILIATE_DISCLOSURE_SHORT}
-          </p>
-          <p className="shrink-0 font-mono text-meta text-text-faint">© {new Date().getFullYear()} CHOSN</p>
+          <div className="mt-14 flex flex-col items-center gap-3 text-center">
+            <Link href="/feedback" className="link-underline font-mono text-ui-label font-bold text-brass">
+              Send us feedback →
+            </Link>
+            <p className="max-w-[70ch] text-meta font-semibold text-[#0A0A0A]/70">
+              {NOT_A_MARKETPLACE} {AFFILIATE_DISCLOSURE_SHORT}
+            </p>
+            <p className="font-mono text-meta font-semibold text-[#0A0A0A]/70">© {new Date().getFullYear()} CHOSN</p>
+          </div>
         </div>
       </div>
     </footer>

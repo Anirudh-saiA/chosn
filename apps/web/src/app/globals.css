@@ -30,8 +30,12 @@
 
   h1,
   h2,
-  h3 {
+  h3,
+  h4 {
     text-wrap: balance;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
   }
 
   ::selection {
@@ -744,4 +748,86 @@ a.glass-card:hover::before,
 }
 .btn-shine:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* The condensed heading face needs open tracking; older components set negative tracking for the serif. */
+.font-display {
+  letter-spacing: 0.012em !important;
+  font-weight: 400 !important;
+}
+
+
+/* Hero carousel band: sits between the wordmark and the tagline (leaves room for the floating header). */
+.hero-track {
+  top: 21%;
+  bottom: 38%;
+}
+@media (min-width: 1024px) {
+  .hero-track {
+    top: 27%;
+    bottom: 31%;
+  }
+}
+
+/* Minimal scrollbar: thin, rounded, no arrow buttons, transparent track.
+   Firefox uses scrollbar-width/-color; Chrome, Edge and Safari use the ::-webkit rules. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 10, 10, 0.55) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(10, 10, 10, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(10, 10, 10, 0.8);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* GlowPanel: spotlight under the cursor + rim glow + gentle lift on hover. */
+.glow-panel {
+  --mx: 50%;
+  --my: 40%;
+  transition: box-shadow 0.5s ease;
+}
+.glow-panel-light {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my), color-mix(in srgb, var(--glow) 55%, transparent), transparent 62%),
+    radial-gradient(180px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.22), transparent 70%);
+}
+.glow-panel:hover .glow-panel-light {
+  opacity: 1;
+}
+.glow-panel:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--glow) 70%, white),
+    0 0 46px -4px color-mix(in srgb, var(--glow) 60%, transparent),
+    0 40px 70px -40px rgba(30, 40, 10, 0.55);
+}
+.glow-panel-lift {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glow-panel:hover .glow-panel-lift {
+  transform: translateY(-6px) scale(1.02);
+}
+@media (hover: none) {
+  .glow-panel-light {
+    opacity: 0.35;
+  }
 }

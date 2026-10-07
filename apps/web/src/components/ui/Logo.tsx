@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 /** Intrinsic aspect ratios of the two logo masks in /public/images (width / height). */
 const MARK = 1.048;
-const WORD = 5.8;
+const WORD = 6.024;
 
 const mask = (file: string) => ({ ['--m' as string]: `url(/images/${file})` });
 
@@ -15,7 +15,7 @@ export function Logo({ className = '', asLink = true }: { className?: string; as
   const mark = (
     <span className={`inline-flex items-center gap-[0.55em] text-[1.45rem] leading-none text-text ${className}`}>
       <span aria-hidden className="logo-mask h-[1.7em]" style={{ ...mask('logo-mark.png'), aspectRatio: MARK }} />
-      <span aria-hidden className="logo-mask h-[0.62em]" style={{ ...mask('logo-word.png'), aspectRatio: WORD }} />
+      <span aria-hidden className="logo-mask h-[0.62em]" style={{ ...mask('logo-word.svg'), aspectRatio: WORD }} />
       <span className="sr-only">CHOSN — home</span>
     </span>
   );
