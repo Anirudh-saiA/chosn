@@ -19,7 +19,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
  */
 export function buttonVariantClass(variant: ButtonVariant = 'secondary', className?: string) {
   return cx(
-    'group/btn relative inline-flex select-none items-center justify-center gap-2 overflow-hidden border px-5 py-[11px] font-sans text-ui-label font-semibold transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40',
+    'btn-shine group/btn relative inline-flex select-none items-center justify-center gap-2 overflow-hidden rounded-full border px-5 py-[11px] font-sans text-ui-label font-semibold transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40',
     // v2: primary is a lit brass slab — gradient + inner highlight, glow on hover.
     variant === 'primary' &&
       'border-brass-bright/40 bg-brass-gradient text-vault-deep shadow-inset hover:-translate-y-px hover:shadow-glow-brass active:translate-y-0',

@@ -49,7 +49,7 @@ export function SiteFooter() {
             </p>
             <Link
               href="/feedback"
-              className="link-underline mt-6 inline-block font-mono text-ui-label text-brass-bright"
+              className="link-underline mt-6 inline-block font-mono text-ui-label font-bold text-brass"
             >
               Send us feedback →
             </Link>
@@ -76,9 +76,11 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <p aria-hidden className="pointer-events-none mt-16 select-none text-center font-display text-[clamp(4rem,19vw,17rem)] font-bold leading-[0.8] tracking-tighter text-outline opacity-60">
-          CHOSN
-        </p>
+        <div
+          aria-hidden
+          className="logo-mask pointer-events-none mx-auto mt-16 !block w-[min(80vw,60rem)] select-none text-text"
+          style={{ ['--m' as string]: 'url(/images/logo-word.png)', aspectRatio: 5.8 }}
+        />
 
         <div className="mt-8 flex flex-col gap-3 border-t border-text/[0.08] pt-6 sm:flex-row sm:items-start sm:justify-between">
           <p className="max-w-[80ch] text-meta text-text-faint">

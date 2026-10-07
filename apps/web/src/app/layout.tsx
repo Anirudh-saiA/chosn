@@ -3,6 +3,7 @@ import { Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { SmoothScroll } from '@/components/fx/SmoothScroll';
+import { SplashGate } from '@/components/ui/SplashGate';
 import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
@@ -38,8 +39,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#030407',
-  colorScheme: 'dark',
+  themeColor: '#CDE6F8',
+  colorScheme: 'light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
+        <SplashGate />
         <AuthSessionProvider>
           <SmoothScroll />
           <MonitoringProvider>{children}</MonitoringProvider>
