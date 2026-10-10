@@ -24,9 +24,6 @@ function ShoeOnColour({ shoe, className = '', size = 'w-[88%]', glass = true }: 
 }
 
 const eyebrow = 'font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em]';
-/* Premium section headers: a big Anton index number beside a black Manrope extra-bold title. */
-const sectionNum = 'font-display text-[clamp(4rem,8vw,6.5rem)] leading-[0.82] tracking-[0.01em] text-[#0A0A0A]';
-const sectionTitle = 'font-display text-[clamp(2.8rem,5.6vw,4.6rem)] font-normal uppercase leading-[0.92] tracking-[0.01em] text-[#0A0A0A]';
 const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]';
 
 /* ---------------------------------------------------------------- compare tiles */
