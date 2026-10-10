@@ -106,7 +106,7 @@ const nextConfig = {
       beforeFiles: [
         {
           source:
-            '/:path((?!_next|api|images|coming-soon|icon\\.png|apple-icon\\.png|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml).+)',
+            '/:path((?!_next|api|images|hero|brands|wheel|coming-soon|icon\\.png|apple-icon\\.png|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml).+)',
           destination: '/coming-soon',
         },
       ],
