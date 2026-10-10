@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Anton, Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
+import { Anton, Caveat, Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { SmoothScroll } from '@/components/fx/SmoothScroll';
@@ -22,6 +22,14 @@ const impact = Anton({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-impact',
+  display: 'swap',
+});
+
+// Handwriting for the doodle annotations on the landing page's price comparison.
+const hand = Caveat({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-hand',
   display: 'swap',
 });
 
@@ -55,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${display.variable} ${impact.variable} ${sans.variable} ${mono.variable}`}
+      className={`${display.variable} ${impact.variable} ${sans.variable} ${mono.variable} ${hand.variable}`}
     >
       <body className="grain">
         <a

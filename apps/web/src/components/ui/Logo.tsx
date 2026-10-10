@@ -11,11 +11,11 @@ const mask = (file: string) => ({ ['--m' as string]: `url(/images/${file})` });
  * both follow the surrounding text colour. Everything is sized in `em`, so a
  * className like `!text-[1.9rem]` scales the whole lockup.
  */
-export function Logo({ className = '', asLink = true }: { className?: string; asLink?: boolean }) {
+export function Logo({ className = '', asLink = true, markOnly = false }: { className?: string; asLink?: boolean; markOnly?: boolean }) {
   const mark = (
     <span className={`inline-flex items-center gap-[0.55em] text-[1.45rem] leading-none text-text ${className}`}>
       <span aria-hidden className="logo-mask h-[1.7em]" style={{ ...mask('logo-mark.png'), aspectRatio: MARK }} />
-      <span aria-hidden className="logo-mask h-[0.62em]" style={{ ...mask('logo-word.svg'), aspectRatio: WORD }} />
+      {!markOnly && <span aria-hidden className="logo-mask h-[0.62em]" style={{ ...mask('logo-word.svg'), aspectRatio: WORD }} />}
       <span className="sr-only">CHOSN — home</span>
     </span>
   );

@@ -24,9 +24,6 @@ function ShoeOnColour({ shoe, className = '', size = 'w-[88%]', glass = true }: 
 }
 
 const eyebrow = 'font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em]';
-/* Premium section headers: a big Anton index number beside a black Manrope extra-bold title. */
-const sectionNum = 'font-display text-[clamp(4rem,8vw,6.5rem)] leading-[0.82] tracking-[0.01em] text-[#0A0A0A]';
-const sectionTitle = 'font-display text-[clamp(2.8rem,5.6vw,4.6rem)] font-normal uppercase leading-[0.92] tracking-[0.01em] text-[#0A0A0A]';
 const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]';
 
 /* ---------------------------------------------------------------- compare tiles */
@@ -37,14 +34,8 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
       <Reveal>
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
           <div>
-            <div className="flex items-end gap-5">
-              <span aria-hidden className={sectionNum}>01</span>
-              <div className="pb-1">
-                <p className={`${eyebrow} text-[#0A0A0A]/60`}>Find the best price</p>
-                <h2 className={`${sectionTitle} mt-1`}>compare.</h2>
-              </div>
-            </div>
-            <p className="mt-5 max-w-md text-[1.05rem] font-bold leading-relaxed text-text-soft">
+            <h2 className="sr-only">Compare</h2>
+            <p className="max-w-md text-[1.05rem] font-bold leading-relaxed text-text-soft">
               The same sneaker across every retailer, shipping included — so you see what you&apos;ll actually pay.
             </p>
           </div>
@@ -146,16 +137,10 @@ const FEATURES = [
 
 export function CommunityStrip({ ids }: { ids: string[] }) {
   return (
-    <section id="community" data-ambient="jordan" className="mx-auto w-full max-w-[90rem] px-5 py-20 sm:px-8">
+    <section id="community" data-ambient="jordan" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
       <Reveal>
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
-          <div className="flex items-end gap-5">
-            <span aria-hidden className={sectionNum}>03</span>
-            <div className="pb-1">
-              <p className={`${eyebrow} text-[#0A0A0A]/60`}>Join the community</p>
-              <h2 className={`${sectionTitle} mt-1`}>connect.</h2>
-            </div>
-          </div>
+        <div className="mb-10 flex flex-wrap items-end justify-end gap-4 border-b-2 border-[#0A0A0A] pb-5">
+          <h2 className="sr-only">Connect</h2>
           <Link href="/community" className="inline-flex items-center gap-2 text-[0.78rem] font-extrabold uppercase tracking-[0.2em] text-text hover:opacity-60">
             Enter the community <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
