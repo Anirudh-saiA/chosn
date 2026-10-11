@@ -12,12 +12,14 @@ export function ScrollHighlight({
   between = ', ',
   second = 'shipping included',
   after = "— so you see what you'll actually pay.",
+  textClass = 'max-w-3xl text-[clamp(1.6rem,3.2vw,2.6rem)] leading-[1.25]',
 }: {
   before?: string;
   first?: string;
   between?: string;
   second?: string;
   after?: string;
+  textClass?: string;
 } = {}) {
   const root = useRef<HTMLParagraphElement>(null);
   const a = useRef<HTMLElement>(null);
@@ -31,11 +33,11 @@ export function ScrollHighlight({
       if (!el || !a.current || !b.current) return;
       const vh = window.innerHeight;
       const top = el.getBoundingClientRect().top;
-      // 0 when the text enters the lower part of the screen, 1 once it has climbed to the upper third
-      const p = Math.min(1, Math.max(0, (vh * 0.8 - top) / (vh * 0.5)));
+      // The slit reveal covers the section until the band has opened, so the sweep must only start once
+      // the text is actually in view: first phrase when the text reaches the upper 40%, second a touch later.
       // each phrase is simply on or off (the CSS transition animates the sweep), so it is smooth at any scroll speed
-      const onA = p > 0.15;
-      const onB = p > 0.6;
+      const onA = top < vh * 0.4;
+      const onB = top < vh * 0.32;
       a.current.style.backgroundSize = onA ? '100% 100%' : '0% 100%';
       b.current.style.backgroundSize = onB ? '100% 100%' : '0% 100%';
       a.current.style.color = onA ? '#0A0A0A' : '';
@@ -54,16 +56,16 @@ export function ScrollHighlight({
     };
   }, []);
 
-  const mark = 'rounded bg-transparent px-1.5 text-[#14213D] transition-[background-size,color] duration-500 ease-out [background-image:linear-gradient(#FFD84A,#FFD84A)] [background-position:left] [background-repeat:no-repeat] [background-size:0%_100%] [box-decoration-break:clone]';
+  const mark = 'rounded bg-transparent px-1.5 text-[#14213D] transition-[background-size,color] duration-[900ms] ease-out [background-image:linear-gradient(#FFD84A,#FFD84A)] [background-position:left] [background-repeat:no-repeat] [background-size:0%_100%] [box-decoration-break:clone]';
 
   return (
-    <p ref={root} className="max-w-3xl text-[clamp(1.6rem,3.2vw,2.6rem)] font-extrabold leading-[1.25] tracking-tight text-[#14213D]">
+    <p ref={root} className={`${textClass} font-extrabold tracking-tight text-[#14213D]`}>
       {before}{' '}
       <mark ref={a} className={mark}>
         {first}
       </mark>
       {between}
-      <mark ref={b} className={mark}>
+      <mark ref={b} className={`${mark} [transition-delay:0.2s]`}>
         {second}
       </mark>{' '}
       {after}

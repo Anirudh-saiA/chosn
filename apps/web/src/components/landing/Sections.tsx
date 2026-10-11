@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Flame, MessageSquare, ShieldCheck } from 'lucide-react';
 import { Reveal } from '@/components/fx/Reveal';
+import { ScrollHighlight } from './ScrollHighlight';
 import { shoeById, type LandingShoe, type ShoePrice } from './shoes';
 
 /** Shared: a shoe floating on its colour block, with a spotlight disc behind it. */
@@ -130,61 +131,61 @@ export function SplitBand({ shoeId }: { shoeId: string }) {
 /* ---------------------------------------------------------------- community */
 
 const FEATURES = [
-  { icon: Flame, title: 'Cop or Drop.', body: 'Put any pair to a vote and see where the community lands before you spend.', tone: '#B3121F' },
-  { icon: MessageSquare, title: 'Price checks & drop talk.', body: 'Ask if a price is fair, or trade notes live in chat rooms that open with every drop.', tone: '#0A3FB0' },
-  { icon: ShieldCheck, title: 'Legit checks.', body: 'Post photos, follow the checklist, get a second pair of eyes — moderated and reputation-weighted.', tone: '#34430F' },
+  { icon: Flame, title: 'Cop or Drop.', body: 'Put any pair to a vote and see where the community lands before you spend.', tone: '#B3121F', shoe: 'dunk' },
+  { icon: MessageSquare, title: 'Price checks & drop talk.', body: 'Ask if a price is fair, or trade notes live in chat rooms that open with every drop.', tone: '#0A3FB0', shoe: 'samba' },
+  { icon: ShieldCheck, title: 'Legit checks.', body: 'Post photos, follow the checklist, get a second pair of eyes — moderated and reputation-weighted.', tone: '#34430F', shoe: 'jordan' },
 ];
 
-export function CommunityStrip({ ids }: { ids: string[] }) {
+/** 03 Connect: highlighted lead line on top; below, three stacked icon cards on the left and a colourful square video on the right, all sized to fit one screen. */
+export function CommunityStrip() {
   return (
-    <section id="community" data-ambient="jordan" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
+    <section id="community" data-ambient="jordan" className="mx-auto flex w-full max-w-[90rem] flex-col justify-center px-5 pb-8 pt-20 [--v:min(46vw,calc(100svh-20rem))] sm:px-8 lg:h-svh">
       <Reveal>
-        <div className="mb-10 flex flex-wrap items-end justify-end gap-4 border-b-2 border-[#0A0A0A] pb-5">
-          <h2 className="sr-only">Connect</h2>
-          <Link href="/community" className="inline-flex items-center gap-2 text-[0.78rem] font-extrabold uppercase tracking-[0.2em] text-text hover:opacity-60">
-            Enter the community <ArrowRight className="h-4 w-4" aria-hidden />
+        <h2 className="sr-only">Connect</h2>
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b-2 border-[#0A0A0A] pb-4">
+          <ScrollHighlight
+            before="Every drop deserves"
+            first="a conversation"
+            between=". Talk "
+            second="style and sneakers"
+            after="with a community that shares your taste."
+            textClass="max-w-5xl text-[clamp(1.4rem,2.8vw,2.6rem)] leading-[1.25]"
+          />
+          <Link
+            href="/community"
+            className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-7 py-3.5 font-display text-[1.05rem] uppercase tracking-[0.18em] text-white shadow-[0_14px_30px_-12px_rgba(0,0,0,0.6)] transition-colors hover:bg-[#262626]"
+          >
+            Community <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </Reveal>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {ids.map((id, n) => {
-          const s = shoeById(id);
-          return (
-            <Reveal key={id} delay={n * 0.06}>
-              <div className="glass-card glass-card-sm glass-lift flex aspect-square flex-col justify-between p-5" style={{ background: s.bg, color: s.fg }}>
-                <span className="font-mono text-[0.62rem] font-extrabold uppercase tracking-[0.2em] opacity-85">{s.brand}</span>
-                <div className="relative mx-auto my-auto aspect-[2/1] w-[96%]">
-                  <img
-                    src={s.src}
-                    alt={s.alt}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                    className="absolute inset-0 h-full w-full select-none object-contain drop-shadow-[0_14px_14px_rgba(0,0,0,0.35)]"
-                  />
+      <div className="grid items-center gap-6 lg:grid-cols-[1fr_auto]">
+        <div className="flex flex-col gap-4 lg:h-[var(--v)]">
+          {FEATURES.map((f, n) => (
+            <Reveal key={f.title} delay={n * 0.08} className="lg:flex-1">
+              <div className="flex h-full items-center gap-5 rounded-3xl border border-[#0A0A0A]/10 bg-white p-5">
+                <span className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: f.tone }}>
+                  <f.icon className="h-9 w-9" aria-hidden />
+                </span>
+                <div>
+                  <h3 className="font-display text-[clamp(1.5rem,2.3vw,2.1rem)] font-normal uppercase leading-none text-text">{f.title}</h3>
+                  <p className="mt-2 text-[clamp(0.9rem,1.25vw,1.1rem)] font-bold leading-snug text-text-soft">{f.body}</p>
                 </div>
-                <span className="text-[0.82rem] font-extrabold uppercase leading-tight tracking-wide">{s.model}</span>
               </div>
             </Reveal>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      <div className="mt-14 grid gap-10 border-t-2 border-text pt-10 md:grid-cols-3">
-        {FEATURES.map((f, n) => (
-          <Reveal key={f.title} delay={n * 0.08}>
-            <div className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_10px_20px_-10px_rgba(0,0,0,0.5)]" style={{ background: f.tone }}>
-                <f.icon className="h-6 w-6" aria-hidden />
-              </span>
-              <div>
-                <h3 className="font-display text-[1.75rem] font-normal uppercase leading-none text-text">{f.title}</h3>
-                <p className="mt-2 max-w-xs text-[0.95rem] font-bold leading-relaxed text-text-soft">{f.body}</p>
-              </div>
-            </div>
-          </Reveal>
-        ))}
+        <Reveal>
+          {/* square black-and-white video (public/hero/community.*) */}
+          <div className="relative mx-auto aspect-square w-full max-w-[28rem] overflow-hidden rounded-[1.75rem] bg-black lg:mx-0 lg:h-[var(--v)] lg:w-auto lg:max-w-none">
+            <video className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" poster="/hero/community-poster.jpg" aria-label="Community video">
+              <source src="/hero/community.webm" type="video/webm" />
+              <source src="/hero/community.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

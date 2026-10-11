@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Menu, Search, X } from 'lucide-react';
-import { AuthNavStatus } from '@/components/auth/AuthNavStatus';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
@@ -27,12 +26,53 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const logoRef = useRef<HTMLSpanElement>(null); // landing: logo glides from centre to the left corner as you scroll
+  const [pastHero, setPastHero] = useState(false); // landing: over the white sections, so header goes dark
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+      setPastHero(window.scrollY > window.innerHeight - 80);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Landing logo: position follows scroll (centre -> left corner over the first ~40% of a screen),
+  // eased in time so it glides instead of jumping, whatever the scroll speed.
+  useEffect(() => {
+    const el = logoRef.current;
+    if (!el) return;
+    let raf = 0;
+    let last = 0;
+    let cur = -1;
+    const apply = (e: number) => {
+      el.style.left = `calc(${(1 - e) * 50}% + ${e * 1.25}rem)`;
+      el.style.transform = `translate(${-50 * (1 - e)}%, -50%)`;
+    };
+    const tick = (now: number) => {
+      raf = 0;
+      const target = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.4)));
+      const goal = target * target * (3 - 2 * target); // smoothstep
+      const dt = Math.min(64, last ? now - last : 16);
+      last = now;
+      cur = cur < 0 ? goal : cur + (goal - cur) * (1 - Math.exp(-dt / 240));
+      apply(cur);
+      if (Math.abs(goal - cur) > 0.0005) raf = requestAnimationFrame(tick);
+      else last = 0;
+    };
+    const kick = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    kick();
+    window.addEventListener('scroll', kick, { passive: true });
+    window.addEventListener('resize', kick);
+    return () => {
+      window.removeEventListener('scroll', kick);
+      window.removeEventListener('resize', kick);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   useEffect(() => {
@@ -72,20 +112,34 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
     const ease = [0.22, 1, 0.36, 1] as const;
     return (
       <>
-        <header className="pointer-events-none absolute inset-x-0 top-0 z-50 flex h-20 items-center justify-center">
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-50 h-20">
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="pointer-events-auto absolute left-5 top-1/2 flex h-11 w-11 -translate-y-1/2 flex-col items-center justify-center gap-[6px] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] transition-opacity hover:opacity-70 sm:left-8"
+            className={`hero-chrome pointer-events-auto absolute right-5 top-1/2 flex h-11 w-11 -translate-y-1/2 flex-col items-center justify-center gap-[6px] transition-[opacity,color] duration-500 hover:opacity-70 sm:right-8 ${menuOpen || pastHero ? 'text-[#0A0A0A]' : 'text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]'}`}
           >
             <span className={`h-[2px] w-6 rounded bg-current transition-transform duration-500 ease-out ${menuOpen ? 'translate-y-[8px] rotate-45' : ''}`} />
-            <span className={`h-[2px] w-6 rounded bg-current transition-opacity duration-300 ${menuOpen ? 'opacity-0 md:opacity-100' : ''}`} />
+            <span className={`h-[2px] w-6 rounded bg-current transition-opacity duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
             <span className={`h-[2px] w-6 rounded bg-current transition-transform duration-500 ease-out ${menuOpen ? '-translate-y-[8px] -rotate-45' : ''}`} />
           </button>
-          <span className={`pointer-events-auto transition-opacity duration-500 ${menuOpen ? 'opacity-0 md:opacity-100' : ''}`}>
-            <Logo markOnly className="!text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]" />
+          {/* centred over the hero; slides to the left corner once you scroll. One click takes you back to the top */}
+          <span ref={logoRef} className="hero-chrome pointer-events-auto absolute top-1/2" style={{ left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <Link
+              href="/"
+              aria-label="CHOSN home, back to top"
+              onClick={(e) => {
+                if (pathname !== '/') return;
+                e.preventDefault();
+                const lenis = (window as unknown as { __lenis?: { scrollTo: (y: number, o?: object) => void } }).__lenis;
+                if (lenis) lenis.scrollTo(0, { duration: 1.4 });
+                else window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`inline-flex transition-colors duration-500 ${menuOpen || !pastHero ? 'text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]' : 'text-[#0A0A0A]'}`}
+            >
+              <Logo markOnly asLink={false} className="!text-inherit" />
+            </Link>
           </span>
         </header>
 
@@ -137,12 +191,12 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 rounded-b-[2rem] border-b border-[#0A0A0A]/10 transition-all duration-500 ease-out ${
-          scrolled || menuOpen ? 'bg-vault-deep/70 backdrop-blur-xl' : 'bg-transparent'
+        className={`sticky top-0 z-50 transition-all duration-500 ease-out ${
+          scrolled || menuOpen ? 'bg-white/80 backdrop-blur-xl' : 'bg-transparent'
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8">
-          <Logo />
+          <Logo markOnly />
 
           <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
             {NAV.map((item) => {
@@ -185,9 +239,6 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
             >
               <Bell className="h-[20px] w-[20px]" strokeWidth={2.2} />
             </Link>
-            <div className="hidden md:block">
-              <AuthNavStatus />
-            </div>
             <button
               type="button"
               onClick={() => setMenuOpen((o) => !o)}
@@ -229,10 +280,9 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
               ))}
             </nav>
             <div className="flex items-center justify-between">
-              <AuthNavStatus />
-              <Link href="/feedback" className="font-mono text-meta text-text-faint">
+              <a href="mailto:join.sneakercommunity@gmail.com?subject=CHOSN%20feedback" className="font-mono text-meta text-text-faint">
                 Send feedback
-              </Link>
+              </a>
             </div>
           </motion.div>
         )}

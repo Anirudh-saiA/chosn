@@ -16,12 +16,14 @@ interface Offer {
   delivery: string;
   legit: number;
   legitNote: string;
+  /** header colour */
+  tone: string;
 }
 
 /* One sneaker, two sites. Figures are illustrative: this is what a CHOSN comparison looks like. */
 const SNEAKER = 'Nike Dunk Low · Sail / Team Red';
-const A: Offer = { site: 'Flipkart', price: '₹9,295', delivery: 'Sat, 18 Oct', legit: 71, legitNote: 'Third-party marketplace seller' };
-const B: Offer = { site: 'Superkicks', price: '₹10,995', delivery: 'Sun, 12 Oct', legit: 98, legitNote: 'Authorised sneaker retailer' };
+const A: Offer = { site: 'Flipkart', price: '₹9,295', delivery: 'Sat, 18 Oct', legit: 71, legitNote: 'Third-party marketplace seller', tone: '#1F5FE0' };
+const B: Offer = { site: 'Superkicks', price: '₹10,995', delivery: 'Sun, 12 Oct', legit: 98, legitNote: 'Authorised sneaker retailer', tone: '#D81E2D' };
 
 /** A wobbly hand-drawn arrow (double-headed), drawn as SVG so it reads like a pen doodle. */
 function DoodleArrow({ className = '' }: { className?: string }) {
@@ -74,7 +76,9 @@ function Note({ children, className = '' }: { children: React.ReactNode; classNa
 
 function Header({ offer }: { offer: Offer }) {
   return (
-    <div className="hidden rounded-2xl bg-[#0A0A0A] px-6 py-4 md:block text-center font-display text-[1.7rem] uppercase tracking-[0.02em] text-white">{offer.site}</div>
+    <div className="hidden rounded-2xl px-6 py-4 text-center font-display text-[1.7rem] uppercase tracking-[0.02em] text-white md:block" style={{ background: offer.tone }}>
+      {offer.site}
+    </div>
   );
 }
 
@@ -88,8 +92,11 @@ export function CompareExample() {
           <ScrollHighlight />
 
           <div className="flex flex-col items-end gap-4">
-            <Link href="/sneakers" className="inline-flex items-center gap-2 text-[0.78rem] font-extrabold uppercase tracking-[0.2em] text-text hover:opacity-60">
-              View all sneakers <ArrowRight className="h-4 w-4" aria-hidden />
+            <Link
+              href="/sneakers"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-7 py-3.5 font-display text-[1.05rem] uppercase tracking-[0.18em] text-white shadow-[0_14px_30px_-12px_rgba(0,0,0,0.6)] transition-colors hover:bg-[#262626]"
+            >
+              Compare <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
         </div>

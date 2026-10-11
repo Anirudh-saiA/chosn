@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { WishlistIcon } from '@/components/ui/WishlistIcon';
 import { useWishlist } from '@/lib/wishlist';
 
-/** Header entry point: the gift icon with a live count of saved sneakers. */
+/** Header entry point: the heart icon with a live count of saved sneakers. */
 export function WishlistNav() {
   const { items } = useWishlist();
   return (
