@@ -99,14 +99,14 @@ const nextConfig = {
   poweredByHeader: false,
   // Pre-launch: only the landing page is live. Every other route shows the
   // /coming-soon page (the URL stays as typed). Assets, the auth API and the
-  // page itself are excluded. Set COMING_SOON=off to open the whole site again.
+  // page itself are excluded, as are the four legal/trust documents (footer links). Set COMING_SOON=off to open the whole site again.
   async rewrites() {
     if (process.env.COMING_SOON === 'off') return [];
     return {
       beforeFiles: [
         {
           source:
-            '/:path((?!_next|api|images|hero|brands|wheel|coming-soon|icon\\.png|apple-icon\\.png|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml).+)',
+            '/:path((?!_next|api|images|hero|brands|wheel|coming-soon|transparency|community-guidelines|terms|privacy|icon\\.png|apple-icon\\.png|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml).+)',
           destination: '/coming-soon',
         },
       ],

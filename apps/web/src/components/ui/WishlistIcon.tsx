@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-/** Minimal gift-box wishlist icon (redrawn as a clean stroke SVG; follows the surrounding text colour). */
+/** Minimal heart wishlist icon (clean stroke SVG; follows the surrounding text colour). */
 export function WishlistIcon({ strokeWidth = 1.8, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -13,15 +13,7 @@ export function WishlistIcon({ strokeWidth = 1.8, ...props }: SVGProps<SVGSVGEle
       aria-hidden
       {...props}
     >
-      {/* bow */}
-      <path d="M12 6.4C12 3.2 9.6 1.4 7.8 2.3 6 3.2 6.6 6.4 12 6.4z" />
-      <path d="M12 6.4c0-3.2 2.4-5 4.2-4.1 1.8.9 1.2 4.1-4.2 4.1z" />
-      {/* lid */}
-      <rect x="3" y="6.4" width="18" height="4.2" rx="1" />
-      {/* box */}
-      <path d="M4.6 10.6V19a1.6 1.6 0 0 0 1.6 1.6h11.6a1.6 1.6 0 0 0 1.6-1.6v-8.4" />
-      {/* ribbon */}
-      <path d="M12 6.4v14.2" />
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
   );
 }

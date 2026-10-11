@@ -55,26 +55,30 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
   return (
     <section id="join" data-ambient={s.id} className="mx-auto w-full max-w-[90rem] px-5 pb-16 pt-8 sm:px-8" aria-labelledby="join-h">
       <Reveal>
-        <div className="glass-card glass-card-lg relative grid items-center lg:grid-cols-2" style={{ background: s.bg, color: s.fg }}>
-          <div className="relative min-h-[18rem] lg:min-h-[30rem]">
-            <div className="shoe-float absolute inset-x-[8%] top-1/2 -translate-y-1/2">
-              <img
-                src={s.src}
-                alt={s.alt}
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                className="mx-auto h-auto w-[88%] select-none -rotate-6 drop-shadow-[0_24px_24px_rgba(0,0,0,0.5)]"
-              />
-            </div>
-          </div>
+        <div className="glass-card glass-card-lg relative overflow-hidden bg-black text-white">
+          {/* background video (walk banner) with a dark wash so the text stays readable */}
+          <video
+            className="!absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/hero/waitlist-poster.jpg"
+            aria-hidden
+          >
+            <source src="/hero/waitlist-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
+            <source src="/hero/waitlist.webm" type="video/webm" />
+            <source src="/hero/waitlist.mp4" type="video/mp4" />
+          </video>
+          <div aria-hidden className="!absolute inset-0 bg-gradient-to-b from-black/45 via-black/35 to-black/65" />
 
-          <div className="p-8 lg:p-16">
+          <div className="relative z-10 mx-auto flex min-h-[30rem] max-w-2xl flex-col justify-center p-8 text-center lg:p-14">
             <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em] opacity-90">Be first in</p>
             <h2 id="join-h" className="mt-3 font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]">
               join the waitlist.
             </h2>
-            <p className="mt-5 max-w-md text-[1.02rem] font-semibold leading-relaxed opacity-90">
+            <p className="mx-auto mt-5 max-w-md text-[1.02rem] font-semibold leading-relaxed opacity-90">
               Early access to drop chat rooms, legit checks and Cop-or-Drop votes.
             </p>
 
@@ -84,7 +88,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                 {status === 'joined' ? "You're on the list — we'll email you." : "You're already on the list."}
               </p>
             ) : (
-              <form onSubmit={handleSubmit} noValidate className="mt-8 flex max-w-lg flex-col gap-3 sm:flex-row">
+              <form onSubmit={handleSubmit} noValidate className="mx-auto mt-8 flex max-w-lg flex-col gap-3 sm:flex-row">
                 <label htmlFor={emailId} className="sr-only">
                   Email address
                 </label>
@@ -105,7 +109,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   type="submit"
                   disabled={status === 'submitting'}
                   className="btn-shine btn-shine-idle whitespace-nowrap rounded-full px-8 py-4 font-sans text-[0.74rem] font-extrabold uppercase tracking-[0.2em] shadow-[0_12px_24px_-12px_rgba(0,0,0,0.6)] disabled:opacity-60"
-                  style={{ background: s.fg, color: s.bg }}
+                  style={{ background: '#fff', color: '#0A0A0A' }}
                 >
                   {status === 'submitting' ? 'Joining…' : 'Submit'}
                 </button>

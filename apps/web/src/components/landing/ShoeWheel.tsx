@@ -1,12 +1,28 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { WHEEL_ITEMS } from './wheel-items';
 
 const STEP = 9.2; // degrees between neighbouring cards
 const VISIBLE = 3.5 * STEP; // cards beyond this angle from the top are hidden
 const FADE = STEP; // ...and fade out over the last FADE degrees
 const RING = WHEEL_ITEMS.length * STEP;
+
+/** Where card `i` sits when the wheel is turned by `theta` degrees. Also used for the first (server) render, so the cards are in place before any script runs. */
+function layout(i: number, theta: number) {
+  // angle from the top, wrapped into (-RING/2, RING/2]
+  let a = ((((i + 0.5) * STEP + (Number.isFinite(theta) ? theta : 0)) % RING) + RING) % RING;
+  if (a > RING / 2) a -= RING;
+  const abs = Math.abs(a);
+  const o = abs >= VISIBLE ? 0 : Math.min(1, (VISIBLE - abs) / FADE);
+  return {
+    transform: `rotate(${a}deg) translateY(calc(var(--R) * -1)) translate(-50%, -50%)`,
+    opacity: o,
+    visibility: (o === 0 ? 'hidden' : 'visible') as 'hidden' | 'visible',
+    zIndex: 100 - Math.round(abs),
+  };
+}
 
 /**
  * Portrait shoe cards laid out on a semicircle. Scrolling the mouse wheel while the
@@ -36,15 +52,11 @@ export function ShoeWheel() {
       WHEEL_ITEMS.forEach((_, i) => {
         const c = cards.current[i];
         if (!c) return;
-        // angle from the top, wrapped into (-RING/2, RING/2]
-        let a = ((((i + 0.5) * STEP + theta.current) % RING) + RING) % RING;
-        if (a > RING / 2) a -= RING;
-        const abs = Math.abs(a);
-        const o = abs >= VISIBLE ? 0 : Math.min(1, (VISIBLE - abs) / FADE);
-        c.style.transform = `rotate(${a}deg) translateY(calc(var(--R) * -1)) translate(-50%, -50%)`;
-        c.style.opacity = String(o);
-        c.style.visibility = o === 0 ? 'hidden' : 'visible';
-        c.style.zIndex = String(100 - Math.round(abs));
+        const l = layout(i, theta.current);
+        c.style.transform = l.transform;
+        c.style.opacity = String(l.opacity);
+        c.style.visibility = l.visibility;
+        c.style.zIndex = String(l.zIndex);
       });
       if (Math.abs(target.current - theta.current) > 0.01) raf = requestAnimationFrame(paint);
       else last = 0;
@@ -104,6 +116,19 @@ export function ShoeWheel() {
       role="group"
       aria-label="Sneakers by brand. Scroll over the cards to turn the wheel."
     >
+      {/* Drops / News: sits in the hollow under the arc */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[200] flex justify-center">
+        <div className="pointer-events-auto flex items-center rounded-full bg-[#0A0A0A] px-4 py-1 text-white shadow-[0_14px_30px_-12px_rgba(0,0,0,0.6)]">
+          <Link href="/drops" className="rounded-full px-3 py-2.5 font-display text-[1.05rem] uppercase tracking-[0.18em] transition-colors hover:bg-white/15">
+            Drops
+          </Link>
+          <span aria-hidden className="text-white/40">/</span>
+          <Link href="/news" className="rounded-full px-3 py-2.5 font-display text-[1.05rem] uppercase tracking-[0.18em] transition-colors hover:bg-white/15">
+            News
+          </Link>
+        </div>
+      </div>
+
       {/* wheel centre; cards are placed around it. It ignores the pointer so only the cards catch the wheel */}
       <div className="pointer-events-none absolute left-1/2 top-[calc(var(--R)+var(--cw)*0.75)]">
         <div ref={root} data-lenis-prevent className="relative">
@@ -113,10 +138,10 @@ export function ShoeWheel() {
               ref={(n) => {
                 cards.current[i] = n;
               }}
-              className="pointer-events-auto absolute left-0 top-0 aspect-[3/4.3] w-[var(--cw)] cursor-grab select-none overflow-hidden rounded-[1.6rem] border border-white/30 shadow-[0_28px_44px_-22px_rgba(0,0,0,0.5)] will-change-transform active:cursor-grabbing"
-              style={{ background: it.bg, transformOrigin: '0 0' }}
+              className="pointer-events-auto absolute left-0 top-0 aspect-[3/4.3] w-[var(--cw)] cursor-grab select-none overflow-hidden rounded-[1.6rem] border border-black/10 shadow-[0_28px_44px_-22px_rgba(0,0,0,0.5)] will-change-transform active:cursor-grabbing"
+              style={{ background: it.bg, transformOrigin: '0 0', ...layout(i, 0) }}
             >
-              <p className="absolute left-4 top-4 font-mono text-[clamp(0.55rem,0.9vw,0.75rem)] font-bold uppercase tracking-[0.3em] text-white/90">{it.brand}</p>
+              <p className={`absolute left-4 top-4 font-mono text-[clamp(0.55rem,0.9vw,0.75rem)] font-bold uppercase tracking-[0.3em] ${it.blend ? 'text-[#0A0A0A]/60' : 'text-white/90'}`}>{it.brand}</p>
               <img
                 src={it.src}
                 alt={`${it.brand} ${it.name}`}
@@ -124,7 +149,7 @@ export function ShoeWheel() {
                 draggable={false}
                 className={`absolute inset-x-[4%] top-1/2 w-[92%] -translate-y-1/2 object-contain ${it.blend ? 'mix-blend-multiply' : 'drop-shadow-[0_18px_16px_rgba(0,0,0,0.35)]'}`}
               />
-              <p className="absolute inset-x-4 bottom-4 font-sans text-[clamp(0.85rem,1.4vw,1.2rem)] font-extrabold uppercase leading-tight text-white">{it.name}</p>
+              <p className={`absolute inset-x-4 bottom-4 font-sans text-[clamp(0.85rem,1.4vw,1.2rem)] font-extrabold uppercase leading-tight ${it.blend ? 'text-[#0A0A0A]' : 'text-white'}`}>{it.name}</p>
             </div>
           ))}
         </div>
