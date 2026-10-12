@@ -20,6 +20,27 @@ STORES = [
 ]
 
 
+def tidy(row):
+    """Make a row pass the importer: numeric size, non-empty colorway."""
+    m = re.match(r"\s*(\d+(?:\.\d+)?)", row["size"])
+    if m:
+        row["size"] = m.group(1)
+    if not row["colorway"]:
+        row["colorway"] = "Default"  # colorway is only in the model name for some Crepdog listings
+    return row
+
+
+def dedupe(rows):
+    """The importer rejects repeats of (store, style code, size); keep the first."""
+    seen, out = set(), []
+    for r in rows:
+        key = (r["retailer"], r["style_code"], r["size"])
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+
 def ranked_handles(store, want, max_pages=12):
     seen, order = set(), []
     for page in range(1, max_pages + 1):
@@ -53,12 +74,13 @@ def main():
             p = by_handle.get(handle)
             if not p or not is_sneaker(p) or not any(v["available"] for v in p["variants"]):
                 continue
-            rows = [r for r in rows_for(p, store) if r["in_stock"] == "yes"]
+            rows = [tidy(r) for r in rows_for(p, store) if r["in_stock"] == "yes"]
             (ok if rows and rows[0]["style_code"] else missing).extend(rows)
             picked += 1
             if picked >= n:
                 break
         print(f"{store['retailer']}: {picked} sneakers")
+    ok, missing = dedupe(ok), dedupe(missing)
     for path, data in ((out_path, ok), (out_path.replace(".csv", "-missing-style-code.csv"), missing)):
         with open(path, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=COLUMNS)

@@ -176,6 +176,7 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
       FROM sneaker_variants v
       JOIN sneakers s ON s.id = v.sneaker_id
       WHERE EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
+         OR EXISTS (SELECT 1 FROM price_snapshots ps WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true)
     `);
 
     let processed = 0;
