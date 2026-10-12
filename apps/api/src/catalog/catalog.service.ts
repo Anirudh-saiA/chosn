@@ -51,6 +51,8 @@ export interface CatalogSneaker {
   gender: string;
   /** The canonical, curated photo — top of the resolution priority (lib/resolve-sneaker-image.ts). Missing from this endpoint's query until now; search/drops already select it, the price comparison page never did. */
   primaryImageUrl: string | null;
+  /** Extra photos of the same pair from other angles (sneakers.gallery_image_refs). Empty when only the primary photo is known. */
+  galleryImageUrls: string[];
 }
 
 export interface SiblingSize {
@@ -124,6 +126,7 @@ interface VariantRow {
   silhouette: string | null;
   gender: string;
   primary_image_url: string | null;
+  gallery_image_refs: string[] | null;
   variant_id: string;
   size: string;
   size_system: string;
@@ -170,7 +173,7 @@ export class CatalogService {
   async getVariantPage(styleCode: string, size: number): Promise<CatalogResponse> {
     const { rows } = await this.db.execute(sql`
       SELECT s.id AS sneaker_id, s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.gender,
-             s.primary_image_url,
+             s.primary_image_url, s.gallery_image_refs,
              v.id AS variant_id, v.size, v.size_system, v.region
       FROM sneakers s
       JOIN sneaker_variants v ON v.sneaker_id = s.id
@@ -197,6 +200,7 @@ export class CatalogService {
         silhouette: variantRow.silhouette,
         gender: variantRow.gender,
         primaryImageUrl: variantRow.primary_image_url,
+        galleryImageUrls: variantRow.gallery_image_refs ?? [],
       },
       variant: {
         id: variantRow.variant_id,

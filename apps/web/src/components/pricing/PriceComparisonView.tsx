@@ -12,6 +12,7 @@ import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
 import { findBestOffer, OfferTable } from './OfferTable';
 import { SizeSelector } from './SizeSelector';
+import { SneakerGallery } from './SneakerGallery';
 
 export interface PriceComparisonViewProps {
   styleCode: string;
@@ -111,6 +112,11 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
       ?.retailerName ?? data.marketIntelligence?.bestRetailerSlug ?? null;
 
   const { sneaker, marketIntelligence: mi } = data;
+  // Main photo first, then the other angles — one entry per distinct file.
+  const galleryImages = useMemo(
+    () => [...new Set([imageUrl, ...(sneaker.galleryImageUrls ?? [])].filter((u): u is string => Boolean(u)))],
+    [imageUrl, sneaker.galleryImageUrls],
+  );
   const palette = useMemo(() => paletteFor(sneaker.colorway, sneaker.brand), [sneaker.colorway, sneaker.brand]);
   const bestOffer = findBestOffer(data.offers);
   const chartPrice = mi?.currentPrice ?? mi?.bestAvailablePrice ?? null;
@@ -141,16 +147,16 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
           />
           <div aria-hidden className="grid-lines !opacity-40" />
           <span className="absolute left-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">
-            {imageUrl ? 'Product view' : '3D view'} / UK {formatSize(data.variant.size)}
+            {galleryImages.length > 0 ? 'Product view' : '3D view'} / UK {formatSize(data.variant.size)}
           </span>
           <span className="absolute right-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass">
             {sneaker.styleCode}
           </span>
-          {imageUrl ? (
-            <img
-              src={imageUrl}
+          {galleryImages.length > 0 ? (
+            <SneakerGallery
+              key={styleCode}
+              images={galleryImages}
               alt={`${sneaker.brand} ${sneaker.model} ${sneaker.colorway}`}
-              className="absolute inset-0 h-full w-full object-contain p-10"
             />
           ) : (
             <div className="absolute inset-0">

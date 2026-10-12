@@ -55,6 +55,8 @@ export interface CatalogSneaker {
   silhouette: string | null;
   gender: string;
   primaryImageUrl: string | null;
+  /** Other angles of the same pair; empty when only the primary photo is known. */
+  galleryImageUrls?: string[];
 }
 
 export interface CatalogVariant {
