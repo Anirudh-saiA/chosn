@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../../db/drizzle.provider';
 import { manualPriceEntries, retailers, sneakerVariants, sneakers } from '../../db/schema';
 import { MarketIntelligenceService } from '../market-intelligence.service';
@@ -85,6 +85,7 @@ export class PriceImportService {
 
     await this.db.transaction(async (tx) => {
       const sneakerIds = new Map<string, string>();
+      const imaged = new Set<string>();
       const storeIds = new Map<string, string>();
 
       for (const r of rows) {
@@ -123,6 +124,15 @@ export class PriceImportService {
           const [s] = await tx.select({ id: sneakers.id }).from(sneakers).where(eq(sneakers.styleCode, r.styleCode));
           sneakerId = s!.id;
           sneakerIds.set(r.styleCode, sneakerId);
+        }
+
+        // Real product photo from the store's listing, so the card doesn't fall back to the placeholder art.
+        if (r.imageUrl && !imaged.has(r.styleCode)) {
+          imaged.add(r.styleCode);
+          await tx
+            .update(sneakers)
+            .set({ primaryImageUrl: r.imageUrl })
+            .where(and(eq(sneakers.id, sneakerId), isNull(sneakers.primaryImageUrl)));
         }
 
         // size variant
