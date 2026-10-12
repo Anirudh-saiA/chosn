@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "fetch:once": "node dist/scripts/fetch-once.js",
+    "import:prices": "node dist/scripts/import-prices.js",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "node dist/scripts/migrate.js",
     "mi:backfill": "node dist/scripts/backfill-daily-best-prices.js",

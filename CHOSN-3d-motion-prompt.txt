@@ -1,0 +1,211 @@
+========================================================================
+CHOSN — 3D MOTION GRAPHICS & ANIMATION BRIEF
+Companion to CHOSN-design-prompt.txt (the general visual brief). This
+one is scoped specifically to 3D scenes, motion/animation, and the
+color rules that govern both — written from what was actually built
+and actually broke while building the landing page's 3D hero, not
+theory. Hand this to a designer, another AI tool, or use it yourself.
+========================================================================
+
+------------------------------------------------------------------------
+1. WHERE 3D LIVES ON THIS SITE TODAY
+------------------------------------------------------------------------
+Two 3D pieces exist right now, both three.js + @react-three/fiber,
+both client-only (dynamic import, ssr:false — @react-three/fiber's
+Canvas touches window/WebGL at module load and breaks SSR otherwise):
+
+  1. WorldWalkerHero (apps/web/src/components/landing/WorldWalkerHero.tsx)
+     — the main landing-page hero. A low-poly globe with a small
+     courier-style figure standing on top, drag-to-rotate, auto-idle
+     rotation, walk-cycle tied to rotation speed.
+
+  2. PriceOrbitVisual (apps/web/src/components/landing/PriceOrbitVisual.tsx)
+     — a smaller, secondary decorative piece beside the real price-stat
+     numbers further down the page. Abstract orbit rings around a core,
+     auto-rotating only, no drag interaction.
+
+Both are built ENTIRELY from primitive Three.js geometry (icosahedron,
+sphere, capsule, torus, cone) — no downloaded or licensed 3D model
+exists for either. This isn't a placeholder to fix later; it's the
+same non-fabrication discipline the rest of this codebase follows for
+data (no invented prices) and images (no fake product photos): if a
+scene needs to look like a specific real object, source or license the
+real asset. If it's meant as stylized/abstract art, primitives are
+honest. Don't blur the two.
+
+------------------------------------------------------------------------
+2. THE REAL BUGS THIS ALREADY HIT (read before building the next one)
+------------------------------------------------------------------------
+These are not hypothetical pitfalls — this is the actual sequence of
+things that broke on WorldWalkerHero during real development, in
+order, each confirmed from an actual screenshot:
+
+  BUG 1 — "Where are the colors, it's just black."
+  Cause: the globe's base material color was set to the exact same
+  hex as the page's own background (#0A0A0A on #0A0A0A). A 3D object
+  lit correctly can still be visually invisible if its unlit base
+  color matches the backdrop and the lighting isn't strong/warm
+  enough to separate it. FIX: give any dark-scene 3D object its own
+  distinct tone from the page background (here: SLATE #312A25, not
+  pure ink), and add a soft colored ambient glow behind the canvas
+  (a CSS radial-gradient on the wrapping div, not a 3D light) so the
+  object's silhouette reads against the page even in shadow.
+
+  BUG 2 — Scene cropped/zoomed, figure looked like a disconnected
+  floating shape.
+  Cause: camera too close relative to object radius, and the
+  figure/globe scale ratio wasn't tuned together — the figure was
+  large enough relative to the globe, and the globe large enough
+  relative to the camera frustum, that the whole thing didn't fit
+  comfortably in frame. FIX: tune camera distance AND object radius
+  together, and always check the full composition fits inside a
+  typical viewport height (not just "does it render"), not only a
+  tall/ultra-wide test window.
+
+  BUG 3 — Figure read as a stick figure / unclear silhouette.
+  FIX: chibi proportions (oversized head, short limbs) read as "a
+  person" at small scale far more reliably than anatomically
+  accurate proportions. One costume detail (a cap) does more for
+  character identity than more geometric complexity would.
+
+  BUG 4 — Scene felt "frozen" at rest.
+  FIX: a small idle bob/sway even when not interacted with. A
+  perfectly static 3D object reads as broken, not calm.
+
+  General rule from all four: BUILD, then actually LOOK at a
+  screenshot of the real rendered result before calling a 3D piece
+  done. Parameters that look reasonable in code (camera distance,
+  material hex, object scale) do not reliably predict what the
+  composition looks like rendered. This project's whole
+  fixture-mode/staleness-disclosure discipline exists because
+  "should be correct" and "verified correct" are different claims —
+  the same standard applies here.
+
+------------------------------------------------------------------------
+3. COLOR — TWO SEPARATE SYSTEMS, DON'T MIX THEM
+------------------------------------------------------------------------
+This codebase currently has two distinct color systems, scoped to
+different parts of the app. Know which one applies before touching a
+file.
+
+A) THE LANDING PAGE'S OWN PALETTE (apps/web/src/components/landing/*)
+   Defined in packages/config/tailwind-preset.js. This is what
+   WorldWalkerHero and PriceOrbitVisual use:
+
+     ink            #0A0A0A   page background
+     bone           #F7F5F0   primary text / highlights
+     ember          #C1652F   brand accent (the wordmark's orange "O")
+     vault          #0F1613   raised dark surface
+     vault-raised   #182420
+     vault-recessed #0A0F0C
+     rust           #CF6F46   wait signals / negative trend deltas
+
+   Explicit note from page.tsx's own comment: "this page alone opts
+   into components/landing/'s separate system" — every other route
+   uses the Day 2 design tokens instead. Don't import ink/bone/ember
+   into a non-landing page, and don't import the app-wide tokens into
+   a landing component.
+
+B) THE APP-WIDE DESIGN SYSTEM (everything outside components/landing/)
+   From the earlier CHOSN-design-prompt.txt brief — dark OLED-style,
+   built around the same brand orange:
+
+     --color-background      #0B0D12
+     --color-card            #151822
+     --color-primary         #F59E0B   (brand orange, app-wide variant)
+     --color-accent-tech     #8B5CF6
+     --color-price-down      #22C55E   (real data only, never decorative)
+     --color-price-up        #EF4444   (real data only, never decorative)
+
+   Same hard rule as before: price-up/price-down colors only attach
+   to a real, sourced price delta. Never decorative, never on
+   placeholder data without the existing fixture-disclosure UI also
+   present.
+
+If a future 3D scene lives OUTSIDE components/landing/ (say, a data
+visualization on the actual price-comparison page), it should pull
+from system (B)'s tokens, not ink/bone/ember — reuse whichever
+palette actually owns the page it's on.
+
+------------------------------------------------------------------------
+4. 3D SCENE CHECKLIST (apply this before calling any new scene "done")
+------------------------------------------------------------------------
+  [ ] Base material colors are visibly distinct from the page background
+      — check this by looking at a real screenshot, not just the hex
+      values on paper
+  [ ] Camera distance and object scale were tuned together against a
+      real rendered screenshot at typical viewport height, not just
+      "does it compile and show something"
+  [ ] Nothing pretends to be a real licensed asset it isn't — primitive
+      geometry stays visibly stylized, not a fake product render
+  [ ] Idle state has subtle motion (bob/sway) — never perfectly frozen
+  [ ] Reduced-motion is a real branch, not a cosmetic slowdown: check
+      `prefers-reduced-motion` and render a genuinely static final
+      frame, no rotation, no bob, no walk cycle
+  [ ] Drag/pointer interaction (if any) uses `touchAction: 'none'` on
+      the wrapper and pointer capture (setPointerCapture /
+      releasePointerCapture) so it doesn't fight page scroll on touch
+      devices
+  [ ] Canvas is dynamically imported with `ssr:false` — never rendered
+      server-side
+  [ ] Colors pulled from whichever palette (A or B above) actually owns
+      the page the scene lives on — never invented ad hoc
+
+------------------------------------------------------------------------
+5. GSAP MOTION (2D — applies everywhere, not just 3D scenes)
+------------------------------------------------------------------------
+Already in production use (see StatementSection.tsx's ScrollTrigger
+parallax, LandingHero.tsx's entrance stagger). Rules that held up in
+practice:
+
+  - Card/grid reveal (search results, drop cards) — Standard tier:
+      gsap.from('.grid-item', {
+        opacity: 0, scale: 0.92, y: 16, duration: 0.4,
+        stagger: { each: 0.06, from: 'start', grid: 'auto' },
+        ease: 'back.out(1.4)',
+      });
+
+  - Dense data tables — Subtle tier ONLY. The back.out() overshoot
+    above reads as sloppy on informational/tabular UI:
+      gsap.from('.table-row', {
+        opacity: 0, y: 8, duration: 0.3, stagger: 0.03, ease: 'power1.out',
+      });
+
+  - Route transitions — fast, asymmetric (exit faster than enter):
+      gsap.to(main, {
+        opacity: 0, duration: 0.2,
+        onComplete: () => {
+          navigate();
+          gsap.fromTo(main, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+        },
+      });
+
+  - Heavy GSAP plugins (ScrollTrigger, etc.) are imported dynamically
+    inside useEffect, never at module top level — keeps their ~30kb
+    out of the initial bundle for pages that don't use them
+    (StatementSection.tsx's own pattern).
+
+  - `prefers-reduced-motion` is checked once via
+    `window.matchMedia('(prefers-reduced-motion: reduce)').matches`
+    (or Framer Motion's `useReducedMotion()` hook where that library's
+    already in use) and gates the animation branch entirely — not a
+    duration tweak, the actual initial/animate values collapse to the
+    same static value.
+
+------------------------------------------------------------------------
+6. WHAT TO AVOID (same list as the general brief, repeated because it
+   matters most here)
+------------------------------------------------------------------------
+  - Auction/hype-drop visual or motion language: countdown urgency,
+    pulsing "act now," anything implying scarcity CHOSN doesn't create
+  - A 3D object whose unlit base color matches its own background
+    (Bug 1 above — check this first on anything new)
+  - back.out() overshoot easing on dense data tables
+  - Decorative use of price-up/price-down colors without real backing data
+  - Any animation with no prefers-reduced-motion branch
+  - Claiming a primitive-built 3D scene is more than it is — no
+    invented brand partnerships, no implied licensed model
+
+========================================================================
+END OF BRIEF
+========================================================================

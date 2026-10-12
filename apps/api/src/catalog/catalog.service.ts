@@ -293,7 +293,10 @@ export class CatalogService {
     // FROM matched (the CTE), where `s` is out of scope; `s.brand` here
     // threw "missing FROM-clause entry for table s" until caught by
     // actually running the query rather than trusting it by inspection.
-    const orderBy = tsQuery ? sql`rank DESC, brand ASC, model ASC` : sql`brand ASC, model ASC`;
+    // lower(): A to Z regardless of the database's collation (a C collation sorts every capital before every lowercase letter).
+    const orderBy = tsQuery
+      ? sql`rank DESC, lower(brand) ASC, lower(model) ASC, colorway ASC`
+      : sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;
 
     const [{ rows }, { rows: brandRows }, communityPosts] = await Promise.all([
       this.db.execute(sql`
@@ -317,7 +320,7 @@ export class CatalogService {
         ORDER BY ${orderBy}
         LIMIT ${limit} OFFSET ${offset}
       `),
-      this.db.execute(sql`SELECT DISTINCT brand FROM sneakers ORDER BY brand`),
+      this.db.execute(sql`SELECT brand FROM sneakers GROUP BY brand ORDER BY lower(brand), brand`),
       this.searchCommunityPosts(params.q),
     ]);
 

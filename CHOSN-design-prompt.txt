@@ -1,0 +1,268 @@
+========================================================================
+CHOSN — COMPLETE VISUAL DESIGN BRIEF / HANDOFF PROMPT
+Generated from UI/UX Pro Max design intelligence + CHOSN's existing
+product reality. Hand this whole file to a designer, another AI tool,
+or use it yourself as the single source of truth for the refresh.
+========================================================================
+
+------------------------------------------------------------------------
+1. PRODUCT CONTEXT (read this before anything else)
+------------------------------------------------------------------------
+CHOSN is a sneaker PRICE-INTELLIGENCE platform. It is explicitly and
+permanently NOT a marketplace:
+  - It never sells sneakers
+  - It never holds inventory
+  - It never processes payments
+  - It never acts as a party to any transaction
+  - It compares prices across retailers and links out (some links are
+    affiliate links; disclosed in the footer)
+
+This single fact should shape every visual and motion decision below.
+Anything that reads as "auction," "bidding," "limited time," "act now,"
+or "checkout" is WRONG for this product, even if a generic e-commerce
+design system suggests it. The product's actual value proposition is
+TRUST and ACCURACY — showing real, sourced, honestly-labeled data
+(including explicitly marking fixture/placeholder data as such, and
+showing when a price was last fetched and whether it's stale).
+
+Core surfaces to design for:
+  - Price comparison page (per sneaker + size): the real product core
+  - Search / browse grid
+  - Drops (release calendar + live drop pages)
+  - News (auto-generated + potentially real external articles)
+  - Community (posts, comments)
+  - Account / notifications settings
+
+Existing brand elements to KEEP, not replace:
+  - Wordmark: "CHOSN" in caps, with the "O" rendered in an orange
+    accent color (e.g. <span style="color:#C6963C">O</span> pattern
+    already used in transactional email templates)
+  - SneakerPlaceholderArt: a deliberate typographic placeholder
+    (large display type showing brand/model as text) used everywhere
+    a real product photo isn't available yet — this is a considered
+    design decision already made, not a stopgap to design away
+
+Current stack: Next.js (App Router) + Tailwind, NestJS API. Already
+dark-mode-first in production.
+
+------------------------------------------------------------------------
+2. STYLE DIRECTION
+------------------------------------------------------------------------
+Style: DARK MODE (OLED-oriented)
+  - Deep near-black background, not a lifted navy-gray
+  - Low overall light emission — this is a product people keep open
+    in a tab and re-check throughout the day; eye strain over long
+    sessions matters more than a punchy first impression
+  - High text contrast, minimal decorative glow
+  - Light mode: not recommended as a first-class target; if built,
+    treat as a secondary theme, not the design's home base
+
+Mood keywords: precise, trustworthy, quietly confident, data-literate,
+editorial-adjacent (for News) but never flashy or "hype drop" styled.
+
+Avoid entirely: skeuomorphism, countdown-timer urgency UI, neon/hype
+streetwear aesthetics that imply "limited drop, buy now," anything
+that could read as sponsored/promotional rather than neutral/factual.
+
+------------------------------------------------------------------------
+3. COLOR SYSTEM (full token table)
+------------------------------------------------------------------------
+Built around the EXISTING orange accent rather than replacing it.
+Do not introduce a second unrelated brand color as primary — orange
+already carries brand recognition from the wordmark and email
+templates.
+
+  --color-background          #0B0D12   page base
+  --color-foreground          #F8FAFC   primary text
+  --color-card                #151822   cards, table rows, panels
+  --color-card-foreground     #F8FAFC   text on cards
+  --color-muted                #1A1E2A   subtle fills, disabled states
+  --color-muted-foreground    #94A3B8   secondary text, timestamps,
+                                          "fetched 3m ago" labels
+  --color-border               #252A38   hairlines, table dividers
+
+  --color-primary              #F59E0B   brand orange — CTAs, active
+                                          nav state, the wordmark "O",
+                                          primary buttons
+  --color-on-primary           #0B0D12   text/icons on orange fills
+
+  --color-accent-tech          #8B5CF6   secondary accent — badges,
+                                          "new" markers, links inside
+                                          body text — USE SPARINGLY,
+                                          never as a second CTA color
+
+  --color-price-down           #22C55E   a tracked price DECREASED
+                                          (factual, not "won a bid")
+  --color-price-up             #EF4444   a tracked price INCREASED
+  --color-destructive          #DC2626   errors, delete actions
+  --color-on-destructive       #FFFFFF
+
+  --color-ring                 #F59E0B   focus ring (keyboard nav)
+
+HARD RULE: --color-price-down / --color-price-up may ONLY be applied
+to an element backed by a real, sourced price delta from the pricing
+API. Never use these colors decoratively, never on placeholder/fixture
+data without the existing fixture disclosure UI also present. This
+mirrors the backend's own fixture-mode honesty discipline — the visual
+design must not accidentally imply more certainty than the data has.
+
+Contrast requirement: every text/background pairing above must hit at
+least 4.5:1 (WCAG AA). Verify --color-muted-foreground on --color-card
+specifically — it's the tightest pairing in this palette.
+
+------------------------------------------------------------------------
+4. TYPOGRAPHY
+------------------------------------------------------------------------
+Pairing: Fira Sans (headings + body) + Fira Code (ALL numerals)
+
+Import:
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+Tailwind config:
+  fontFamily: {
+    sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+    mono: ['Fira Code', 'ui-monospace', 'monospace'],
+  }
+
+Rules:
+  - Every price, percentage, size number, and timestamp renders in
+    Fira Code with font-variant-numeric: tabular-nums — this is the
+    single highest-leverage typographic choice for this product. It's
+    what makes a price comparison table feel precise and scannable
+    instead of decorative. Non-negotiable for any price/number.
+  - Headings: Fira Sans 600/700, real type scale, not ad hoc sizes.
+    Suggested scale: 14 / 16 / 18 / 20 / 24 / 30 / 36 / 48 (px), one
+    step per heading level, no in-between sizes invented per-component.
+  - Body text: Fira Sans 400, base 16px minimum, line-height 1.5.
+  - Never drop body text below 12px anywhere, including captions.
+
+------------------------------------------------------------------------
+5. LAYOUT & SPACING
+------------------------------------------------------------------------
+Spacing scale (standard density — this is a data-dense product but
+not a cramped admin dashboard; use the mid-density scale):
+  4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 (px)
+
+Breakpoints to test at: 375px, 768px, 1024px, 1440px.
+  - No horizontal scroll on the page body at any width
+  - Price tables and any wide data go inside their own
+    overflow-x: auto container, never the page itself
+  - Mobile-first: build the 375px layout first, expand up
+
+Grid: CSS Grid for the search/browse card grid, with
+  grid: 'auto' style natural row/column inference (see motion section)
+  rather than fixed column counts per breakpoint.
+
+------------------------------------------------------------------------
+6. MOTION (GSAP) — target tier: STANDARD, not showy
+------------------------------------------------------------------------
+This product is used for fast comparison across many tabs. Motion
+should orient and confirm, never delay or perform. Every animation
+below must respect prefers-reduced-motion (see rule at the end).
+
+A) Card/grid reveal (search results, drop cards) — Standard tier:
+   gsap.from('.grid-item', {
+     opacity: 0, scale: 0.92, y: 16, duration: 0.4,
+     stagger: { each: 0.06, from: 'start', grid: 'auto' },
+     ease: 'back.out(1.4)',
+   });
+   Note: grid:'auto' infers rows/columns from the CSS grid layout for
+   a natural wave stagger without hardcoding column counts.
+
+B) Dense data table rows (price comparison table) — Subtle tier ONLY.
+   DO NOT use the back.out overshoot from (A) here — on dense
+   informational UI it reads as sloppy, not polished:
+   gsap.from('.table-row', {
+     opacity: 0, y: 8, duration: 0.3, stagger: 0.03, ease: 'power1.out',
+   });
+
+C) Route/page transitions — Subtle tier, fast:
+   gsap.to(main, {
+     opacity: 0, duration: 0.2,
+     onComplete: () => {
+       navigate();
+       gsap.fromTo(main, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+     },
+   });
+   Rule: exit animation must always resolve FASTER than entrance
+   (asymmetric timing) so back/forward navigation feels snappy, not
+   sluggish. Never block navigation on the animation completing.
+
+D) Price-change counter (no verified preset exists in the design
+   database for this specific pattern — flagged honestly, this is a
+   standard fallback, not a sourced recommendation):
+   gsap.to(counterState, {
+     value: newPrice, duration: 0.6, ease: 'power2.out',
+     onUpdate: () => setDisplay(Math.round(counterState.value)),
+   });
+
+E) Reduced motion (apply globally, once, not per-component):
+   const prefersReduced =
+     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   if (prefersReduced) {
+     // skip all non-essential motion above; render final state
+     // immediately — this is not optional, it's an accessibility
+     // requirement (WCAG 2.3.3)
+   }
+
+------------------------------------------------------------------------
+7. ICONOGRAPHY
+------------------------------------------------------------------------
+  - SVG icons only (Heroicons or Lucide) — never emoji as functional
+    icons anywhere in the product UI
+  - Every icon-only button needs an aria-label
+  - Minimum touch target 44x44px, even if the icon glyph is smaller
+    (pad the hit area)
+
+------------------------------------------------------------------------
+8. INTERACTION & FEEDBACK
+------------------------------------------------------------------------
+  - cursor: pointer on every clickable element
+  - Hover states with 150-300ms transitions, never instant (0ms) state
+    changes and never hover-only interactions (must also work on
+    touch/keyboard)
+  - Visible focus ring on every interactive element for keyboard nav —
+    do not remove default focus outlines without replacing them
+  - Loading feedback on anything that fetches (price refresh, search) —
+    a skeleton or spinner, never a silent frozen state
+  - "Fetched Xm ago" / staleness labels should be visually quiet
+    (--color-muted-foreground, small type) but always present when
+    real fetch-freshness data exists — this is core to the product's
+    trust proposition, not a minor detail
+
+------------------------------------------------------------------------
+9. WHAT TO AVOID (explicit anti-patterns for THIS product)
+------------------------------------------------------------------------
+  - Auction/marketplace visual language: countdown urgency bars,
+    "X people viewing this," "only 2 left," bid/outbid color coding
+  - Decorative use of --color-price-up / --color-price-down without
+    a real backing data point
+  - back.out() overshoot easing on dense data tables
+  - Generic "hype drop" streetwear visual tropes (neon gradients,
+    aggressive diagonal slashes, countdown typography) — CHOSN is
+    positioned as the neutral, trustworthy comparison layer, not a
+    hype/drop marketing site
+  - Replacing SneakerPlaceholderArt with a generic broken-image icon
+    or stock photo — the typographic placeholder is a kept decision
+  - Any animation that cannot be disabled via prefers-reduced-motion
+  - Text below 12px anywhere
+  - Icon-only buttons without an accessible label
+
+------------------------------------------------------------------------
+10. PRE-DELIVERY CHECKLIST
+------------------------------------------------------------------------
+  [ ] No emoji used as functional icons (SVG only)
+  [ ] cursor-pointer on all clickable elements
+  [ ] Hover states, 150-300ms transitions, no instant state changes
+  [ ] Text contrast 4.5:1 minimum on every token pairing actually used
+  [ ] Visible focus states for keyboard navigation
+  [ ] prefers-reduced-motion respected globally
+  [ ] Responsive and horizontal-scroll-free at 375 / 768 / 1024 / 1440px
+  [ ] All prices/numbers in Fira Code with tabular-nums
+  [ ] price-up/price-down colors only on real, sourced data
+  [ ] SneakerPlaceholderArt preserved as the placeholder treatment
+  [ ] Staleness/fetch-time labels present wherever fetch data exists
+
+========================================================================
+END OF BRIEF
+========================================================================

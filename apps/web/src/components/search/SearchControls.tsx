@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
-import { cx } from '@chosn/ui';
 
 export interface SearchControlsProps {
   brands: string[];
@@ -17,6 +16,7 @@ const DEBOUNCE_MS = 300;
  * component only ever reads/writes the URL, page.tsx does the actual
  * fetch. Text input is debounced; brand/signal are discrete toggles and
  * apply immediately on click. Sticks under the masthead while scrolling.
+ * Landing style: one underlined search line, black pill chips.
  */
 export function SearchControls({ brands }: SearchControlsProps) {
   const router = useRouter();
@@ -51,19 +51,16 @@ export function SearchControls({ brands }: SearchControlsProps) {
   }, []);
 
   return (
-    <div className="sticky top-16 z-30 -mx-5 flex flex-col gap-3 border-y border-text/[0.08] bg-vault-deep/85 px-5 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
+    <div className="sticky top-16 z-30 -mx-5 flex flex-col gap-4 bg-white/85 px-5 py-4 backdrop-blur-xl sm:-mx-8 sm:px-8">
       <label className="group relative block">
         <span className="sr-only">Search sneakers</span>
-        <Search
-          className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-text-faint transition-colors group-focus-within:text-brass-bright"
-          aria-hidden
-        />
+        <Search className="pointer-events-none absolute left-0 top-1/2 h-6 w-6 -translate-y-1/2 text-[#0A0A0A]" aria-hidden />
         <input
           type="search"
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
-          placeholder="Search brand, model or colorway…"
-          className="min-h-[52px] w-full border border-text/15 bg-vault-deep/80 py-3 pl-12 pr-12 font-sans text-base text-text sm:text-lg outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)] [&::-webkit-search-cancel-button]:hidden"
+          placeholder="Search brand, model or colourway"
+          className="w-full border-b-2 border-[#0A0A0A] bg-transparent py-3 pl-10 pr-10 font-display text-[clamp(1.4rem,2.6vw,2.2rem)] uppercase tracking-[0.04em] text-[#0A0A0A] outline-none placeholder:text-[#0A0A0A]/30 [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button
@@ -74,16 +71,16 @@ export function SearchControls({ brands }: SearchControlsProps) {
               if (debounceRef.current) clearTimeout(debounceRef.current);
               pushParams({ q: null });
             }}
-            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-text-faint transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass-bright"
+            className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]"
           >
-            <X className="h-4 w-4" aria-hidden />
+            <X className="h-5 w-5" aria-hidden />
           </button>
         )}
       </label>
 
       <div className="-mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         <FilterChip active={!activeBrand} onClick={() => pushParams({ brand: null })}>
-          All brands
+          All
         </FilterChip>
         {brands.map((b) => (
           <FilterChip key={b} active={activeBrand === b} onClick={() => pushParams({ brand: b })}>
@@ -91,14 +88,10 @@ export function SearchControls({ brands }: SearchControlsProps) {
           </FilterChip>
         ))}
 
-        <span className="mx-1 h-5 w-px shrink-0 bg-text/15" aria-hidden="true" />
+        <span className="mx-1 h-5 w-px shrink-0 bg-[#0A0A0A]/20" aria-hidden="true" />
 
-        <FilterChip
-          signal
-          active={buyOnly}
-          onClick={() => pushParams({ signal: buyOnly ? null : 'good_time_to_buy' })}
-        >
-          Good time to buy only
+        <FilterChip signal active={buyOnly} onClick={() => pushParams({ signal: buyOnly ? null : 'good_time_to_buy' })}>
+          Good time to buy
         </FilterChip>
       </div>
     </div>
@@ -121,16 +114,11 @@ function FilterChip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={cx(
-        'inline-flex min-h-[44px] shrink-0 items-center gap-2 border px-3.5 font-mono text-data-delta transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright sm:min-h-[38px]',
-        active
-          ? signal
-            ? 'border-signal/60 bg-signal/15 text-signal'
-            : 'border-brass-bright/50 bg-brass-gradient font-semibold text-vault-deep'
-          : 'border-text/15 bg-vault-raised/60 text-text-soft hover:border-brass/50 hover:text-text',
-      )}
+      className={`inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-full border-2 px-5 font-display text-[0.95rem] uppercase tracking-[0.14em] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] ${
+        active ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white' : 'border-[#0A0A0A]/15 bg-white text-[#0A0A0A] hover:border-[#0A0A0A]'
+      }`}
     >
-      {signal && <span aria-hidden className={cx('h-1.5 w-1.5 rounded-full', active ? 'bg-signal' : 'bg-text-faint')} />}
+      {signal && <span aria-hidden className={`h-2 w-2 rounded-full ${active ? 'bg-[#FF7A1A]' : 'bg-[#0A0A0A]/30'}`} />}
       {children}
     </button>
   );

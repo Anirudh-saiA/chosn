@@ -5,12 +5,12 @@ import { SearchControls } from '@/components/search/SearchControls';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { CountUp } from '@/components/fx/CountUp';
 import { Reveal } from '@/components/fx/Reveal';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { PageShell } from '@/components/ui/PageShell';
 import { fetchSearch } from '@/lib/catalog';
 
 export const metadata: Metadata = {
-  title: 'Search sneakers',
+  title: 'Compare sneaker prices',
   description: 'Search and browse the CHOSN launch catalog — compare real-time prices across every tracked retailer.',
 };
 
@@ -32,23 +32,32 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   );
 
   return (
-    <PageShell width="7xl">
-      <PageHeader
-        eyebrow="Catalog / Live prices"
-        title="Search sneakers"
-        description="Every pair we track, compared across every retailer CHOSN watches."
-        className="!mb-8 lg:!mb-10"
-      >
-        <p className="flex items-baseline gap-2 border border-text/[0.1] bg-vault-raised/60 px-4 py-2.5" aria-live="polite">
-          <span className="live-dot" aria-hidden />
-          <span className="font-mono text-2xl font-medium tabular-nums text-brass-bright">
-            <CountUp to={total} duration={0.9} />
-          </span>
-          <span className="font-mono text-meta uppercase tracking-[0.12em] text-text-soft">
-            {total === 1 ? 'sneaker' : 'sneakers'} tracked
-          </span>
-        </p>
-      </PageHeader>
+    <PageShell width="full" plain>
+      <header className="mb-6 border-b-2 border-[#0A0A0A] pb-8">
+        <Reveal>
+          <p className="flex items-center gap-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#0A0A0A]/60" aria-live="polite">
+            <span className="live-dot" aria-hidden />
+            Live prices
+            <span className="text-[#0A0A0A]">
+              <CountUp to={total} duration={0.9} /> {total === 1 ? 'sneaker' : 'sneakers'} tracked
+            </span>
+          </p>
+        </Reveal>
+        <Reveal delay={0.05}>
+          <h1 className="mt-4 font-display text-[clamp(4.5rem,15vw,12rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">Compare.</h1>
+        </Reveal>
+        <div className="mt-6">
+          <ScrollHighlight
+            before="Every pair we track,"
+            first="across every retailer"
+            between=", shipping included — with the "
+            second="best price"
+            after="first."
+            triggerAt={0.8}
+            textClass="max-w-4xl text-[clamp(1.3rem,2.6vw,2.3rem)] leading-[1.25]"
+          />
+        </div>
+      </header>
 
       <SearchControls brands={brands} />
 
