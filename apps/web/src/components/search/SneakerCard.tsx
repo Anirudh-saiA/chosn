@@ -70,7 +70,7 @@ export function SneakerCard({ item }: SneakerCardProps) {
               {item.bestAvailablePrice !== null ? (
                 <p className="mt-1 font-mono text-[1.6rem] font-extrabold leading-none tabular-nums text-[#0A0A0A]">{formatInr(item.bestAvailablePrice)}</p>
               ) : (
-                <p className="mt-1 font-mono text-[0.9rem] font-bold text-[#0A0A0A]/50">Unavailable</p>
+                <p className="mt-1 font-mono text-[0.9rem] font-bold text-[#0A0A0A]/50">Sold out</p>
               )}
             </div>
             <span

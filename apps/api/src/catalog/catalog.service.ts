@@ -301,10 +301,9 @@ export class CatalogService {
    * exactly the precomputed table Day 9 built for this), just read
    * efficiently rather than one-card-at-a-time.
    *
-   * "Default size" = each sneaker's lowest listed size. There's no real
-   * popularity signal to rank by yet at this catalog size — a documented,
-   * deterministic choice rather than an arbitrary one, easy to swap for
-   * an actual "most-ordered size" once that data exists.
+   * "Default size" = each sneaker's cheapest in-stock size (its smallest
+   * size when none has a price yet). There's no real popularity signal to
+   * rank by, so the card shows what you can actually buy for the least.
    *
    * Filtering is a SQL WHERE clause (brand, signal, full-text query),
    * never a client-side filter of the whole catalog — task 3.
@@ -328,16 +327,19 @@ export class CatalogService {
     // threw "missing FROM-clause entry for table s" until caught by
     // actually running the query rather than trusting it by inspection.
     // lower(): A to Z regardless of the database's collation (a C collation sorts every capital before every lowercase letter).
+    // Shoes in stock somewhere come first (sold-out ones follow), then A to Z.
     const orderBy = tsQuery
-      ? sql`rank DESC, lower(brand) ASC, lower(model) ASC, colorway ASC`
-      : sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;
+      ? sql`rank DESC, (best_available_price IS NULL) ASC, lower(brand) ASC, lower(model) ASC, colorway ASC`
+      : sql`(best_available_price IS NULL) ASC, lower(brand) ASC, lower(model) ASC, colorway ASC`;
 
     const [{ rows }, { rows: brandRows }, communityPosts] = await Promise.all([
       this.db.execute(sql`
         WITH default_variant AS (
-          SELECT DISTINCT ON (sneaker_id) sneaker_id, id AS variant_id, size, size_system
-          FROM sneaker_variants
-          ORDER BY sneaker_id, size ASC
+          -- The size a card links to: the one with the lowest in-stock price; when no size has a price, the smallest.
+          SELECT DISTINCT ON (v.sneaker_id) v.sneaker_id, v.id AS variant_id, v.size, v.size_system
+          FROM sneaker_variants v
+          LEFT JOIN market_summaries mv ON mv.sneaker_variant_id = v.id
+          ORDER BY v.sneaker_id, (mv.best_available_price IS NULL), mv.best_available_price ASC, v.size ASC
         ),
         matched AS (
           SELECT s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
