@@ -1,5 +1,11 @@
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
-import { CatalogService, type CatalogResponse, type SearchResponse } from './catalog.service';
+import {
+  CatalogService,
+  type CatalogResponse,
+  type CompareItem,
+  type SearchResponse,
+  type SearchResultItem,
+} from './catalog.service';
 import { SearchQueryDto } from './dto/search-query.dto';
 
 /**
@@ -31,6 +37,21 @@ export class CatalogController {
   @Get('variants')
   async listVariants(): Promise<{ styleCode: string; size: number }[]> {
     return this.catalog.listVariantParams();
+  }
+
+  /** Side-by-side compare: /catalog/compare?styles=DD1391-100,CW2288-111 (up to four). */
+  @Get('compare')
+  async compare(@Query('styles') styles?: string): Promise<{ items: CompareItem[] }> {
+    return { items: await this.catalog.compare((styles ?? '').split(',')) };
+  }
+
+  /** Similar shoes for the product page's side rail. Declared before :styleCode/:size so "similar" isn't read as a size. */
+  @Get(':styleCode/similar')
+  async similar(
+    @Param('styleCode') styleCode: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ results: SearchResultItem[] }> {
+    return { results: await this.catalog.similar(styleCode, limit ? Number(limit) || 8 : 8) };
   }
 
   @Get(':styleCode/:size')

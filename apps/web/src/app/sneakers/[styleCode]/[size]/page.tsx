@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
-import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
+import { fetchAllVariantParams, fetchCatalogVariant, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
+import { SimilarRail } from '@/components/pricing/SimilarRail';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -72,9 +73,10 @@ export async function generateStaticParams() {
 
 export default async function SneakerPricePage({ params }: PageProps) {
   const { styleCode, size } = await params;
-  const [data, drop] = await Promise.all([
+  const [data, drop, similar] = await Promise.all([
     loadVariant(styleCode, size),
     fetchDropForSneaker(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
+    fetchSimilar(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
   ]);
   if (!data) notFound();
 
@@ -86,7 +88,7 @@ export default async function SneakerPricePage({ params }: PageProps) {
   const imageUrl = resolveSneakerImage(sneaker.primaryImageUrl, offers);
 
   return (
-    <PageShell width="7xl">
+    <PageShell width="full">
       <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-meta text-text-soft">
         <Link href="/sneakers" className="link-underline inline-flex min-h-[44px] items-center gap-1.5 hover:text-text sm:min-h-0">
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> All sneakers
@@ -101,6 +103,7 @@ export default async function SneakerPricePage({ params }: PageProps) {
         styleCode={styleCode}
         initialData={data}
         imageUrl={imageUrl}
+        aside={<SimilarRail items={similar} current={{ styleCode: sneaker.styleCode }} />}
         // Most sneakers have no drop_event yet — this is the normal
         // case, not a loading state, so it renders nothing.
         badges={drop ? <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} /> : null}

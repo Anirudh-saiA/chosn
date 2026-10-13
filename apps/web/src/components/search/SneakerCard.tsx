@@ -5,6 +5,7 @@ import { formatInr, formatSize, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
+import { CompareToggle } from '@/components/compare/CompareToggle';
 
 export interface SneakerCardProps {
   item: SearchResultItem;
@@ -92,6 +93,11 @@ export function SneakerCard({ item }: SneakerCardProps) {
           price: item.bestAvailablePrice,
         }}
         className="absolute right-4 top-4 z-10"
+      />
+      <CompareToggle
+        variant="icon"
+        className="absolute right-4 top-[3.75rem] z-10"
+        entry={{ styleCode: item.styleCode, brand: item.brand, model: item.model, colorway: item.colorway, imageUrl }}
       />
     </div>
   );

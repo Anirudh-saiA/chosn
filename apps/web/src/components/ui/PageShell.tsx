@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CompareTray } from '@/components/compare/CompareTray';
 import { Masthead } from '@/components/Masthead';
 import { SiteFooter } from '@/components/SiteFooter';
 
@@ -45,6 +46,7 @@ export function PageShell({
         </main>
         {footer && <SiteFooter />}
       </div>
+      <CompareTray />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"""Collect multi-angle product photos per sneaker from the retailers' own listing pages.
+r"""Collect multi-angle product photos per sneaker from the retailers' own listing pages.
 
 Input : a text file of `style_code|listing_url` lines (distinct, from price_snapshots.listing_url).
 Output: a SQL file that sets sneakers.gallery_image_refs (and primary_image_url if empty).
@@ -7,6 +7,7 @@ Shopify stores (Superkicks, Crepdog Crew): <listing>.js lists every product imag
 VegNonVeg: the product page embeds its gallery as data-lazy="...1020X1200/..." images.
 
 Usage: python scripts/build_galleries.py listings.txt out.sql [max_images=6]
+The listings file: `docker exec <postgres> psql ... -t -A -F'|' -c "select distinct s.style_code, ps.listing_url from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id join sneakers s on s.id=v.sneaker_id where ps.listing_url ~ '^https://(www\.)?(superkicks\.in|crepdogcrew\.com|vegnonveg\.com)/products/'"`.
 """
 import json
 import re
@@ -14,9 +15,11 @@ import sys
 import time
 import urllib.request
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 UA = {"User-Agent": "Mozilla/5.0"}
 MAX_IMAGES = int(sys.argv[3]) if len(sys.argv) > 3 else 6
+WORKERS = 6
 
 
 def fetch(url):
@@ -71,8 +74,8 @@ def main():
             code, url = line.split("|", 1)
             by_code[code].append(url)
 
-    stmts, counts = [], []
-    for code, urls in by_code.items():
+    def collect(item):
+        code, urls = item
         gallery, seen = [], set()
         for url in urls:
             imgs = vnv_images(url) if "vegnonveg.com" in url else shopify_images(url)
@@ -81,7 +84,14 @@ def main():
                 if k not in seen:
                     seen.add(k)
                     gallery.append(img)
-            time.sleep(0.3)
+        return code, gallery
+
+    # A handful of workers: ~7k product pages finish in minutes without hammering any one store.
+    with ThreadPoolExecutor(WORKERS) as pool:
+        results = list(pool.map(collect, by_code.items()))
+
+    stmts, counts = [], []
+    for code, gallery in results:
         gallery = gallery[:MAX_IMAGES]
         counts.append(len(gallery))
         if gallery:

@@ -177,6 +177,45 @@ export async function fetchCatalogVariant(
   return res.json() as Promise<CatalogResponse>;
 }
 
+/** One shoe in the side-by-side compare view (mirrors apps/api catalog.service CompareItem). */
+export interface CompareItem {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  bestPrice: number | null;
+  bestRetailerName: string | null;
+  sizesInStock: number[];
+  linkSize: number | null;
+  offers: Array<{
+    retailerSlug: string;
+    retailerName: string;
+    bestPrice: number;
+    listingUrl: string;
+    sizesInStock: number[];
+  }>;
+}
+
+/** Shoes similar to `styleCode` (other colourways, then the brand's closest models) that are in stock somewhere. */
+export async function fetchSimilar(styleCode: string, init?: RequestInit): Promise<SearchResultItem[]> {
+  try {
+    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/similar?limit=8`, init);
+    if (!res.ok) return [];
+    return ((await res.json()) as { results: SearchResultItem[] }).results;
+  } catch {
+    return []; // the rail is an extra — never fail the page over it
+  }
+}
+
+/** Up to four shoes side by side, in the order requested. */
+export async function fetchCompare(styleCodes: string[], init?: RequestInit): Promise<CompareItem[]> {
+  if (styleCodes.length === 0) return [];
+  const res = await fetch(`${API_URL}/catalog/compare?styles=${encodeURIComponent(styleCodes.join(','))}`, init);
+  if (!res.ok) throw new Error(`compare fetch failed: ${res.status}`);
+  return ((await res.json()) as { items: CompareItem[] }).items;
+}
+
 /** en-IN grouping (lakh/crore boundaries) — the market this product is built for. */
 export function formatInr(value: number): string {
   return `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(value))}`;

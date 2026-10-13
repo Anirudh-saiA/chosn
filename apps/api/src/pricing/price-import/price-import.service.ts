@@ -44,7 +44,8 @@ export class PriceImportService {
     private readonly marketIntelligence: MarketIntelligenceService,
   ) {}
 
-  async importCsv(csv: string, opts: { dryRun: boolean; recordedBy: string }): Promise<ImportSummary> {
+  /** `refresh: false` skips the per-upload market-intelligence recompute (bulk loads refresh once at the end). */
+  async importCsv(csv: string, opts: { dryRun: boolean; recordedBy: string; refresh?: boolean }): Promise<ImportSummary> {
     const { rows, errors } = parsePriceCsv(csv);
     const rowsRead = rows.length + errors.filter((e) => e.line > 1).length;
 
@@ -199,7 +200,7 @@ export class PriceImportService {
     // The Compare grid reads best price / signal from Market Intelligence (normally refreshed hourly):
     // recompute now so the new prices show up straight away. A failure here must not undo the import.
     try {
-      await this.marketIntelligence.refreshAll();
+      if (opts.refresh !== false) await this.marketIntelligence.refreshAll();
     } catch (err) {
       this.logger.warn(`CSV import saved, but the market-intelligence refresh failed: ${(err as Error).message}`);
     }

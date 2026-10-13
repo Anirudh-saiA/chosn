@@ -68,6 +68,36 @@ export interface CatalogResponse {
   marketIntelligence: MarketIntelligenceSummary | null;
 }
 
+/** node-postgres hands numeric[] back as the text "{3,3.5}" unless a type parser is registered. */
+function parsePgArray(value: string[] | string | null | undefined): string[] {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  return value.replace(/^\{|\}$/g, '').split(',').filter((v) => v !== '');
+}
+
+/** One shoe in the side-by-side compare view: its cheapest in-stock price at every store that lists it. */
+export interface CompareItem {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  /** Cheapest in-stock price (shipping included) across stores, null when nothing is in stock. */
+  bestPrice: number | null;
+  bestRetailerName: string | null;
+  /** UK sizes that at least one store has in stock. */
+  sizesInStock: number[];
+  /** A size to deep-link into the full price page (the cheapest listing's size). */
+  linkSize: number | null;
+  offers: Array<{
+    retailerSlug: string;
+    retailerName: string;
+    bestPrice: number;
+    listingUrl: string;
+    sizesInStock: number[];
+  }>;
+}
+
 export interface SearchParams {
   q?: string;
   brand?: string;
@@ -349,6 +379,131 @@ export class CatalogService {
       brands: (brandRows as unknown as { brand: string }[]).map((b) => b.brand),
       communityPosts,
     };
+  }
+
+  /**
+   * Shoes similar to this one, for the "similar sneakers" rail: same model first (other colourways),
+   * then the same brand's closest model names. Only shoes that are in stock somewhere, each with the
+   * size and price of its cheapest in-stock listing so the card links straight to a priced page.
+   */
+  async similar(styleCode: string, limit = 8): Promise<SearchResultItem[]> {
+    const capped = Math.min(Math.max(limit, 1), 24);
+    const { rows } = await this.db.execute(sql`
+      WITH t AS (
+        SELECT id, lower(brand) AS brand, lower(model) AS model,
+               to_tsquery('english', regexp_replace(trim(regexp_replace(model, '[^A-Za-z0-9]+', ' ', 'g')), ' +', ' | ', 'g')) AS q
+        FROM sneakers WHERE style_code = ${styleCode}
+      ),
+      candidates AS (
+        SELECT s.id, s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
+               ((lower(s.model) = t.model)::int * 4 + (lower(s.brand) = t.brand)::int * 2
+                 + ts_rank(s.search_vector, t.q)) AS score
+        FROM sneakers s, t
+        WHERE s.id <> t.id
+          AND lower(s.brand) = t.brand
+          AND s.search_vector @@ t.q
+        ORDER BY score DESC, s.style_code
+        LIMIT 40
+      )
+      SELECT c.style_code, c.brand, c.model, c.colorway, c.silhouette, c.primary_image_url,
+             bp.size, bp.size_system, bp.price
+      FROM candidates c
+      JOIN LATERAL (
+        SELECT v.size, v.size_system, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price
+        FROM sneaker_variants v
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+        WHERE v.sneaker_id = c.id
+        ORDER BY price ASC NULLS LAST
+        LIMIT 1
+      ) bp ON bp.price IS NOT NULL
+      ORDER BY c.score DESC, bp.price ASC
+      LIMIT ${capped}
+    `);
+    return (rows as unknown as Array<{
+      style_code: string; brand: string; model: string; colorway: string; silhouette: string | null;
+      primary_image_url: string | null; size: string; size_system: string; price: string;
+    }>).map((r) => ({
+      styleCode: r.style_code,
+      brand: r.brand,
+      model: r.model,
+      colorway: r.colorway,
+      silhouette: r.silhouette,
+      primaryImageUrl: r.primary_image_url,
+      defaultSize: Number(r.size),
+      defaultSizeSystem: r.size_system,
+      currentPrice: Number(r.price),
+      bestAvailablePrice: Number(r.price),
+      signal: null,
+      currency: 'INR',
+    }));
+  }
+
+  /** Side-by-side data for up to four shoes (the order requested is kept; unknown style codes are skipped). */
+  async compare(styleCodes: string[]): Promise<CompareItem[]> {
+    const codes = [...new Set(styleCodes.map((c) => c.trim()).filter(Boolean))].slice(0, 4);
+    if (codes.length === 0) return [];
+    const { rows } = await this.db.execute(sql`
+      SELECT s.style_code, s.brand, s.model, s.colorway, s.primary_image_url,
+             r.slug AS retailer_slug, r.name AS retailer_name,
+             MIN(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS best_price,
+             (array_agg(ps.listing_url ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC))[1] AS listing_url,
+             (array_agg(v.size ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC))[1] AS cheapest_size,
+             array_agg(DISTINCT v.size ORDER BY v.size) AS sizes
+      FROM sneakers s
+      JOIN sneaker_variants v ON v.sneaker_id = s.id
+      JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+      JOIN retailers r ON r.id = ps.retailer_id
+      WHERE s.style_code IN (${sql.join(codes.map((c) => sql`${c}`), sql`, `)})
+      GROUP BY s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, r.slug, r.name
+    `);
+    type Row = {
+      style_code: string; brand: string; model: string; colorway: string; primary_image_url: string | null;
+      retailer_slug: string; retailer_name: string; best_price: string | null; listing_url: string;
+      cheapest_size: string; sizes: string[] | string | null;
+    };
+    const bySneaker = new Map<string, CompareItem>();
+    const cheapestSize = new Map<string, number>();
+    for (const r of rows as unknown as Row[]) {
+      let item = bySneaker.get(r.style_code);
+      if (!item) {
+        item = {
+          styleCode: r.style_code, brand: r.brand, model: r.model, colorway: r.colorway,
+          primaryImageUrl: r.primary_image_url, bestPrice: null, bestRetailerName: null,
+          sizesInStock: [], linkSize: null, offers: [],
+        };
+        bySneaker.set(r.style_code, item);
+      }
+      if (r.best_price === null) continue;
+      const price = Number(r.best_price);
+      const sizes = parsePgArray(r.sizes).map(Number);
+      item.offers.push({ retailerSlug: r.retailer_slug, retailerName: r.retailer_name, bestPrice: price, listingUrl: r.listing_url, sizesInStock: sizes });
+      item.sizesInStock = [...new Set([...item.sizesInStock, ...sizes])].sort((a, b) => a - b);
+      if (item.bestPrice === null || price < item.bestPrice) {
+        item.bestPrice = price;
+        item.bestRetailerName = r.retailer_name;
+        cheapestSize.set(r.style_code, Number(r.cheapest_size));
+      }
+    }
+    for (const item of bySneaker.values()) {
+      item.offers.sort((a, b) => a.bestPrice - b.bestPrice);
+      item.linkSize = cheapestSize.get(item.styleCode) ?? null;
+    }
+    // Shoes with no priced listing still show up (as "unavailable") so a requested column never silently vanishes.
+    const missing = codes.filter((c) => !bySneaker.has(c));
+    if (missing.length > 0) {
+      const { rows: plain } = await this.db.execute(sql`
+        SELECT style_code, brand, model, colorway, primary_image_url FROM sneakers
+        WHERE style_code IN (${sql.join(missing.map((c) => sql`${c}`), sql`, `)})
+      `);
+      for (const r of plain as unknown as Array<{ style_code: string; brand: string; model: string; colorway: string; primary_image_url: string | null }>) {
+        bySneaker.set(r.style_code, {
+          styleCode: r.style_code, brand: r.brand, model: r.model, colorway: r.colorway,
+          primaryImageUrl: r.primary_image_url, bestPrice: null, bestRetailerName: null,
+          sizesInStock: [], linkSize: null, offers: [],
+        });
+      }
+    }
+    return codes.map((c) => bySneaker.get(c)).filter((i): i is CompareItem => Boolean(i));
   }
 
   /**

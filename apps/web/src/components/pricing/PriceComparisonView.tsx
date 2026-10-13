@@ -11,6 +11,7 @@ import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
 import { findBestOffer, OfferTable } from './OfferTable';
+import { CompareToggle } from '@/components/compare/CompareToggle';
 import { SizeSelector } from './SizeSelector';
 import { SneakerGallery } from './SneakerGallery';
 
@@ -23,6 +24,8 @@ export interface PriceComparisonViewProps {
   badges?: ReactNode;
   /** Server-rendered notify controls. */
   notify?: ReactNode;
+  /** Side column (similar sneakers): third column on wide screens, full-width row below the hero otherwise. */
+  aside?: ReactNode;
 }
 
 /**
@@ -43,7 +46,7 @@ export interface PriceComparisonViewProps {
  * copy-pasted link stay correct — it just doesn't ask Next to refetch
  * and re-render the segment, since the data's already in hand.
  */
-export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify }: PriceComparisonViewProps) {
+export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, aside }: PriceComparisonViewProps) {
   const [data, setData] = useState(initialData);
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const [range, setRange] = useState<30 | 90>(90);
@@ -137,10 +140,10 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
 
   return (
     <div className="flex flex-col gap-10 pb-24 md:pb-0 lg:gap-14">
-      <div className="grid items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_19rem]">
         {/* Stage */}
         {galleryImages.length > 0 ? (
-          <div className="self-start lg:sticky lg:top-24">
+          <div className="min-w-0 self-start lg:sticky lg:top-24">
             <SneakerGallery
               key={styleCode}
               images={galleryImages}
@@ -181,6 +184,17 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
               {sneaker.model}
             </h1>
             <p className="mt-2 text-lg text-text-soft">{sneaker.colorway}</p>
+            <div className="mt-4">
+              <CompareToggle
+                entry={{
+                  styleCode: sneaker.styleCode,
+                  brand: sneaker.brand,
+                  model: sneaker.model,
+                  colorway: sneaker.colorway,
+                  imageUrl: galleryImages[0] ?? null,
+                }}
+              />
+            </div>
           </Reveal>
 
           <MarketIntelligenceCard data={data.marketIntelligence} bestRetailerName={bestRetailerName} />
@@ -203,6 +217,8 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
             </div>
           )}
         </div>
+
+        {aside && <aside className="min-w-0 lg:col-span-2 xl:sticky xl:top-24 xl:col-span-1">{aside}</aside>}
       </div>
 
       {series.length > 0 && (
