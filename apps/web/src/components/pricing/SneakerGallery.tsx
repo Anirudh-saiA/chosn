@@ -34,7 +34,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
       aria-roledescription={many ? 'carousel' : undefined}
       aria-label={many ? `${alt} photos` : undefined}
     >
-      <div className="group relative aspect-square w-full min-w-0 overflow-hidden rounded-2xl border border-text/10 bg-[#F3F3F1] md:flex-1">
+      <div className="group relative aspect-square w-full min-w-0 overflow-hidden rounded-2xl border border-text/10 bg-[#EFEBE2] md:flex-1">
         <img
           key={current}
           src={current}
@@ -81,7 +81,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               aria-selected={i === index}
               aria-label={`Show photo ${i + 1}`}
               onClick={() => setSelected(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#F3F3F1] transition-colors md:h-[72px] md:w-[72px] ${
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#EFEBE2] transition-colors md:h-[72px] md:w-[72px] ${
                 i === index ? 'border-text' : 'border-transparent ring-1 ring-text/10 hover:ring-text/30'
               }`}
             >

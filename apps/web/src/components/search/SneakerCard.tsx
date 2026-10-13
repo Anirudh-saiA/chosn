@@ -33,7 +33,7 @@ export function SneakerCard({ item }: SneakerCardProps) {
         href={href}
         className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]"
       >
-        <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-[#F3F3F1]' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
+        <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-[#EFEBE2]' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
           {imageUrl ? (
             // Plain <img>: no known remote domain to allow-list yet.
             <img
