@@ -16,9 +16,10 @@ const SIGNAL_PILL: Partial<Record<NonNullable<SearchResultItem['signal']>, { lab
 };
 
 /**
- * Landing-style catalog tile: a soft wash of the shoe's own colour behind the
- * photo (white-background photos are multiplied in, so nothing looks boxed),
- * then brand, model, colourway and the best live price. No shadows.
+ * Marketplace-style catalog tile: a square white photo frame (every shoe at the
+ * same size, photos darken-blended so white / light-grey backgrounds don't look boxed),
+ * then brand, model, colourway and the best live price. No shadows. Shoes with
+ * no photo keep a soft wash of their own colour behind the illustration.
  */
 export function SneakerCard({ item }: SneakerCardProps) {
   const href = `/sneakers/${encodeURIComponent(item.styleCode)}/${formatSize(item.defaultSize)}`;
@@ -32,13 +33,13 @@ export function SneakerCard({ item }: SneakerCardProps) {
         href={href}
         className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]"
       >
-        <div className="relative aspect-[4/3] overflow-hidden" style={{ background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
+        <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-[#F3F3F1]' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
           {imageUrl ? (
             // Plain <img>: no known remote domain to allow-list yet.
             <img
               src={imageUrl}
               alt={`${item.brand} ${item.model} ${item.colorway}`}
-              className="absolute inset-0 h-full w-full object-contain p-6 mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+              className="absolute inset-0 h-full w-full object-contain p-8 mix-blend-darken transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             />
           ) : (
             <SneakerArt
@@ -100,7 +101,7 @@ export function SneakerCard({ item }: SneakerCardProps) {
 export function SneakerCardSkeleton() {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10" aria-hidden>
-      <div className="skeleton aspect-[4/3]" />
+      <div className="skeleton aspect-square" />
       <div className="flex flex-col gap-3 p-5">
         <div className="skeleton h-3 w-16" />
         <div className="skeleton h-6 w-2/3" />

@@ -139,31 +139,33 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
     <div className="flex flex-col gap-10 pb-24 md:pb-0 lg:gap-14">
       <div className="grid items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
         {/* Stage */}
-        <div className="panel ticks relative h-[360px] self-start overflow-hidden sm:h-[460px] lg:sticky lg:top-24 lg:h-[560px]">
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{ background: `radial-gradient(55% 50% at 50% 58%, ${palette.glow}40, transparent 72%)` }}
-          />
-          <div aria-hidden className="grid-lines !opacity-40" />
-          <span className="absolute left-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">
-            {galleryImages.length > 0 ? 'Product view' : '3D view'} / UK {formatSize(data.variant.size)}
-          </span>
-          <span className="absolute right-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass">
-            {sneaker.styleCode}
-          </span>
-          {galleryImages.length > 0 ? (
+        {galleryImages.length > 0 ? (
+          <div className="self-start lg:sticky lg:top-24">
             <SneakerGallery
               key={styleCode}
               images={galleryImages}
               alt={`${sneaker.brand} ${sneaker.model} ${sneaker.colorway}`}
             />
-          ) : (
+          </div>
+        ) : (
+          <div className="panel ticks relative h-[360px] self-start overflow-hidden sm:h-[460px] lg:sticky lg:top-24 lg:h-[560px]">
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{ background: `radial-gradient(55% 50% at 50% 58%, ${palette.glow}40, transparent 72%)` }}
+            />
+            <div aria-hidden className="grid-lines !opacity-40" />
+            <span className="absolute left-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">
+              3D view / UK {formatSize(data.variant.size)}
+            </span>
+            <span className="absolute right-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass">
+              {sneaker.styleCode}
+            </span>
             <div className="absolute inset-0">
               <SneakerViewer brand={sneaker.brand} model={sneaker.model} colorway={sneaker.colorway} />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Readout */}
         <div className="flex min-w-0 flex-col gap-6">

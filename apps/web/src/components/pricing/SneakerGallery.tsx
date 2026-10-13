@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
- * Fills its (relatively positioned) parent: the selected photo large, a thumbnail
- * strip underneath and prev/next arrows once there is more than one angle. A photo
- * that fails to load (retailer removed it) is dropped instead of leaving a broken tile.
+ * Marketplace-style product photos: one fixed square frame with the selected photo
+ * (always `contain`, same padding, so every shoe renders at the same size), and a
+ * thumbnail rail beside it on desktop / below it on phones. A photo that fails to
+ * load (the retailer removed it) is dropped instead of leaving a broken tile.
  */
 export function SneakerGallery({ images, alt }: { images: string[]; alt: string }) {
   const [broken, setBroken] = useState<ReadonlySet<string>>(new Set());
@@ -23,7 +24,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
 
   return (
     <div
-      className="absolute inset-0 flex flex-col outline-none"
+      className="flex flex-col gap-3 outline-none md:flex-row-reverse md:gap-4"
       tabIndex={many ? 0 : -1}
       onKeyDown={(e) => {
         if (!many) return;
@@ -33,13 +34,13 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
       aria-roledescription={many ? 'carousel' : undefined}
       aria-label={many ? `${alt} photos` : undefined}
     >
-      <div className="relative min-h-0 flex-1">
+      <div className="group relative aspect-square w-full min-w-0 overflow-hidden rounded-2xl border border-text/10 bg-[#F3F3F1] md:flex-1">
         <img
           key={current}
           src={current}
           alt={`${alt}${many ? ` — photo ${index + 1} of ${shown.length}` : ''}`}
           onError={() => drop(current)}
-          className="absolute inset-0 h-full w-full object-contain p-8 sm:p-10"
+          className="absolute inset-0 h-full w-full object-contain p-6 mix-blend-darken sm:p-8"
         />
         {many && (
           <>
@@ -47,7 +48,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               type="button"
               onClick={() => go(-1)}
               aria-label="Previous photo"
-              className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-text/15 bg-vault-raised/80 text-text backdrop-blur transition-colors hover:bg-vault-raised"
+              className="absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
@@ -55,16 +56,23 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               type="button"
               onClick={() => go(1)}
               aria-label="Next photo"
-              className="absolute right-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-text/15 bg-vault-raised/80 text-text backdrop-blur transition-colors hover:bg-vault-raised"
+              className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
+            <span className="absolute bottom-3 right-3 rounded-full bg-text/80 px-2.5 py-1 font-mono text-[0.65rem] tracking-[0.08em] text-white">
+              {index + 1} / {shown.length}
+            </span>
           </>
         )}
       </div>
 
       {many && (
-        <div className="relative z-10 flex gap-2 overflow-x-auto px-4 pb-4 pt-1" role="tablist" aria-label="Choose a photo">
+        <div
+          className="flex shrink-0 gap-2 overflow-x-auto md:max-h-[560px] md:w-[72px] md:flex-col md:overflow-y-auto md:overflow-x-hidden"
+          role="tablist"
+          aria-label="Choose a photo"
+        >
           {shown.map((src, i) => (
             <button
               key={src}
@@ -73,11 +81,11 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               aria-selected={i === index}
               aria-label={`Show photo ${i + 1}`}
               onClick={() => setSelected(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden border bg-white transition-colors sm:h-[72px] sm:w-[72px] ${
-                i === index ? 'border-brass' : 'border-text/15 hover:border-text/40'
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#F3F3F1] transition-colors md:h-[72px] md:w-[72px] ${
+                i === index ? 'border-text' : 'border-transparent ring-1 ring-text/10 hover:ring-text/30'
               }`}
             >
-              <img src={src} alt="" loading="lazy" onError={() => drop(src)} className="h-full w-full object-contain p-1" />
+              <img src={src} alt="" loading="lazy" onError={() => drop(src)} className="h-full w-full object-contain p-1 mix-blend-darken" />
             </button>
           ))}
         </div>
