@@ -4,6 +4,7 @@ import { SneakerArt } from '@/components/ui/SneakerArt';
 import { formatInr, formatSize, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
+import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import { CompareToggle } from '@/components/compare/CompareToggle';
 
@@ -34,13 +35,22 @@ export function SneakerCard({ item }: SneakerCardProps) {
         href={href}
         className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]"
       >
-        <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-[#EFEBE2]' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
+        <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-white' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
           {imageUrl ? (
-            // Plain <img>: no known remote domain to allow-list yet.
-            <img
+            // Plain <img>: no known remote domain to allow-list yet. Falls back to the illustration if the photo can't load.
+            <ShoePhoto
+              key={imageUrl}
               src={imageUrl}
               alt={`${item.brand} ${item.model} ${item.colorway}`}
-              className="absolute inset-0 h-full w-full object-contain p-8 mix-blend-darken transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              className="absolute inset-0 h-full w-full object-contain p-8 transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              fallback={
+                <SneakerArt
+                  colorway={item.colorway}
+                  brand={item.brand}
+                  palette={palette}
+                  className="absolute inset-0 m-auto h-[82%] w-[88%]"
+                />
+              }
             />
           ) : (
             <SneakerArt

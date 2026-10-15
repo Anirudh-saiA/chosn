@@ -34,13 +34,13 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
       aria-roledescription={many ? 'carousel' : undefined}
       aria-label={many ? `${alt} photos` : undefined}
     >
-      <div className="group relative aspect-square w-full min-w-0 overflow-hidden rounded-2xl border border-text/10 bg-[#EFEBE2] md:flex-1">
-        <img
+      <div className="group relative aspect-square w-full min-w-0 overflow-hidden rounded-2xl border border-text/10 bg-white md:flex-1">
+        <img referrerPolicy="no-referrer"
           key={current}
           src={current}
           alt={`${alt}${many ? ` — photo ${index + 1} of ${shown.length}` : ''}`}
           onError={() => drop(current)}
-          className="absolute inset-0 h-full w-full object-contain p-6 mix-blend-darken sm:p-8"
+          className="absolute inset-0 h-full w-full object-contain p-6 sm:p-8"
         />
         {many && (
           <>
@@ -81,11 +81,11 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               aria-selected={i === index}
               aria-label={`Show photo ${i + 1}`}
               onClick={() => setSelected(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#EFEBE2] transition-colors md:h-[72px] md:w-[72px] ${
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition-colors md:h-[72px] md:w-[72px] ${
                 i === index ? 'border-text' : 'border-transparent ring-1 ring-text/10 hover:ring-text/30'
               }`}
             >
-              <img src={src} alt="" loading="lazy" onError={() => drop(src)} className="h-full w-full object-contain p-1 mix-blend-darken" />
+              <img referrerPolicy="no-referrer" src={src} alt="" loading="lazy" onError={() => drop(src)} className="h-full w-full object-contain p-1" />
             </button>
           ))}
         </div>

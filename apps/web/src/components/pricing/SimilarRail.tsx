@@ -40,13 +40,13 @@ export function SimilarRail({ items, current }: { items: SearchResultItem[]; cur
                 href={href}
                 className="group flex items-center gap-3 rounded-2xl border border-text/10 bg-white p-2.5 pr-12 transition-colors hover:border-text/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
-                <div className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-[#EFEBE2]">
+                <div className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-white">
                   {image && (
-                    <img
+                    <img referrerPolicy="no-referrer"
                       src={image}
                       alt=""
                       loading="lazy"
-                      className="h-full w-full object-contain p-1.5 mix-blend-darken transition-transform duration-300 group-hover:scale-105"
+                      className="h-full w-full object-contain p-1.5 transition-transform duration-300 group-hover:scale-105"
                     />
                   )}
                 </div>

@@ -23,9 +23,9 @@ export function CompareTray() {
         <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
           {items.map((item) => (
             <li key={item.styleCode} className="relative shrink-0">
-              <div className="h-12 w-12 overflow-hidden rounded-lg bg-[#EFEBE2]">
+              <div className="h-12 w-12 overflow-hidden rounded-lg bg-white">
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={`${item.brand} ${item.model}`} className="h-full w-full object-contain p-1 mix-blend-darken" />
+                  <img referrerPolicy="no-referrer" src={item.imageUrl} alt={`${item.brand} ${item.model}`} className="h-full w-full object-contain p-1" />
                 ) : (
                   <span className="grid h-full w-full place-items-center font-mono text-[0.55rem] text-[#14213D]/60">{item.brand}</span>
                 )}

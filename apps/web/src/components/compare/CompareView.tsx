@@ -45,9 +45,9 @@ export function CompareView({ items }: { items: CompareItem[] }) {
               >
                 <X className="h-4 w-4" aria-hidden />
               </Link>
-              <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#EFEBE2]">
+              <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
                 {image ? (
-                  <img src={image} alt={`${item.brand} ${item.model} ${item.colorway}`} className="absolute inset-0 h-full w-full object-contain p-6 mix-blend-darken" />
+                  <img referrerPolicy="no-referrer" src={image} alt={`${item.brand} ${item.model} ${item.colorway}`} className="absolute inset-0 h-full w-full object-contain p-6" />
                 ) : (
                   <div className="grid h-full w-full place-items-center font-mono text-xs text-text-faint">No photo</div>
                 )}
