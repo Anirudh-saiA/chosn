@@ -31,3 +31,23 @@ export function parseList(value: string | undefined, max = 12): string[] {
   if (!value) return [];
   return [...new Set(value.split(',').map((v) => v.trim()).filter(Boolean))].slice(0, max);
 }
+
+/**
+ * Turns how people actually type a sneaker into how the catalog spells it, so "Nike airforce", "af1",
+ * "aj4", "jordan4" and "nb 550" all find their shoes. Lower-cases, strips apostrophes, collapses spaces.
+ */
+export function normalizeQuery(raw: string): string {
+  let s = raw.toLowerCase().replace(/[’'`]/g, '').replace(/\s+/g, ' ').trim();
+  const rules: Array<[RegExp, string]> = [
+    [/\bairforce\s*(\d*)\b/g, 'air force $1'],
+    [/\bairmax\s*(\d*)\b/g, 'air max $1'],
+    [/\baf-?1\b/g, 'air force 1'],
+    [/\baj-?(\d{1,2})\b/g, 'jordan $1'],
+    [/\bnewbalance\b/g, 'new balance'],
+    [/\bnb\b/g, 'new balance'],
+    [/\b(jordan|dunk|yeezy|samba|gazelle|campus|forum|kayano)s\b/g, '$1'],
+    [/\b(jordan|dunk|yeezy|new balance|nb|ultraboost|pegasus|vomero)(\d{1,4})\b/g, '$1 $2'],
+  ];
+  for (const [re, to] of rules) s = s.replace(re, to);
+  return s.replace(/\s+/g, ' ').trim();
+}

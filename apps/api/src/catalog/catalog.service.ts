@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { COLOR_FAMILIES, colorRegex, parseList } from './catalog-filters';
+import { COLOR_FAMILIES, colorRegex, normalizeQuery, parseList } from './catalog-filters';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import {
@@ -118,6 +118,10 @@ export interface SearchParams {
   signal?: string;
   limit?: number;
   offset?: number;
+  /** Internal: match ANY typed word instead of all of them (second attempt when nothing matched). */
+  relaxed?: boolean;
+  /** Internal: tolerate typos by similarity (third attempt; needs the pg_trgm extension). */
+  fuzzy?: boolean;
 }
 
 export interface FacetOption {
@@ -347,20 +351,52 @@ export class CatalogService {
    * never a client-side filter of the whole catalog — task 3.
    */
   /** Same filters within 30 seconds return the same answer: the per-store summary behind them is the slow part. */
-  async search(params: SearchParams): Promise<SearchResponse> {
+  async search(input: SearchParams): Promise<SearchResponse> {
+    const params = input.q ? { ...input, q: normalizeQuery(input.q) } : input;
     const key = JSON.stringify(params);
     const hit = this.searchCache.get(key);
     if (hit && Date.now() - hit.at < 30_000) return hit.value;
-    const value = await this.runSearch(params);
+    let value = await this.runSearch(params);
+    // Nothing matched every word: try any word, then (if the database supports it) tolerate typos.
+    if (value.total === 0 && params.q && !params.offset) {
+      // The exact shoe may exist but be sold out everywhere: show it (marked sold out) rather than unrelated ones.
+      if (!params.includeSoldOut) {
+        const withSoldOut = await this.runSearch({ ...params, includeSoldOut: true });
+        if (withSoldOut.total > 0) {
+          this.searchCache.set(key, { at: Date.now(), value: withSoldOut });
+          return withSoldOut;
+        }
+      }
+      const relaxed = await this.runSearch({ ...params, relaxed: true });
+      if (relaxed.total > 0) value = relaxed;
+      else if (await this.canFuzzy()) {
+        const fuzzy = await this.runSearch({ ...params, fuzzy: true });
+        if (fuzzy.total > 0) value = fuzzy;
+      }
+    }
     if (this.searchCache.size >= 200) this.searchCache.clear();
     this.searchCache.set(key, { at: Date.now(), value });
     return value;
   }
 
+  private trgm: Promise<boolean> | null = null;
+
+  /** pg_trgm powers typo-tolerant matching; enable it on first need, and quietly go without if that isn't allowed. */
+  private canFuzzy(): Promise<boolean> {
+    this.trgm ??= this.db
+      .execute(sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`)
+      .then(() => true)
+      .catch(() => false);
+    return this.trgm;
+  }
+
   private async runSearch(params: SearchParams): Promise<SearchResponse> {
     const limit = Math.min(Math.max(params.limit ?? 24, 1), 100);
     const offset = Math.max(params.offset ?? 0, 0);
-    const tsQuery = params.q ? buildPrefixTsQuery(params.q) : null;
+    const strictQuery = params.q ? buildPrefixTsQuery(params.q) : null;
+    // relaxed: any word may match (OR); fuzzy: no full-text query at all, similarity decides instead.
+    const tsQuery = params.fuzzy ? null : params.relaxed && strictQuery ? strictQuery.replace(/ & /g, ' | ') : strictQuery;
+    const fuzzy = params.fuzzy === true && strictQuery !== null;
 
     const brands = parseList(params.brand);
     const stores = parseList(params.store);
@@ -381,6 +417,7 @@ export class CatalogService {
           : sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`,
       );
     }
+    if (fuzzy) baseConditions.push(sql`word_similarity(${phrase}, lower(s.brand || ' ' || s.model || ' ' || s.colorway)) > 0.45`);
     if (!params.includeSoldOut) baseConditions.push(sql`st.min_price IS NOT NULL`);
     const baseWhere = baseConditions.length > 0 ? sql`WHERE ${sql.join(baseConditions, sql` AND `)}` : sql``;
 
@@ -395,7 +432,9 @@ export class CatalogService {
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
     // Rank: an exact full name or style code first, then names that contain the whole phrase, then word-by-word relevance.
-    const rankExpr = tsQuery
+    const rankExpr = fuzzy
+      ? sql`word_similarity(${phrase}, lower(s.brand || ' ' || s.model || ' ' || s.colorway))`
+      : tsQuery
       ? sql`(ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))
           + CASE
               WHEN lower(s.style_code) = ${phrase}
@@ -415,7 +454,7 @@ export class CatalogService {
     // lower(): A to Z regardless of the database's collation. Shoes in stock somewhere come before sold-out ones.
     const alpha = sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;
     const inStockFirst = sql`(best_available_price IS NULL) ASC`;
-    let orderBy = tsQuery ? sql`rank DESC, ${inStockFirst}, ${alpha}` : sql`${inStockFirst}, ${alpha}`;
+    let orderBy = tsQuery || fuzzy ? sql`rank DESC, ${inStockFirst}, ${alpha}` : sql`${inStockFirst}, ${alpha}`;
     if (params.sort === 'price_asc') orderBy = sql`${inStockFirst}, best_available_price ASC, ${alpha}`;
     else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
     else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
