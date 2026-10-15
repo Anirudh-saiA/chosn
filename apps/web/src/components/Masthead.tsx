@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Menu, Search, X } from 'lucide-react';
-import { CommandPalette } from '@/components/ui/CommandPalette';
+import { CommandPalette, type PaletteOrigin } from '@/components/ui/CommandPalette';
 import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
 import { COMING_SOON } from '@/lib/features';
@@ -35,6 +35,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteOrigin, setPaletteOrigin] = useState<PaletteOrigin | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const logoRef = useRef<HTMLSpanElement>(null); // landing: logo glides from centre to the left corner as you scroll
   const [pastHero, setPastHero] = useState(false); // landing: over the white sections, so header goes dark
@@ -91,11 +92,13 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
       const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        setPaletteOrigin(null);
         setPaletteOpen((o) => !o);
       } else if (e.key === 'Escape') {
         setMenuOpen(false);
       } else if (e.key === '/' && !typing) {
         e.preventDefault();
+        setPaletteOrigin(null);
         setPaletteOpen(true);
       }
     };
@@ -237,7 +240,12 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
-              onClick={() => setPaletteOpen(true)}
+              onClick={(e) => {
+                // The search box grows out of this button.
+                const r = e.currentTarget.getBoundingClientRect();
+                setPaletteOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                setPaletteOpen(true);
+              }}
               aria-label="Search sneakers"
               className="flex h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
             >
@@ -301,7 +309,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
         )}
       </AnimatePresence>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CommandPalette open={paletteOpen} origin={paletteOrigin} onClose={() => setPaletteOpen(false)} />
     </>
   );
 }
