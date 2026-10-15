@@ -200,7 +200,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
             <div className="max-h-[56vh] overflow-y-auto p-2" data-lenis-prevent>
               {term.length < 2 && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.3 }} className="px-3 pb-3 pt-2">
-                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">Try</p>
+                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">Popular searches</p>
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {EXAMPLES.map((ex) => (
                       <button
