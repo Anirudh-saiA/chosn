@@ -13,6 +13,7 @@ import { MarketIntelligenceCard } from './MarketIntelligenceCard';
 import { findBestOffer, OfferTable } from './OfferTable';
 import { CompareToggle } from '@/components/compare/CompareToggle';
 import { SizeSelector } from './SizeSelector';
+import { BestToBuy } from './BestToBuy';
 import { SneakerGallery } from './SneakerGallery';
 
 export interface PriceComparisonViewProps {
@@ -281,6 +282,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
               {data.offers.length === 1 ? 'retailer' : 'retailers'}
             </p>
           </div>
+          <BestToBuy offers={data.offers} />
           <OfferTable offers={data.offers} />
           <AffiliateDisclosure />
         </section>

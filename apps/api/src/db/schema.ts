@@ -153,6 +153,17 @@ export const retailers = pgTable(
     /** A pointer into the secrets store — never the credential itself. */
     apiCredentialsRef: text('api_credentials_ref'),
     status: retailerStatusEnum('status').notNull().default('pending_integration'),
+    /** The store's own published delivery estimate (days) and where it came from — drizzle/0019. */
+    deliveryMinDays: integer('delivery_min_days'),
+    deliveryMaxDays: integer('delivery_max_days'),
+    deliveryNote: text('delivery_note'),
+    deliverySourceUrl: text('delivery_source_url'),
+    /** Store rating; null until a citable source exists (rating_source / rating_url say which). */
+    rating: numeric('rating', { precision: 2, scale: 1 }),
+    reviewCount: integer('review_count'),
+    ratingSource: text('rating_source'),
+    ratingUrl: text('rating_url'),
+    ratingUpdatedAt: timestamp('rating_updated_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

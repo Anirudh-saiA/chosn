@@ -1,6 +1,7 @@
 import { ArrowUpRight, Trophy } from 'lucide-react';
 import { buttonVariantClass, cx } from '@chosn/ui';
 import { formatInr, relativeTime, type CatalogOffer } from '@/lib/catalog';
+import { formatDelivery, pickBestToBuy } from '@/lib/recommend';
 
 export interface OfferTableProps {
   offers: CatalogOffer[];
@@ -36,6 +37,8 @@ export function OfferTable({ offers }: OfferTableProps) {
   }
 
   const best = findBestOffer(offers);
+  const pickSlug = pickBestToBuy(offers)?.offer.retailerSlug ?? null;
+  const showRatings = offers.some((o) => o.rating != null);
 
   // Rank only live, fresh, in-stock offers so #1 is always the best deal.
   const ranked = offers
@@ -53,10 +56,12 @@ export function OfferTable({ offers }: OfferTableProps) {
               ['Rank', ''],
               ['Retailer', ''],
               ['Price', ''],
+              ['Delivery', 'hidden md:table-cell'],
+              ...(showRatings ? [['Rating', 'hidden md:table-cell']] : []),
               ['Shipping', 'hidden md:table-cell'],
-              ['Condition', 'hidden md:table-cell'],
+              ['Condition', 'hidden lg:table-cell'],
               ['Status', 'hidden md:table-cell'],
-              ['Updated', 'hidden md:table-cell'],
+              ['Updated', 'hidden lg:table-cell'],
               ['', ''],
             ].map(([h, cls], i) => (
               <th
@@ -67,7 +72,7 @@ export function OfferTable({ offers }: OfferTableProps) {
                   cls,
                 )}
               >
-                {h || <span className="sr-only">{i === 7 ? 'Action' : ''}</span>}
+                {h || <span className="sr-only">Action</span>}
               </th>
             ))}
           </tr>
@@ -79,6 +84,8 @@ export function OfferTable({ offers }: OfferTableProps) {
               offer={offer}
               rank={rankOf.get(offer.retailerSlug) ?? null}
               isBest={best?.retailerSlug === offer.retailerSlug}
+              isPick={pickSlug === offer.retailerSlug}
+              showRatings={showRatings}
             />
           ))}
         </tbody>
@@ -87,7 +94,8 @@ export function OfferTable({ offers }: OfferTableProps) {
   );
 }
 
-function OfferRow({ offer, rank, isBest }: { offer: CatalogOffer; rank: number | null; isBest: boolean }) {
+function OfferRow({ offer, rank, isBest, isPick, showRatings }: { offer: CatalogOffer; rank: number | null; isBest: boolean; isPick: boolean; showRatings: boolean }) {
+  const delivery = formatDelivery(offer);
   const isFixture = offer.mode === 'fixture';
   const unavailable = !offer.inStock || offer.effectivePriceInr === null;
 
@@ -127,6 +135,10 @@ function OfferRow({ offer, rank, isBest }: { offer: CatalogOffer; rank: number |
             <Trophy className="h-3 w-3" aria-hidden /> Best deal
           </span>
         )}
+        {isPick && (
+          <span className="mt-1 inline-flex rounded-full bg-[#14213D] px-2 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.14em] text-white">Best to buy</span>
+        )}
+        {delivery && <span className="mt-1 block font-mono text-[0.68rem] text-text-faint md:hidden">Delivery {delivery}</span>}
       </td>
       <td
         className={cx(
@@ -145,16 +157,35 @@ function OfferRow({ offer, rank, isBest }: { offer: CatalogOffer; rank: number |
           </span>
         )}
       </td>
+      <td className="hidden whitespace-nowrap px-4 py-4 font-sans text-data-inline text-text-soft md:table-cell">
+        {delivery ? (
+          <span title={offer.deliveryNote ?? undefined}>{delivery}</span>
+        ) : (
+          <span className="text-text-faint" title="This store does not publish a delivery estimate">Not published</span>
+        )}
+      </td>
+      {showRatings && (
+        <td className="hidden whitespace-nowrap px-4 py-4 font-mono text-data-inline tabular-nums text-text-soft md:table-cell">
+          {offer.rating != null ? (
+            <a href={offer.ratingUrl ?? undefined} target="_blank" rel="noopener" title={offer.ratingSource ?? undefined} className="hover:text-text">
+              ★ {offer.rating.toFixed(1)}
+              {offer.reviewCount ? <span className="ml-1 text-text-faint">({offer.reviewCount.toLocaleString('en-IN')})</span> : null}
+            </a>
+          ) : (
+            <span className="text-text-faint">—</span>
+          )}
+        </td>
+      )}
       <td className="hidden whitespace-nowrap px-4 py-4 font-mono text-data-inline tabular-nums text-text-soft md:table-cell">
         {offer.shippingCost > 0 ? formatInr(offer.shippingCost) : 'Free'}
       </td>
-      <td className="hidden whitespace-nowrap px-4 py-4 font-sans text-data-inline capitalize text-text-soft md:table-cell">
+      <td className="hidden whitespace-nowrap px-4 py-4 font-sans text-data-inline capitalize text-text-soft lg:table-cell">
         {offer.condition}
       </td>
       <td className="hidden whitespace-nowrap px-4 py-4 font-sans text-data-inline md:table-cell">
         <StatusCell offer={offer} isFixture={isFixture} />
       </td>
-      <td className="hidden whitespace-nowrap px-4 py-4 font-mono text-meta text-text-soft md:table-cell">
+      <td className="hidden whitespace-nowrap px-4 py-4 font-mono text-meta text-text-soft lg:table-cell">
         {relativeTime(offer.fetchedAt)}
       </td>
       <td className="whitespace-nowrap py-4 pl-0 pr-2.5 text-right sm:pl-4 sm:pr-4">

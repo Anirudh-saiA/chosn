@@ -25,6 +25,16 @@ export interface CatalogOffer {
   imageUrl: string | null;
   fetchedAt: string;
   fetchFrequencyMinutes: number;
+  /** The store's own published delivery estimate in days (null = not known). See drizzle/0019. */
+  deliveryMinDays: number | null;
+  deliveryMaxDays: number | null;
+  deliveryNote: string | null;
+  deliverySourceUrl: string | null;
+  /** Store rating, only ever set from a citable source (null = no review data found). */
+  rating: number | null;
+  reviewCount: number | null;
+  ratingSource: string | null;
+  ratingUrl: string | null;
   /** Older than 2x the retailer's own cadence — same rule Day 9's ranking uses. */
   isStale: boolean;
   /**
@@ -209,6 +219,14 @@ interface OfferRow {
   retailer_name: string;
   retailer_logo_url: string | null;
   fetch_frequency_minutes: number;
+  delivery_min_days: number | null;
+  delivery_max_days: number | null;
+  delivery_note: string | null;
+  delivery_source_url: string | null;
+  rating: string | null;
+  review_count: number | null;
+  rating_source: string | null;
+  rating_url: string | null;
   integration_type: string;
   price: string;
   shipping_cost: string | null;
@@ -302,6 +320,8 @@ export class CatalogService {
     const { rows } = await this.db.execute(sql`
       SELECT r.slug AS retailer_slug, r.name AS retailer_name, r.logo_url AS retailer_logo_url,
              r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
+             r.delivery_min_days, r.delivery_max_days, r.delivery_note, r.delivery_source_url,
+             r.rating, r.review_count, r.rating_source, r.rating_url,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.image_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
@@ -328,6 +348,14 @@ export class CatalogService {
         imageUrl: r.image_url,
         fetchedAt: fetchedAt.toISOString(),
         fetchFrequencyMinutes: r.fetch_frequency_minutes,
+        deliveryMinDays: r.delivery_min_days,
+        deliveryMaxDays: r.delivery_max_days,
+        deliveryNote: r.delivery_note,
+        deliverySourceUrl: r.delivery_source_url,
+        rating: r.rating !== null ? Number(r.rating) : null,
+        reviewCount: r.review_count,
+        ratingSource: r.rating_source,
+        ratingUrl: r.rating_url,
         isStale: Date.now() - fetchedAt.getTime() > staleCutoffMs,
         mode: retailerModeFor(r.retailer_slug, r.integration_type),
       };

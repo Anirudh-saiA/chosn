@@ -42,6 +42,16 @@ export interface CatalogOffer {
   imageUrl: string | null;
   fetchedAt: string;
   fetchFrequencyMinutes: number;
+  /** The store's own published delivery estimate in days (null = not published). */
+  deliveryMinDays: number | null;
+  deliveryMaxDays: number | null;
+  deliveryNote: string | null;
+  deliverySourceUrl: string | null;
+  /** Store rating — only ever set from a cited source; null = no review data. */
+  rating: number | null;
+  reviewCount: number | null;
+  ratingSource: string | null;
+  ratingUrl: string | null;
   isStale: boolean;
   /** 'fixture' = placeholder data, not a real quote — see OfferTable's disclosure. */
   mode: 'live' | 'fixture' | 'manual';
