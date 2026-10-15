@@ -368,8 +368,19 @@ export class CatalogService {
 
     // `base` = what the text query matches (and the sold-out rule); facet counts are taken from here so that
     // picking one brand doesn't make every other brand's count drop to zero.
+    // Typed text, lower-cased, with LIKE wildcards escaped: used to float exact / whole-phrase matches to the top.
+    const phrase = (params.q ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const phraseLike = phrase.replace(/[\\%_]/g, '\\$&');
+
     const baseConditions = [];
-    if (tsQuery) baseConditions.push(sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`);
+    if (tsQuery) {
+      // Words match as prefixes ("nik dun" finds Nike Dunk); a style code (has a digit) also matches by its start.
+      baseConditions.push(
+        /\d/.test(phrase)
+          ? sql`(s.search_vector @@ to_tsquery('english', ${tsQuery}) OR lower(s.style_code) LIKE ${phraseLike + '%'})`
+          : sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`,
+      );
+    }
     if (!params.includeSoldOut) baseConditions.push(sql`st.min_price IS NOT NULL`);
     const baseWhere = baseConditions.length > 0 ? sql`WHERE ${sql.join(baseConditions, sql` AND `)}` : sql``;
 
@@ -383,7 +394,23 @@ export class CatalogService {
     if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
-    const rankExpr = tsQuery ? sql`ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))` : sql`0`;
+    // Rank: an exact full name or style code first, then names that contain the whole phrase, then word-by-word relevance.
+    const rankExpr = tsQuery
+      ? sql`(ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))
+          + CASE
+              WHEN lower(s.style_code) = ${phrase}
+                OR lower(s.brand || ' ' || s.model || ' ' || s.colorway) = ${phrase}
+                OR lower(s.model || ' ' || s.colorway) = ${phrase}
+                OR lower(s.model) = ${phrase} THEN 20
+              WHEN lower(s.brand || ' ' || s.model) LIKE ${phraseLike + '%'}
+                OR lower(s.model) LIKE ${phraseLike + '%'} THEN 10
+              WHEN lower(s.brand || ' ' || s.model || ' ' || s.colorway) LIKE ${'%' + phraseLike + '%'} THEN 6
+              WHEN lower(s.brand || ' ' || s.model) LIKE ${'%' + phraseLike + '%'} THEN 4
+              WHEN lower(s.style_code) LIKE ${phraseLike + '%'} THEN 4
+              ELSE 0
+            END
+          - length(s.model)::float / 1000)` // all else equal, the plainer (shorter) name first
+      : sql`0`;
     // Unqualified column names, deliberately — the outer SELECT reads FROM matched (the CTE), where `s` is out of scope.
     // lower(): A to Z regardless of the database's collation. Shoes in stock somewhere come before sold-out ones.
     const alpha = sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;

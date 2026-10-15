@@ -8,12 +8,22 @@ import { Bell, Menu, Search, X } from 'lucide-react';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
+import { COMING_SOON } from '@/lib/features';
 
-const NAV = [
+/** Small tag shown next to a nav link whose section isn't open yet. */
+function SoonTag() {
+  return (
+    <span className="ml-2 rounded-full bg-[#0A0A0A]/10 px-1.5 py-0.5 align-middle text-[0.5rem] font-bold tracking-[0.14em] text-[#0A0A0A]/60">
+      SOON
+    </span>
+  );
+}
+
+const NAV: Array<{ href: string; label: string; soon?: boolean }> = [
   { href: '/sneakers', label: 'Compare' },
-  { href: '/drops', label: 'Drops' },
-  { href: '/news', label: 'News' },
-  { href: '/community', label: 'Community' },
+  { href: '/drops', label: 'Drops', soon: COMING_SOON.drops },
+  { href: '/news', label: 'News', soon: COMING_SOON.news },
+  { href: '/community', label: 'Community', soon: COMING_SOON.community },
 ] as const;
 
 /**
@@ -176,6 +186,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                       className="group flex items-baseline justify-between border-b border-[#0A0A0A]/10 py-6 font-display text-5xl uppercase tracking-[0.02em] text-[#0A0A0A] transition-[padding,color] duration-300 hover:pl-3 hover:text-[#0A0A0A]/60"
                     >
                       {item.label}
+{item.soon && <SoonTag />}
                       <span className="font-mono text-xs text-[#0A0A0A]/40">0{i + 1}</span>
                     </Link>
                   </motion.div>
@@ -211,6 +222,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                   }`}
                 >
                   {item.label}
+{item.soon && <SoonTag />}
                   {active && (
                     <motion.span
                       layoutId="nav-active"
@@ -274,6 +286,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                     className="flex items-baseline justify-between border-b border-text/10 py-5 font-display text-4xl font-semibold text-text"
                   >
                     {item.label}
+{item.soon && <SoonTag />}
                     <span className="font-mono text-meta text-brass">0{i + 1}</span>
                   </Link>
                 </motion.div>

@@ -11,6 +11,8 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
 
   const chips: Array<{ key: string; label: string; remove: () => void }> = [];
   const remove = (param: string, item: string) => () => set({ [param]: splitList(get(param)).filter((v) => v !== item).join(',') || null });
+  const q = get('q');
+  if (q) chips.push({ key: 'q', label: `“${q}”`, remove: () => set({ q: null }) });
   for (const b of splitList(get('brand'))) chips.push({ key: `b-${b}`, label: b, remove: remove('brand', b) });
   for (const s of splitList(get('store'))) chips.push({ key: `s-${s}`, label: facets.stores.find((x) => x.slug === s)?.name ?? s, remove: remove('store', s) });
   for (const c of splitList(get('color'))) chips.push({ key: `c-${c}`, label: COLOR_SWATCH[c]?.label ?? c, remove: remove('color', c) });

@@ -3,9 +3,7 @@ import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
 import { FilterPanel } from '@/components/search/FilterPanel';
 import { ResultsToolbar } from '@/components/search/ResultsToolbar';
-import { SearchControls } from '@/components/search/SearchControls';
 import { SneakerCard } from '@/components/search/SneakerCard';
-import { CountUp } from '@/components/fx/CountUp';
 import { Reveal } from '@/components/fx/Reveal';
 import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { PageShell } from '@/components/ui/PageShell';
@@ -34,17 +32,8 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   return (
     <PageShell width="full" plain>
       <header className="mb-6 border-b-2 border-[#0A0A0A] pb-8">
-        <Reveal>
-          <p className="flex items-center gap-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#0A0A0A]/60" aria-live="polite">
-            <span className="live-dot" aria-hidden />
-            Live prices
-            <span className="text-[#0A0A0A]">
-              <CountUp to={total} duration={0.9} /> {total === 1 ? 'sneaker' : 'sneakers'} tracked
-            </span>
-          </p>
-        </Reveal>
         <Reveal delay={0.05}>
-          <h1 className="mt-4 font-display text-[clamp(4.5rem,15vw,12rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">Compare.</h1>
+          <h1 className="font-display text-[clamp(4.5rem,15vw,12rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">Compare.</h1>
         </Reveal>
         <div className="mt-6">
           <ScrollHighlight
@@ -59,9 +48,7 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
         </div>
       </header>
 
-      <SearchControls />
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[16.5rem_minmax(0,1fr)] xl:grid-cols-[17.5rem_minmax(0,1fr)] xl:gap-10">
+      <div className="grid gap-8 lg:grid-cols-[16.5rem_minmax(0,1fr)] xl:grid-cols-[17.5rem_minmax(0,1fr)] xl:gap-10">
         <aside aria-label="Filters" className="hidden lg:block">
           <div className="sticky top-40 max-h-[calc(100vh-11rem)] overflow-y-auto pr-3">
             <FilterPanel facets={facets} total={total} />

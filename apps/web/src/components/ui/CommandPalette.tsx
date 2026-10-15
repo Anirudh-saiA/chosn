@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CornerDownLeft, Search, Sparkles, Newspaper, Flame, Users, Bell } from 'lucide-react';
+import { ArrowRight, CornerDownLeft, Search, Bell } from 'lucide-react';
+import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { SneakerArt } from '@/components/ui/SneakerArt';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -15,13 +16,12 @@ interface Hit {
   colorway: string;
   defaultSize: number;
   currentPrice: number | null;
+  bestAvailablePrice: number | null;
+  primaryImageUrl: string | null;
 }
 
 const LINKS = [
-  { label: 'Search sneakers', href: '/sneakers', icon: Search },
-  { label: 'Upcoming drops', href: '/drops', icon: Flame },
-  { label: 'News', href: '/news', icon: Newspaper },
-  { label: 'Community', href: '/community', icon: Users },
+  { label: 'Browse and filter all sneakers', href: '/sneakers', icon: Search },
   { label: 'Notifications', href: '/notifications', icon: Bell },
 ];
 
@@ -69,7 +69,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/catalog/search?q=${encodeURIComponent(term)}&limit=6`, { signal: ctrl.signal });
+        const res = await fetch(`${API_URL}/catalog/search?q=${encodeURIComponent(term)}&limit=8`, { signal: ctrl.signal });
         if (!res.ok) throw new Error();
         const body = await res.json();
         setHits(body.results ?? []);
@@ -89,7 +89,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     () => (q.trim() ? LINKS.filter((l) => l.label.toLowerCase().includes(q.trim().toLowerCase())) : LINKS),
     [q],
   );
-  const total = hits.length + links.length;
+  const seeAll = q.trim().length >= 2 ? 1 : 0; // the row after the hits
+  const total = hits.length + seeAll + links.length;
 
   const go = useCallback(
     (href: string) => {
@@ -104,13 +105,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       if (i < hits.length) {
         const h = hits[i]!;
         go(`/sneakers/${encodeURIComponent(h.styleCode)}/${h.defaultSize}`);
-      } else if (links[i - hits.length]) {
-        go(links[i - hits.length]!.href);
+      } else if (seeAll && i === hits.length) {
+        go(`/sneakers?q=${encodeURIComponent(q.trim())}`);
+      } else if (links[i - hits.length - seeAll]) {
+        go(links[i - hits.length - seeAll]!.href);
       } else if (q.trim()) {
         go(`/sneakers?q=${encodeURIComponent(q.trim())}`);
       }
     },
-    [hits, links, go, q],
+    [hits, links, go, q, seeAll],
   );
 
   function onKey(e: React.KeyboardEvent) {
@@ -186,8 +189,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   onMouseEnter={() => setActive(i)}
                   className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${active === i ? 'bg-brass/10' : 'hover:bg-text/[0.04]'}`}
                 >
-                  <span className="flex h-11 w-16 shrink-0 items-center justify-center bg-vault-deep/70">
-                    <SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />
+                  <span className="relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white">
+                    {h.primaryImageUrl ? (
+                      <ShoePhoto
+                        key={h.primaryImageUrl}
+                        src={h.primaryImageUrl}
+                        alt=""
+                        className="h-full w-full object-contain p-1"
+                        fallback={<SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />}
+                      />
+                    ) : (
+                      <SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />
+                    )}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-ui-label font-semibold text-text">
@@ -197,16 +210,31 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       {h.styleCode} · {h.colorway}
                     </span>
                   </span>
-                  {h.currentPrice != null && <span className="font-mono text-data-inline text-text">{inr(h.currentPrice)}</span>}
+                  {(h.bestAvailablePrice ?? h.currentPrice) != null && (
+                    <span className="font-mono text-data-inline text-text">{inr((h.bestAvailablePrice ?? h.currentPrice) as number)}</span>
+                  )}
                   {active === i && <CornerDownLeft className="h-3.5 w-3.5 text-brass" aria-hidden />}
                 </button>
               ))}
+
+              {seeAll === 1 && !loading && (
+                <button
+                  type="button"
+                  onClick={() => choose(hits.length)}
+                  onMouseEnter={() => setActive(hits.length)}
+                  className={`mt-1 flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${active === hits.length ? 'bg-brass/10' : 'hover:bg-text/[0.04]'}`}
+                >
+                  <Search className="h-4 w-4 text-brass" aria-hidden />
+                  <span className="flex-1 truncate text-ui-label font-semibold text-text">See all results for “{q.trim()}”</span>
+                  <ArrowRight className={`h-3.5 w-3.5 transition-opacity ${active === hits.length ? 'text-brass opacity-100' : 'opacity-0'}`} aria-hidden />
+                </button>
+              )}
 
               {links.length > 0 && (
                 <p className="px-3 pb-1 pt-3 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">Go to</p>
               )}
               {links.map((l, j) => {
-                const i = hits.length + j;
+                const i = hits.length + seeAll + j;
                 const Icon = l.icon;
                 return (
                   <button
@@ -223,16 +251,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 );
               })}
 
-              {q.trim() && !loading && hits.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => go(`/sneakers?q=${encodeURIComponent(q.trim())}`)}
-                  className="mt-1 flex w-full items-center gap-3 px-3 py-2.5 text-left text-ui-label text-text-soft hover:bg-text/[0.04]"
-                >
-                  <Sparkles className="h-4 w-4 text-brass" aria-hidden />
-                  Search the full catalog for “{q.trim()}”
-                </button>
-              )}
             </div>
 
             <div className="flex items-center justify-between border-t border-text/10 px-4 py-2 font-mono text-[0.65rem] text-text-faint">
