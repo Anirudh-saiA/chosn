@@ -21,10 +21,53 @@ export class SearchQueryDto {
   @MaxLength(200)
   q?: string;
 
+  /** Comma-separated brand names. */
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(400)
   brand?: string;
+
+  /** Comma-separated retailer slugs. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  store?: string;
+
+  /** Comma-separated colour families. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  color?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  minPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  maxPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  minStores?: number;
+
+  /** '1' includes shoes that are sold out everywhere. */
+  @IsOptional()
+  @IsIn(['1'])
+  soldOut?: string;
+
+  @IsOptional()
+  @IsIn(['relevance', 'price_asc', 'price_desc', 'stores'])
+  sort?: string;
 
   @IsOptional()
   @IsIn(['good_time_to_buy', 'neutral', 'consider_waiting', 'insufficient_data'])

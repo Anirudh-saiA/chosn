@@ -73,6 +73,11 @@ export function SneakerCard({ item }: SneakerCardProps) {
             {/* h2: the page's h1 sits directly above this list of items. */}
             <h2 className="mt-1 font-display text-[1.7rem] uppercase leading-none tracking-[0.02em] text-[#0A0A0A]">{item.model}</h2>
             <p className="mt-1.5 truncate text-[0.9rem] font-bold text-[#0A0A0A]/60">{item.colorway}</p>
+            {(item.storeCount ?? 0) > 0 && (
+              <p className="mt-1 font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/45">
+                {item.storeCount} {item.storeCount === 1 ? 'store' : 'stores'} to compare
+              </p>
+            )}
           </div>
           <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#0A0A0A]/10 pt-4">
             <div>

@@ -4,6 +4,7 @@ import {
   type CatalogResponse,
   type CompareItem,
   type SearchResponse,
+  type SearchSort,
   type SearchResultItem,
 } from './catalog.service';
 import { SearchQueryDto } from './dto/search-query.dto';
@@ -30,7 +31,12 @@ export class CatalogController {
    */
   @Get('search')
   async search(@Query() query: SearchQueryDto): Promise<SearchResponse> {
-    return this.catalog.search(query);
+    const { soldOut, sort, ...rest } = query;
+    return this.catalog.search({
+      ...rest,
+      includeSoldOut: soldOut === '1',
+      sort: sort as SearchSort | undefined,
+    });
   }
 
   /** Feeds Next's generateStaticParams() — see listVariantParams()'s doc comment. */

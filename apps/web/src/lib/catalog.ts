@@ -92,6 +92,13 @@ export interface SearchResultItem {
   bestAvailablePrice: number | null;
   signal: Signal | null;
   currency: string;
+  /** How many real stores have this shoe in stock (search results only). */
+  storeCount?: number;
+  /** Only on similar-sneaker results: same model in another colourway. */
+  sameModel?: boolean;
+  /** Only on similar-sneaker results: cheapest in-stock store and its direct listing link. */
+  bestRetailerName?: string;
+  listingUrl?: string;
 }
 
 export interface CommunityPostSearchResult {
@@ -103,16 +110,37 @@ export interface CommunityPostSearchResult {
   createdAt: string;
 }
 
+export interface FacetOption {
+  value: string;
+  count: number;
+}
+
+export interface SearchFacets {
+  brands: FacetOption[];
+  stores: Array<{ slug: string; name: string; count: number }>;
+  colors: FacetOption[];
+  price: { min: number; max: number; p98: number };
+}
+
 export interface SearchResponse {
   results: SearchResultItem[];
   total: number;
   brands: string[];
+  facets: SearchFacets;
   communityPosts: CommunityPostSearchResult[];
 }
 
 export interface SearchQuery {
   q?: string;
+  /** Comma-separated lists for brand / store / color. */
   brand?: string;
+  store?: string;
+  color?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  minStores?: string;
+  soldOut?: string;
+  sort?: string;
   signal?: string;
 }
 
@@ -121,9 +149,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 /** Server-side search/browse (Day 11) — query params drive the filter, same endpoint either way. */
 export async function fetchSearch(query: SearchQuery, init?: RequestInit): Promise<SearchResponse> {
   const params = new URLSearchParams();
-  if (query.q) params.set('q', query.q);
-  if (query.brand) params.set('brand', query.brand);
-  if (query.signal) params.set('signal', query.signal);
+  for (const [key, value] of Object.entries(query)) {
+    if (value) params.set(key, value);
+  }
 
   const res = await fetch(`${API_URL}/catalog/search?${params.toString()}`, init);
   if (!res.ok) throw new Error(`search fetch failed: ${res.status}`);
@@ -200,7 +228,7 @@ export interface CompareItem {
 /** Shoes similar to `styleCode` (other colourways, then the brand's closest models) that are in stock somewhere. */
 export async function fetchSimilar(styleCode: string, init?: RequestInit): Promise<SearchResultItem[]> {
   try {
-    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/similar?limit=8`, init);
+    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/similar?limit=14`, init);
     if (!res.ok) return [];
     return ((await res.json()) as { results: SearchResultItem[] }).results;
   } catch {

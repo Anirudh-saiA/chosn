@@ -26,6 +26,8 @@ export interface PriceComparisonViewProps {
   notify?: ReactNode;
   /** Side column (similar sneakers): third column on wide screens, full-width row below the hero otherwise. */
   aside?: ReactNode;
+  /** Rendered under the offers table (other colours / related sneakers with direct store links). */
+  below?: ReactNode;
 }
 
 /**
@@ -46,7 +48,7 @@ export interface PriceComparisonViewProps {
  * copy-pasted link stay correct — it just doesn't ask Next to refetch
  * and re-render the segment, since the data's already in hand.
  */
-export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, aside }: PriceComparisonViewProps) {
+export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, aside, below }: PriceComparisonViewProps) {
   const [data, setData] = useState(initialData);
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const [range, setRange] = useState<30 | 90>(90);
@@ -283,6 +285,8 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
           <AffiliateDisclosure />
         </section>
       </Reveal>
+
+      {below}
 
       {bestOffer && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-brass/30 bg-vault-deep/95 px-5 py-3 backdrop-blur-xl md:hidden">

@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { COLOR_FAMILIES, colorRegex, parseList } from './catalog-filters';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import {
@@ -98,12 +99,38 @@ export interface CompareItem {
   }>;
 }
 
+export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'stores';
+
 export interface SearchParams {
   q?: string;
+  /** Comma-separated brand names. */
   brand?: string;
+  /** Comma-separated retailer slugs: shoes in stock at any of them. */
+  store?: string;
+  /** Comma-separated colour families (see catalog-filters.ts). */
+  color?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  /** Only shoes in stock at this many stores or more (compare across sites). */
+  minStores?: number;
+  includeSoldOut?: boolean;
+  sort?: SearchSort;
   signal?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface FacetOption {
+  value: string;
+  count: number;
+}
+
+export interface SearchFacets {
+  brands: FacetOption[];
+  stores: Array<{ slug: string; name: string; count: number }>;
+  colors: FacetOption[];
+  /** Cheapest-price range of the matching shoes (p98 trims outliers for a slider's upper end). */
+  price: { min: number; max: number; p98: number };
 }
 
 export interface SearchResultItem {
@@ -120,6 +147,13 @@ export interface SearchResultItem {
   bestAvailablePrice: number | null;
   signal: Signal | null;
   currency: string;
+  /** How many real stores have this shoe in stock (search results only). */
+  storeCount?: number;
+  /** Only on /similar: true when this is the same model in another colourway. */
+  sameModel?: boolean;
+  /** Only on /similar: the cheapest in-stock store for this shoe and its direct listing link. */
+  bestRetailerName?: string;
+  listingUrl?: string;
 }
 
 export interface CommunityPostSearchResult {
@@ -137,6 +171,8 @@ export interface SearchResponse {
   total: number;
   /** Every brand in the catalog, unfiltered — populates the filter UI regardless of the current query. */
   brands: string[];
+  /** Filter options with counts for the current text query (brands, stores, colours, price range). */
+  facets: SearchFacets;
   /**
    * Day 24 task 1 — the same search box now also surfaces matching
    * community discussion, clearly separate from `results` so the page
@@ -195,6 +231,8 @@ interface OfferRow {
  */
 @Injectable()
 export class CatalogService {
+  private readonly searchCache = new Map<string, { at: number; value: SearchResponse }>();
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Db,
     private readonly intelligence: MarketIntelligenceService,
@@ -308,46 +346,99 @@ export class CatalogService {
    * Filtering is a SQL WHERE clause (brand, signal, full-text query),
    * never a client-side filter of the whole catalog — task 3.
    */
+  /** Same filters within 30 seconds return the same answer: the per-store summary behind them is the slow part. */
   async search(params: SearchParams): Promise<SearchResponse> {
+    const key = JSON.stringify(params);
+    const hit = this.searchCache.get(key);
+    if (hit && Date.now() - hit.at < 30_000) return hit.value;
+    const value = await this.runSearch(params);
+    if (this.searchCache.size >= 200) this.searchCache.clear();
+    this.searchCache.set(key, { at: Date.now(), value });
+    return value;
+  }
+
+  private async runSearch(params: SearchParams): Promise<SearchResponse> {
     const limit = Math.min(Math.max(params.limit ?? 24, 1), 100);
     const offset = Math.max(params.offset ?? 0, 0);
     const tsQuery = params.q ? buildPrefixTsQuery(params.q) : null;
 
-    const conditions = [];
-    if (tsQuery) conditions.push(sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`);
-    if (params.brand) conditions.push(sql`s.brand = ${params.brand}`);
+    const brands = parseList(params.brand);
+    const stores = parseList(params.store);
+    const colors = parseList(params.color).map(colorRegex).filter((r): r is string => r !== null);
+
+    // `base` = what the text query matches (and the sold-out rule); facet counts are taken from here so that
+    // picking one brand doesn't make every other brand's count drop to zero.
+    const baseConditions = [];
+    if (tsQuery) baseConditions.push(sql`s.search_vector @@ to_tsquery('english', ${tsQuery})`);
+    if (!params.includeSoldOut) baseConditions.push(sql`st.min_price IS NOT NULL`);
+    const baseWhere = baseConditions.length > 0 ? sql`WHERE ${sql.join(baseConditions, sql` AND `)}` : sql``;
+
+    const conditions = [...baseConditions];
+    if (brands.length > 0) conditions.push(sql`s.brand IN (${sql.join(brands.map((b) => sql`${b}`), sql`, `)})`);
+    if (stores.length > 0) conditions.push(sql`st.store_slugs && ARRAY[${sql.join(stores.map((x) => sql`${x}`), sql`, `)}]::text[]`);
+    if (colors.length > 0) conditions.push(sql`(${sql.join(colors.map((r) => sql`lower(s.colorway) ~ ${r}`), sql` OR `)})`);
+    if (params.minPrice !== undefined) conditions.push(sql`st.min_price >= ${params.minPrice}`);
+    if (params.maxPrice !== undefined) conditions.push(sql`st.min_price <= ${params.maxPrice}`);
+    if (params.minStores !== undefined && params.minStores > 1) conditions.push(sql`COALESCE(st.store_count, 0) >= ${params.minStores}`);
     if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
-    const rankExpr = tsQuery
-      ? sql`ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))`
-      : sql`0`;
-    // Unqualified column names, deliberately — the outer SELECT reads
-    // FROM matched (the CTE), where `s` is out of scope; `s.brand` here
-    // threw "missing FROM-clause entry for table s" until caught by
-    // actually running the query rather than trusting it by inspection.
-    // lower(): A to Z regardless of the database's collation (a C collation sorts every capital before every lowercase letter).
-    // Shoes in stock somewhere come first (sold-out ones follow), then A to Z.
-    const orderBy = tsQuery
-      ? sql`rank DESC, (best_available_price IS NULL) ASC, lower(brand) ASC, lower(model) ASC, colorway ASC`
-      : sql`(best_available_price IS NULL) ASC, lower(brand) ASC, lower(model) ASC, colorway ASC`;
+    const rankExpr = tsQuery ? sql`ts_rank(s.search_vector, to_tsquery('english', ${tsQuery}))` : sql`0`;
+    // Unqualified column names, deliberately — the outer SELECT reads FROM matched (the CTE), where `s` is out of scope.
+    // lower(): A to Z regardless of the database's collation. Shoes in stock somewhere come before sold-out ones.
+    const alpha = sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;
+    const inStockFirst = sql`(best_available_price IS NULL) ASC`;
+    let orderBy = tsQuery ? sql`rank DESC, ${inStockFirst}, ${alpha}` : sql`${inStockFirst}, ${alpha}`;
+    if (params.sort === 'price_asc') orderBy = sql`${inStockFirst}, best_available_price ASC, ${alpha}`;
+    else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
+    else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
 
-    const [{ rows }, { rows: brandRows }, communityPosts] = await Promise.all([
+    // Shared CTEs. real_offers = latest in-stock listings with a real link (the demo fixtures are left out), so
+    // price / store filters and counts only ever reflect stores a shopper can actually buy from.
+    const ctes = sql`
+      default_variant AS (
+        -- The variant whose market summary (signal) a card shows; the smallest size when none has a price.
+        SELECT DISTINCT ON (v.sneaker_id) v.sneaker_id, v.id AS variant_id, v.size, v.size_system
+        FROM sneaker_variants v
+        LEFT JOIN market_summaries mv ON mv.sneaker_variant_id = v.id
+        ORDER BY v.sneaker_id, (mv.best_available_price IS NULL), mv.best_available_price ASC, v.size ASC
+      ),
+      real_offers AS (
+        SELECT v.sneaker_id, v.size, v.size_system, ps.retailer_id, r.slug,
+               effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price
+        FROM price_snapshots ps
+        JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+        JOIN retailers r ON r.id = ps.retailer_id
+        WHERE ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+      ),
+      st AS (
+        SELECT sneaker_id,
+               count(DISTINCT retailer_id) AS store_count,
+               array_agg(DISTINCT slug) AS store_slugs,
+               min(price) AS min_price,
+               (array_agg(size ORDER BY price))[1] AS min_size,
+               (array_agg(size_system ORDER BY price))[1] AS min_size_system
+        FROM real_offers
+        GROUP BY sneaker_id
+      )`;
+
+    const colorCounts = sql.join(
+      Object.keys(COLOR_FAMILIES).map((family) => sql`'${sql.raw(family)}', count(*) FILTER (WHERE lower(colorway) ~ ${colorRegex(family)})`),
+      sql`, `,
+    );
+
+    const [{ rows }, facetResult, { rows: brandRows }, communityPosts] = await Promise.all([
       this.db.execute(sql`
-        WITH default_variant AS (
-          -- The size a card links to: the one with the lowest in-stock price; when no size has a price, the smallest.
-          SELECT DISTINCT ON (v.sneaker_id) v.sneaker_id, v.id AS variant_id, v.size, v.size_system
-          FROM sneaker_variants v
-          LEFT JOIN market_summaries mv ON mv.sneaker_variant_id = v.id
-          ORDER BY v.sneaker_id, (mv.best_available_price IS NULL), mv.best_available_price ASC, v.size ASC
-        ),
+        WITH ${ctes},
         matched AS (
           SELECT s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
-                 dv.size, dv.size_system,
-                 ms.current_price, ms.best_available_price, ms.signal, ms.currency,
+                 COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
+                 st.min_price AS current_price, st.min_price AS best_available_price,
+                 ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
+          LEFT JOIN st ON st.sneaker_id = s.id
           LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
           ${where}
         )
@@ -355,6 +446,26 @@ export class CatalogService {
         FROM matched
         ORDER BY ${orderBy}
         LIMIT ${limit} OFFSET ${offset}
+      `),
+      // One statement for every facet, over one shared `base` scan.
+      this.db.execute(sql`
+        WITH ${ctes},
+        base AS MATERIALIZED (
+          SELECT s.brand, s.colorway, st.store_slugs, st.min_price
+          FROM sneakers s LEFT JOIN st ON st.sneaker_id = s.id ${baseWhere}
+        )
+        SELECT
+          (SELECT COALESCE(json_agg(b), '[]'::json) FROM (
+             SELECT brand AS value, count(*) AS n FROM base GROUP BY brand ORDER BY count(*) DESC, lower(brand) LIMIT 40) b) AS brands,
+          (SELECT COALESCE(json_agg(x), '[]'::json) FROM (
+             SELECT r.slug, r.name, count(*) AS n
+             FROM base CROSS JOIN LATERAL unnest(base.store_slugs) AS u(slug)
+             JOIN retailers r ON r.slug = u.slug
+             GROUP BY r.slug, r.name ORDER BY count(*) DESC) x) AS stores,
+          (SELECT json_build_object(${colorCounts}) FROM base) AS colors,
+          (SELECT json_build_object('lo', min(min_price), 'hi', max(min_price),
+                                    'p98', percentile_cont(0.98) WITHIN GROUP (ORDER BY min_price))
+             FROM base WHERE min_price IS NOT NULL) AS price
       `),
       this.db.execute(sql`SELECT brand FROM sneakers GROUP BY brand ORDER BY lower(brand), brand`),
       this.searchCommunityPosts(params.q),
@@ -373,12 +484,33 @@ export class CatalogService {
       bestAvailablePrice: r.best_available_price !== null ? Number(r.best_available_price) : null,
       signal: (r.signal as Signal | null) ?? null,
       currency: r.currency ?? 'INR',
+      storeCount: Number(r.store_count ?? 0),
     }));
+
+    const facetRow = (facetResult.rows[0] ?? {}) as {
+      brands: Array<{ value: string; n: string | number }> | null;
+      stores: Array<{ slug: string; name: string; n: string | number }> | null;
+      colors: Record<string, string | number> | null;
+      price: { lo: number | null; hi: number | null; p98: number | null } | null;
+    };
+    const price = facetRow.price ?? { lo: null, hi: null, p98: null };
 
     return {
       results,
       total: rows.length > 0 ? Number((rows[0] as unknown as SearchRow).total_count) : 0,
       brands: (brandRows as unknown as { brand: string }[]).map((b) => b.brand),
+      facets: {
+        brands: (facetRow.brands ?? []).map((b) => ({ value: b.value, count: Number(b.n) })),
+        stores: (facetRow.stores ?? []).map((x) => ({ slug: x.slug, name: x.name, count: Number(x.n) })),
+        colors: Object.keys(COLOR_FAMILIES)
+          .map((family) => ({ value: family, count: Number(facetRow.colors?.[family] ?? 0) }))
+          .filter((c) => c.count > 0),
+        price: {
+          min: price.lo != null ? Math.floor(Number(price.lo)) : 0,
+          max: price.hi != null ? Math.ceil(Number(price.hi)) : 0,
+          p98: price.p98 != null ? Math.ceil(Number(price.p98)) : 0,
+        },
+      },
       communityPosts,
     };
   }
@@ -398,6 +530,7 @@ export class CatalogService {
       ),
       candidates AS (
         SELECT s.id, s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
+               (lower(s.model) = t.model) AS same_model,
                ((lower(s.model) = t.model)::int * 4 + (lower(s.brand) = t.brand)::int * 2
                  + ts_rank(s.search_vector, t.q)) AS score
         FROM sneakers s, t
@@ -407,13 +540,15 @@ export class CatalogService {
         ORDER BY score DESC, s.style_code
         LIMIT 40
       )
-      SELECT c.style_code, c.brand, c.model, c.colorway, c.silhouette, c.primary_image_url,
-             bp.size, bp.size_system, bp.price
+      SELECT c.style_code, c.brand, c.model, c.colorway, c.silhouette, c.primary_image_url, c.same_model,
+             bp.size, bp.size_system, bp.price, bp.retailer_name, bp.listing_url
       FROM candidates c
       JOIN LATERAL (
-        SELECT v.size, v.size_system, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price
+        SELECT v.size, v.size_system, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price,
+               r.name AS retailer_name, ps.listing_url
         FROM sneaker_variants v
-        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+        JOIN retailers r ON r.id = ps.retailer_id
         WHERE v.sneaker_id = c.id
         ORDER BY price ASC NULLS LAST
         LIMIT 1
@@ -424,6 +559,7 @@ export class CatalogService {
     return (rows as unknown as Array<{
       style_code: string; brand: string; model: string; colorway: string; silhouette: string | null;
       primary_image_url: string | null; size: string; size_system: string; price: string;
+      same_model: boolean; retailer_name: string; listing_url: string;
     }>).map((r) => ({
       styleCode: r.style_code,
       brand: r.brand,
@@ -437,6 +573,9 @@ export class CatalogService {
       bestAvailablePrice: Number(r.price),
       signal: null,
       currency: 'INR',
+      sameModel: r.same_model,
+      bestRetailerName: r.retailer_name,
+      listingUrl: r.listing_url,
     }));
   }
 
@@ -453,7 +592,7 @@ export class CatalogService {
              array_agg(DISTINCT v.size ORDER BY v.size) AS sizes
       FROM sneakers s
       JOIN sneaker_variants v ON v.sneaker_id = s.id
-      JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+      JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
       JOIN retailers r ON r.id = ps.retailer_id
       WHERE s.style_code IN (${sql.join(codes.map((c) => sql`${c}`), sql`, `)})
       GROUP BY s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, r.slug, r.name
@@ -570,6 +709,7 @@ export class CatalogService {
 }
 
 interface SearchRow {
+  store_count?: string | number;
   style_code: string;
   brand: string;
   model: string;

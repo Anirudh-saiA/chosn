@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
 import { fetchAllVariantParams, fetchCatalogVariant, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
+import { MoreLikeThis } from '@/components/pricing/MoreLikeThis';
 import { SimilarRail } from '@/components/pricing/SimilarRail';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
@@ -103,7 +104,8 @@ export default async function SneakerPricePage({ params }: PageProps) {
         styleCode={styleCode}
         initialData={data}
         imageUrl={imageUrl}
-        aside={<SimilarRail items={similar} current={{ styleCode: sneaker.styleCode }} />}
+        aside={<SimilarRail items={similar.slice(0, 8)} current={{ styleCode: sneaker.styleCode }} />}
+        below={<MoreLikeThis items={similar} />}
         // Most sneakers have no drop_event yet — this is the normal
         // case, not a loading state, so it renders nothing.
         badges={drop ? <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} /> : null}
