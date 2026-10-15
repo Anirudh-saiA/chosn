@@ -170,7 +170,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
             className="relative w-full max-w-[40rem] overflow-hidden border border-[#0A0A0A]/10 bg-white/95 shadow-[0_40px_120px_-30px_rgba(20,33,61,0.45)] backdrop-blur-xl"
           >
             <div className="flex items-center gap-3 px-5">
-              <Search className="h-5 w-5 shrink-0 text-[#D97E00]" strokeWidth={2.2} aria-hidden />
+              <Search className="h-5 w-5 shrink-0 text-[#0A0A0A]" strokeWidth={2.2} aria-hidden />
               <input
                 ref={inputRef}
                 value={q}
@@ -183,7 +183,6 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
                 autoComplete="off"
                 className="h-16 w-full bg-transparent font-sans text-[1.1rem] text-text outline-none placeholder:text-text-faint"
               />
-              <kbd className="hidden shrink-0 rounded-md border border-text/15 px-1.5 py-0.5 font-mono text-[0.65rem] text-text-faint sm:block">ESC</kbd>
             </div>
 
             {/* A thin bar that runs while results load */}
@@ -276,7 +275,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
                   onMouseEnter={() => setActive(hits.length)}
                   className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${active === hits.length ? 'bg-[#F6F2EA]' : 'hover:bg-text/[0.04]'}`}
                 >
-                  <Search className="h-4 w-4 text-[#D97E00]" aria-hidden />
+                  <Search className="h-4 w-4 text-[#0A0A0A]" aria-hidden />
                   <span className="flex-1 truncate text-ui-label font-semibold text-text">See all results for “{term}”</span>
                   <ArrowRight className={`h-3.5 w-3.5 transition-opacity ${active === hits.length ? 'text-[#D97E00] opacity-100' : 'opacity-0'}`} aria-hidden />
                 </motion.button>
