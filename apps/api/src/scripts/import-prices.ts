@@ -6,22 +6,31 @@
  *   npm run import:prices --workspace=@chosn/api -- prices.csv            # check only (dry run)
  *   npm run import:prices --workspace=@chosn/api -- prices.csv --save     # actually import
  *
+ * With --mark-missing (daily updates): after a successful import, every in-stock listing at a store that was
+ * just refreshed (500+ prices written this run) but NOT seen in this file is recorded as out of stock, so a
+ * shoe that disappears from a store stops showing as buyable. Append-only: it adds a new snapshot per listing.
+ *
  * A file bigger than the admin page's limit (2000 rows) is split into chunks and imported in order; the
  * Compare summaries are recomputed once at the end instead of after every chunk. Needs DATABASE_URL /
  * REDIS_URL set, like the API itself.
  */
 import { readFileSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
+import { sql } from 'drizzle-orm';
 import { AppModule } from '../app.module';
+import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { MarketIntelligenceService } from '../pricing/market-intelligence.service';
 import { MAX_ROWS } from '../pricing/price-import/price-csv';
 import { PriceImportService, type ImportSummary } from '../pricing/price-import/price-import.service';
+import { PriceSnapshotService } from '../pricing/price-snapshot.service';
 
 async function main() {
   const file = process.argv[2];
   const save = process.argv.includes('--save');
+  const markMissing = process.argv.includes('--mark-missing');
+  const startedAt = new Date();
   if (!file) {
-    console.error('Usage: import:prices <file.csv> [--save]');
+    console.error('Usage: import:prices <file.csv> [--save] [--mark-missing]');
     process.exit(1);
   }
 
@@ -46,6 +55,39 @@ async function main() {
       console.log(`chunk ${n + 1}/${chunks.length}: ${part.errors.length ? part.errors.length + ' problem(s)' : 'ok'}`);
       if (part.errors.length > 0) break;
     }
+    if (save && markMissing && result.errors.length === 0) {
+      const db = app.get<Db>(DRIZZLE);
+      const { rows: stale } = await db.execute(sql`
+        WITH ran AS (
+          SELECT retailer_id FROM price_snapshots WHERE fetched_at >= ${startedAt}
+          GROUP BY retailer_id HAVING count(*) >= 500
+        )
+        SELECT ps.sneaker_variant_id, ps.retailer_id, ps.price, ps.shipping_cost, ps.currency, ps.condition,
+               ps.price_type, ps.listing_url, ps.image_url
+        FROM price_snapshots ps JOIN ran ON ran.retailer_id = ps.retailer_id
+        WHERE ps.is_latest = true AND ps.in_stock = true AND ps.fetched_at < ${startedAt}
+          AND ps.listing_url NOT LIKE '%FIXTURE%'
+      `);
+      const snapshots = app.get(PriceSnapshotService);
+      for (const r of stale as unknown as Array<Record<string, string | null>>) {
+        await snapshots.record({
+          sneakerVariantId: r.sneaker_variant_id as string,
+          retailerId: r.retailer_id as string,
+          price: r.price as string,
+          shippingCost: r.shipping_cost ?? null,
+          currency: r.currency as string,
+          condition: r.condition as never,
+          priceType: r.price_type as never,
+          inStock: false,
+          listingUrl: r.listing_url as string,
+          imageUrl: r.image_url ?? null,
+          authenticityVerified: false,
+          fetchedAt: new Date(),
+        });
+      }
+      console.log(`Marked ${stale.length} listings no longer on the stores as out of stock.`);
+    }
+
     if (save && result.errors.length === 0) {
       console.log('Recomputing Compare summaries…');
       await app.get(MarketIntelligenceService).refreshAll();

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ArrowUpRight } from 'lucide-react';
 import { buttonVariantClass } from '@chosn/ui';
 import { Reveal } from '@/components/fx/Reveal';
-import { PriceChart, makeSeries } from '@/components/ui/PriceChart';
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
 import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
@@ -14,6 +13,7 @@ import { findBestOffer, OfferTable } from './OfferTable';
 import { CompareToggle } from '@/components/compare/CompareToggle';
 import { SizeSelector } from './SizeSelector';
 import { BestToBuy } from './BestToBuy';
+import { PriceHistory } from './PriceHistory';
 import { SneakerGallery } from './SneakerGallery';
 
 export interface PriceComparisonViewProps {
@@ -52,8 +52,6 @@ export interface PriceComparisonViewProps {
 export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, aside, below }: PriceComparisonViewProps) {
   const [data, setData] = useState(initialData);
   const [pendingSize, setPendingSize] = useState<number | null>(null);
-  const [range, setRange] = useState<30 | 90>(90);
-  const [narrow, setNarrow] = useState(false);
   const cache = useRef(new Map<number, CatalogResponse>([[initialData.variant.size, initialData]]));
   const inFlight = useRef(new Map<number, Promise<CatalogResponse | null>>());
 
@@ -75,16 +73,6 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
     },
     [styleCode],
   );
-
-  // The chart is drawn in an 800-unit viewBox, so on phones it needs more
-  // height to keep its plotted area legible.
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    const sync = () => setNarrow(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
 
   // Adjacent sizes only (task 7 says "adjacent," not "every size") —
   // fetched once on mount so the common case (one step up or down) is
@@ -117,7 +105,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
     data.offers.find((o) => o.retailerSlug === data.marketIntelligence?.bestRetailerSlug)
       ?.retailerName ?? data.marketIntelligence?.bestRetailerSlug ?? null;
 
-  const { sneaker, marketIntelligence: mi } = data;
+  const { sneaker } = data;
   // Main photo first, then the other angles — one entry per distinct file.
   const galleryImages = useMemo(
     () => [...new Set([imageUrl, ...(sneaker.galleryImageUrls ?? [])].filter((u): u is string => Boolean(u)))],
@@ -125,22 +113,6 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
   );
   const palette = useMemo(() => paletteFor(sneaker.colorway, sneaker.brand), [sneaker.colorway, sneaker.brand]);
   const bestOffer = findBestOffer(data.offers);
-  const chartPrice = mi?.currentPrice ?? mi?.bestAvailablePrice ?? null;
-  const series = useMemo(
-    () =>
-      chartPrice != null
-        ? makeSeries({
-            current: chartPrice,
-            avg30: mi?.avg30d,
-            avg90: mi?.avg90d,
-            seed: `${styleCode}-${data.variant.size}`,
-          })
-        : [],
-    [chartPrice, mi?.avg30d, mi?.avg90d, styleCode, data.variant.size],
-  );
-  const shown = range === 30 ? series.slice(-30) : series;
-  const accent = mi?.signal === 'good_time_to_buy' ? 'signal' : mi?.signal === 'consider_waiting' ? 'rust' : 'brass';
-
   return (
     <div className="flex flex-col gap-10 pb-24 md:pb-0 lg:gap-14">
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_19rem]">
@@ -224,49 +196,9 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
         {aside && <aside className="min-w-0 lg:col-span-2 xl:sticky xl:top-24 xl:col-span-1">{aside}</aside>}
       </div>
 
-      {series.length > 0 && (
-        <Reveal>
-          <section aria-labelledby="chart-h" className="panel ticks p-5 sm:p-7">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="eyebrow">Trend</p>
-                <h2 id="chart-h" className="mt-2 font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
-                  Price history
-                </h2>
-              </div>
-              <div role="group" aria-label="Chart range" className="flex border border-text/15">
-                {([30, 90] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    aria-pressed={range === r}
-                    onClick={() => setRange(r)}
-                    className={`min-h-[44px] min-w-[64px] px-4 font-mono text-data-delta transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brass-bright ${
-                      range === r
-                        ? 'bg-brass-gradient font-semibold text-vault-deep'
-                        : 'text-text-soft hover:bg-vault-high hover:text-text'
-                    }`}
-                  >
-                    {r}D
-                  </button>
-                ))}
-              </div>
-            </div>
-            <PriceChart
-              key={`${range}-${data.variant.size}`}
-              series={shown}
-              avg30={mi?.avg30d}
-              avg90={range === 90 ? mi?.avg90d : null}
-              accent={accent}
-              height={narrow ? 520 : 300}
-            />
-            <p className="mt-3 font-mono text-meta text-text-faint">
-              Illustrative trend interpolated from the 30- and 90-day averages and today&apos;s price — not raw daily
-              ticks.
-            </p>
-          </section>
-        </Reveal>
-      )}
+      <Reveal>
+        <PriceHistory styleCode={styleCode} size={data.variant.size} />
+      </Reveal>
 
       <Reveal>
         <section aria-labelledby="offers-h">

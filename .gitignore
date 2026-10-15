@@ -38,3 +38,8 @@ apps/web/public/local-preview/
 # real object storage configured yet, and user uploads don't belong in
 # a public git repo regardless.
 apps/api/uploads/
+
+# Daily update output
+data/
+logs/
+scripts/run-daily.cmd

@@ -3,6 +3,7 @@ import {
   CatalogService,
   type CatalogResponse,
   type CompareItem,
+  type PriceHistory,
   type SearchResponse,
   type SearchSort,
   type SearchResultItem,
@@ -58,6 +59,18 @@ export class CatalogController {
     @Query('limit') limit?: string,
   ): Promise<{ results: SearchResultItem[] }> {
     return { results: await this.catalog.similar(styleCode, limit ? Number(limit) || 8 : 8) };
+  }
+
+  /** Real recorded prices per day: /catalog/DD1391-100/9/history?days=90 */
+  @Get(':styleCode/:size/history')
+  async history(
+    @Param('styleCode') styleCode: string,
+    @Param('size') size: string,
+    @Query('days') days?: string,
+  ): Promise<PriceHistory> {
+    const parsedSize = Number(size);
+    if (!Number.isFinite(parsedSize) || parsedSize <= 0) throw new NotFoundException(`Invalid size "${size}"`);
+    return this.catalog.priceHistory(styleCode, parsedSize, days ? Number(days) || 90 : 90);
   }
 
   @Get(':styleCode/:size')

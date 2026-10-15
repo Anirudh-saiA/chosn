@@ -86,6 +86,21 @@ function parsePgArray(value: string[] | string | null | undefined): string[] {
   return value.replace(/^\{|\}$/g, '').split(',').filter((v) => v !== '');
 }
 
+/** One day of recorded prices for a shoe in one size (real listings only, shipping included). */
+export interface PriceHistoryPoint {
+  /** Calendar day in India, YYYY-MM-DD. */
+  day: string;
+  bestPrice: number;
+  bestStore: string;
+  stores: Array<{ slug: string; name: string; price: number }>;
+}
+
+export interface PriceHistory {
+  points: PriceHistoryPoint[];
+  /** First day any price was recorded (null when none yet). */
+  since: string | null;
+}
+
 /** One shoe in the side-by-side compare view: its cheapest in-stock price at every store that lists it. */
 export interface CompareItem {
   styleCode: string;
@@ -671,6 +686,45 @@ export class CatalogService {
       bestRetailerName: r.retailer_name,
       listingUrl: r.listing_url,
     }));
+  }
+
+  /**
+   * Real price history for one variant: for each day a store's price was recorded, the cheapest in-stock listing
+   * per store, and the day's best. Demo/fixture listings are excluded. Days with no recording are simply absent
+   * (nothing is interpolated), so the chart only ever shows prices that were actually seen.
+   */
+  async priceHistory(styleCode: string, size: number, days = 90): Promise<PriceHistory> {
+    const span = Math.min(Math.max(Math.floor(days), 1), 730);
+    const { rows } = await this.db.execute(sql`
+      SELECT (ps.fetched_at AT TIME ZONE 'Asia/Kolkata')::date::text AS day, r.slug, r.name,
+             min(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS price
+      FROM price_snapshots ps
+      JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+      JOIN sneakers s ON s.id = v.sneaker_id
+      JOIN retailers r ON r.id = ps.retailer_id
+      WHERE s.style_code = ${styleCode} AND v.size = ${size}::numeric
+        AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+        AND ps.fetched_at >= now() - make_interval(days => ${span})
+      GROUP BY 1, r.slug, r.name
+      ORDER BY 1, price
+    `);
+    const byDay = new Map<string, PriceHistoryPoint>();
+    for (const r of rows as unknown as Array<{ day: string; slug: string; name: string; price: string | null }>) {
+      if (r.price === null) continue;
+      const price = Number(r.price);
+      let point = byDay.get(r.day);
+      if (!point) {
+        point = { day: r.day, bestPrice: price, bestStore: r.name, stores: [] };
+        byDay.set(r.day, point);
+      }
+      point.stores.push({ slug: r.slug, name: r.name, price });
+      if (price < point.bestPrice) {
+        point.bestPrice = price;
+        point.bestStore = r.name;
+      }
+    }
+    const points = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+    return { points, since: points[0]?.day ?? null };
   }
 
   /** Side-by-side data for up to four shoes (the order requested is kept; unknown style codes are skipped). */
