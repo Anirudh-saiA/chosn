@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
-import { fetchAllVariantParams, fetchCatalogVariant, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
+import { fetchAllVariantParams, fetchCatalogVariant, fetchColours, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -70,10 +70,11 @@ export async function generateStaticParams() {
 
 export default async function SneakerPricePage({ params }: PageProps) {
   const { styleCode, size } = await params;
-  const [data, drop, similar] = await Promise.all([
+  const [data, drop, similar, colours] = await Promise.all([
     loadVariant(styleCode, size),
     fetchDropForSneaker(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
     fetchSimilar(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
+    fetchColours(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
   ]);
   if (!data) notFound();
 
@@ -102,6 +103,7 @@ export default async function SneakerPricePage({ params }: PageProps) {
         imageUrl={imageUrl}
         // Most sneakers have no drop_event yet - the normal case, so no badge.
         drop={drop ? { id: drop.id, status: drop.status } : null}
+        colours={colours}
         similar={similar}
       />
     </PageShell>

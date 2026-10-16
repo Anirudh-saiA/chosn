@@ -73,17 +73,12 @@ function Group({ id, eyebrow, title, items }: { id: string; eyebrow: string; tit
 }
 
 /**
- * Bottom of the product page: other colours of this same model, then related sneakers — each with its cheapest
+ * Bottom of the product page: related sneakers (other models) — each with its cheapest
  * in-stock store and a direct "View deal" link, so a shopper can jump straight to a store from here.
  */
 export function MoreLikeThis({ items }: { items: SearchResultItem[] }) {
-  const sameModel = items.filter((i) => i.sameModel).slice(0, 5);
+  // Other colours of this same model live in the colour picker under the name, so only different models are shown here.
   const related = items.filter((i) => !i.sameModel).slice(0, 5);
-  if (sameModel.length === 0 && related.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-12">
-      <Group id="colours-h" eyebrow="Same shoe" title="Other colours" items={sameModel} />
-      <Group id="related-h" eyebrow="Keep looking" title="Related sneakers" items={related} />
-    </div>
-  );
+  if (related.length === 0) return null;
+  return <Group id="related-h" eyebrow="Keep looking" title="Related sneakers" items={related} />;
 }

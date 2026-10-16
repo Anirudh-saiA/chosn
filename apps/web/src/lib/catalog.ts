@@ -99,6 +99,19 @@ export interface CatalogResponse {
   marketIntelligence: MarketIntelligence | null;
 }
 
+/** One colourway of a model (mirrors apps/api catalog.service ColourOption). */
+export interface ColourOption {
+  styleCode: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  defaultSize: number;
+  /** UK sizes this colourway has in stock. */
+  sizesInStock: number[];
+  bestAvailablePrice: number | null;
+  /** The shoe the page is about. */
+  current: boolean;
+}
+
 export interface SearchResultItem {
   styleCode: string;
   brand: string;
@@ -114,6 +127,8 @@ export interface SearchResultItem {
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
+  /** Search results: every matching colourway of this model, the shown one first (one card per model). */
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'>>;
   /** Only on similar-sneaker results: same model in another colourway. */
   sameModel?: boolean;
   /** Only on similar-sneaker results: cheapest in-stock store and its direct listing link. */
@@ -253,6 +268,17 @@ export async function fetchSimilar(styleCode: string, init?: RequestInit): Promi
     return ((await res.json()) as { results: SearchResultItem[] }).results;
   } catch {
     return []; // the rail is an extra — never fail the page over it
+  }
+}
+
+/** The model's colourways, this shoe first (empty when the API can't be reached - the picker just hides). */
+export async function fetchColours(styleCode: string, init?: RequestInit): Promise<ColourOption[]> {
+  try {
+    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/colours`, init);
+    if (!res.ok) return [];
+    return ((await res.json()) as { colours: ColourOption[] }).colours;
+  } catch {
+    return [];
   }
 }
 

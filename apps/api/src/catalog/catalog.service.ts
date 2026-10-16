@@ -172,6 +172,19 @@ export interface SearchFacets {
   price: { min: number; max: number; p98: number };
 }
 
+/** One colourway of a model, as offered in the colour picker (the cheapest in-stock size is where it links to). */
+export interface ColourOption {
+  styleCode: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  defaultSize: number;
+  /** UK sizes this colourway has in stock (empty when it is sold out). */
+  sizesInStock: number[];
+  bestAvailablePrice: number | null;
+  /** True for the shoe the page / card is about. */
+  current: boolean;
+}
+
 export interface SearchResultItem {
   styleCode: string;
   brand: string;
@@ -188,6 +201,8 @@ export interface SearchResultItem {
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
+  /** Search results: every colourway of this model that matched, the shown one first (a card = one model). */
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'>>;
   /** Only on /similar: true when this is the same model in another colourway. */
   sameModel?: boolean;
   /** Only on /similar: the cheapest in-stock store for this shoe and its direct listing link. */
@@ -569,17 +584,31 @@ export class CatalogService {
                  COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  st.min_price AS current_price, st.min_price AS best_available_price,
                  ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count,
+                 lower(s.brand) || '|' || lower(btrim(s.model)) AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
           LEFT JOIN st ON st.sneaker_id = s.id
           LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
           ${where}
+        ),
+        -- One card per model: the best-ranked colourway of each model stands for it.
+        firsts AS (
+          SELECT * FROM (SELECT matched.*, row_number() OVER (PARTITION BY grp ORDER BY ${orderBy}) AS rn FROM matched) x
+          WHERE rn = 1
+        ),
+        page AS (
+          SELECT *, count(*) OVER() AS total_count FROM firsts ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}
         )
-        SELECT *, count(*) OVER() AS total_count
-        FROM matched
+        SELECT p.*,
+               (SELECT json_agg(t) FROM (
+                  SELECT m.style_code AS "styleCode", m.colorway, m.primary_image_url AS "primaryImageUrl",
+                         m.size AS "defaultSize", m.best_available_price AS "bestAvailablePrice"
+                  FROM matched m WHERE m.grp = p.grp
+                  ORDER BY (m.style_code = p.style_code) DESC, m.best_available_price ASC NULLS LAST, m.colorway
+                  LIMIT 12) t) AS colours
+        FROM page p
         ORDER BY ${orderBy}
-        LIMIT ${limit} OFFSET ${offset}
       `),
       // One statement for every facet, over one shared `base` scan.
       this.db.execute(sql`
@@ -619,6 +648,13 @@ export class CatalogService {
       signal: (r.signal as Signal | null) ?? null,
       currency: r.currency ?? 'INR',
       storeCount: Number(r.store_count ?? 0),
+      colours: (r.colours ?? []).map((c) => ({
+        styleCode: c.styleCode,
+        colorway: c.colorway,
+        primaryImageUrl: c.primaryImageUrl,
+        defaultSize: Number(c.defaultSize),
+        bestAvailablePrice: c.bestAvailablePrice !== null ? Number(c.bestAvailablePrice) : null,
+      })),
     }));
 
     const facetRow = (facetResult.rows[0] ?? {}) as {
@@ -752,6 +788,47 @@ export class CatalogService {
     return { points, since: points[0]?.day ?? null };
   }
 
+  /**
+   * Every colourway of this shoe's model (same brand, same model name), this one first. Others only appear when
+   * they are in stock somewhere, so the picker never offers a dead end. Each carries the UK sizes it has in stock.
+   */
+  async colours(styleCode: string): Promise<ColourOption[]> {
+    const { rows } = await this.db.execute(sql`
+      WITH t AS (SELECT id, lower(brand) AS b, lower(btrim(model)) AS m FROM sneakers WHERE style_code = ${styleCode})
+      SELECT s.style_code, s.colorway, s.primary_image_url, (s.id = t.id) AS is_current,
+             bp.size, bp.price, bp.sizes
+      FROM sneakers s
+      JOIN t ON lower(s.brand) = t.b AND lower(btrim(s.model)) = t.m
+      LEFT JOIN LATERAL (
+        SELECT (array_agg(v.size ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency)))[1] AS size,
+               min(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS price,
+               array_agg(DISTINCT v.size ORDER BY v.size) AS sizes
+        FROM sneaker_variants v
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+                                AND ps.listing_url NOT LIKE '%FIXTURE%'
+        WHERE v.sneaker_id = s.id
+      ) bp ON true
+      WHERE s.id = t.id OR bp.price IS NOT NULL
+      ORDER BY (s.id = t.id) DESC, bp.price ASC NULLS LAST, s.colorway
+      LIMIT 24
+    `);
+    type Row = { style_code: string; colorway: string; primary_image_url: string | null; is_current: boolean; size: string | null; price: string | null; sizes: string[] | string | null };
+    const out: ColourOption[] = [];
+    for (const r of rows as unknown as Row[]) {
+      const sizes = parsePgArray(r.sizes).map(Number);
+      out.push({
+        styleCode: r.style_code,
+        colorway: r.colorway,
+        primaryImageUrl: r.primary_image_url,
+        defaultSize: r.size !== null ? Number(r.size) : (sizes[0] ?? 0),
+        sizesInStock: sizes,
+        bestAvailablePrice: r.price !== null ? Number(r.price) : null,
+        current: r.is_current,
+      });
+    }
+    return out;
+  }
+
   /** Side-by-side data for up to four shoes (the order requested is kept; unknown style codes are skipped). */
   async compare(styleCodes: string[]): Promise<CompareItem[]> {
     const codes = [...new Set(styleCodes.map((c) => c.trim()).filter(Boolean))].slice(0, 4);
@@ -882,6 +959,7 @@ export class CatalogService {
 }
 
 interface SearchRow {
+  colours?: Array<{ styleCode: string; colorway: string; primaryImageUrl: string | null; defaultSize: string; bestAvailablePrice: string | null }> | null;
   store_count?: string | number;
   style_code: string;
   brand: string;

@@ -2,6 +2,7 @@ import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common
 import {
   CatalogService,
   type CatalogResponse,
+  type ColourOption,
   type CompareItem,
   type PriceHistory,
   type SearchResponse,
@@ -50,6 +51,12 @@ export class CatalogController {
   @Get('compare')
   async compare(@Query('styles') styles?: string): Promise<{ items: CompareItem[] }> {
     return { items: await this.catalog.compare((styles ?? '').split(',')) };
+  }
+
+  /** Colourways of the same model, for the colour picker: /catalog/DD1391-100/colours */
+  @Get(':styleCode/colours')
+  async colours(@Param('styleCode') styleCode: string): Promise<{ colours: ColourOption[] }> {
+    return { colours: await this.catalog.colours(styleCode) };
   }
 
   /** Similar shoes for the product page's side rail. Declared before :styleCode/:size so "similar" isn't read as a size. */
