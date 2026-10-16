@@ -145,6 +145,14 @@ def main():
     for line in tail[-4:]:
         log("   " + line)
 
+    # Live offers from each store's banner. Best effort: a failure here never undoes the price import.
+    try:
+        offers_json = RUN_DIR / "store_offers.json"
+        run("Store offers", [sys.executable, "scripts/scrape_store_offers.py", str(offers_json)])
+        run("Save store offers", [NODE, "--env-file=.env", "dist/scripts/import-store-offers.js", str(offers_json)], cwd=api)
+    except RuntimeError as e:
+        log(f"Store offers skipped: {e}")
+
     merged_state = {**last, **today_counts} if args.only else today_counts
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")

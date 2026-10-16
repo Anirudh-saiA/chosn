@@ -52,6 +52,16 @@ export interface CatalogOffer {
   reviewCount: number | null;
   ratingSource: string | null;
   ratingUrl: string | null;
+  /** Payment methods the store says it accepts; empty = the store doesn't say (nothing is shown). */
+  paymentMethods: string[];
+  shippingNote: string | null;
+  returnsNote: string | null;
+  /** 'ok' | 'limited' | 'none' */
+  returnsTone: string | null;
+  infoSourceUrl: string | null;
+  /** Live offers read from the store's own site. */
+  offers: Array<{ text: string; url?: string }>;
+  offersUpdatedAt: string | null;
   isStale: boolean;
   /** 'fixture' = placeholder data, not a real quote — see OfferTable's disclosure. */
   mode: 'live' | 'fixture' | 'manual';

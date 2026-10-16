@@ -344,8 +344,7 @@ html.lenis body {
     background: #f6f2ea;
   }
   /* Anything hard-coded white inside these pages (cards, footer, sticky header) becomes warm. */
-  .page-shell .bg-white,
-  .page-shell footer.bg-white {
+  .page-shell .bg-white {
     background-color: var(--warm-raised);
   }
   .page-shell .bg-white\/80 {

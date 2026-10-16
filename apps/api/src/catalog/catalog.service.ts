@@ -35,6 +35,16 @@ export interface CatalogOffer {
   reviewCount: number | null;
   ratingSource: string | null;
   ratingUrl: string | null;
+  /** Payment methods the store says it accepts (empty = the store doesn't say, so none are shown). */
+  paymentMethods: string[];
+  shippingNote: string | null;
+  returnsNote: string | null;
+  /** 'ok' | 'limited' | 'none' — how friendly the return rule is. */
+  returnsTone: string | null;
+  infoSourceUrl: string | null;
+  /** Live offers read from the store's own site. */
+  offers: Array<{ text: string; url?: string }>;
+  offersUpdatedAt: string | null;
   /** Older than 2x the retailer's own cadence — same rule Day 9's ranking uses. */
   isStale: boolean;
   /**
@@ -242,6 +252,13 @@ interface OfferRow {
   review_count: number | null;
   rating_source: string | null;
   rating_url: string | null;
+  payment_methods: string[] | string | null;
+  shipping_note: string | null;
+  returns_note: string | null;
+  returns_tone: string | null;
+  info_source_url: string | null;
+  offers: Array<{ text: string; url?: string }> | null;
+  offers_updated_at: string | null;
   integration_type: string;
   price: string;
   shipping_cost: string | null;
@@ -337,6 +354,7 @@ export class CatalogService {
              r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
              r.delivery_min_days, r.delivery_max_days, r.delivery_note, r.delivery_source_url,
              r.rating, r.review_count, r.rating_source, r.rating_url,
+             r.payment_methods, r.shipping_note, r.returns_note, r.returns_tone, r.info_source_url, r.offers, r.offers_updated_at,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.image_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
@@ -371,6 +389,13 @@ export class CatalogService {
         reviewCount: r.review_count,
         ratingSource: r.rating_source,
         ratingUrl: r.rating_url,
+        paymentMethods: parsePgArray(r.payment_methods),
+        shippingNote: r.shipping_note,
+        returnsNote: r.returns_note,
+        returnsTone: r.returns_tone,
+        infoSourceUrl: r.info_source_url,
+        offers: Array.isArray(r.offers) ? r.offers : [],
+        offersUpdatedAt: r.offers_updated_at ? new Date(r.offers_updated_at).toISOString() : null,
         isStale: Date.now() - fetchedAt.getTime() > staleCutoffMs,
         mode: retailerModeFor(r.retailer_slug, r.integration_type),
       };

@@ -9,10 +9,10 @@ import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse } from
 import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
-import { findBestOffer, OfferTable } from './OfferTable';
+import { findBestOffer } from './OfferTable';
 import { CompareToggle } from '@/components/compare/CompareToggle';
 import { SizeSelector } from './SizeSelector';
-import { BestToBuy } from './BestToBuy';
+import { OfferCards } from './OfferCards';
 import { PriceHistory } from './PriceHistory';
 import { SneakerGallery } from './SneakerGallery';
 
@@ -210,8 +210,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
               {data.offers.length === 1 ? 'retailer' : 'retailers'}
             </p>
           </div>
-          <BestToBuy offers={data.offers} />
-          <OfferTable offers={data.offers} />
+          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} />
           <AffiliateDisclosure />
         </section>
       </Reveal>
