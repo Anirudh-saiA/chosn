@@ -135,7 +135,7 @@ export function PriceHistory({ styleCode, size }: { styleCode: string; size: num
                 );
               })}
               {points.length > 1 &&
-                [0, Math.floor((points.length - 1) / 2), points.length - 1].map((i) => (
+                [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])].map((i) => (
                   <text key={i} x={x(points[i]!.day)} y={H - 10} textAnchor={i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'} className="fill-text-faint font-mono" fontSize={11}>
                     {label(points[i]!.day)}
                   </text>

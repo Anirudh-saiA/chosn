@@ -1,17 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { buttonVariantClass } from '@chosn/ui';
 import { Reveal } from '@/components/fx/Reveal';
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
-import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse } from '@/lib/catalog';
+import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
 import { findBestOffer } from './OfferTable';
 import { CompareToggle } from '@/components/compare/CompareToggle';
+import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
+import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import { SizeSelector } from './SizeSelector';
+import { MoreLikeThis } from './MoreLikeThis';
 import { OfferCards } from './OfferCards';
 import { PriceHistory } from './PriceHistory';
 import { SneakerGallery } from './SneakerGallery';
@@ -21,12 +24,10 @@ export interface PriceComparisonViewProps {
   initialData: CatalogResponse;
   /** Real product image (resolveSneakerImage) — replaces the 3D stage when present. */
   imageUrl?: string | null;
-  /** Server-rendered extras slotted next to the brand eyebrow (drop badge). */
-  badges?: ReactNode;
-  /** Server-rendered notify controls. */
-  notify?: ReactNode;
-  /** Rendered under the offers table (other colours / related sneakers with direct store links). */
-  below?: ReactNode;
+  /** The sneaker's drop event, when it has one (renders the live/upcoming badge). */
+  drop?: { id: string; status: 'upcoming' | 'live' | 'sold_out' } | null;
+  /** Other colours and related sneakers shown under the offers. */
+  similar?: SearchResultItem[];
 }
 
 /**
@@ -47,7 +48,7 @@ export interface PriceComparisonViewProps {
  * copy-pasted link stay correct — it just doesn't ask Next to refetch
  * and re-render the segment, since the data's already in hand.
  */
-export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, below }: PriceComparisonViewProps) {
+export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, similar }: PriceComparisonViewProps) {
   const [data, setData] = useState(initialData);
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const cache = useRef(new Map<number, CatalogResponse>([[initialData.variant.size, initialData]]));
@@ -151,7 +152,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
               <span className="border border-text/15 bg-vault-raised/70 px-2.5 py-1 font-mono text-meta tracking-[0.06em] text-text-soft">
                 {sneaker.styleCode}
               </span>
-              {badges}
+              {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}
             </div>
             <h1 className="mt-3 font-display text-[clamp(2.25rem,5vw,3.75rem)] font-bold leading-[0.98] tracking-tight text-text">
               {sneaker.model}
@@ -183,12 +184,10 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
             />
           </div>
 
-          {notify && (
-            <div className="border-t border-text/[0.08] pt-5">
-              <p className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-text-faint">Drop alerts</p>
-              {notify}
-            </div>
-          )}
+          <div className="border-t border-text/[0.08] pt-5">
+            <p className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-text-faint">Drop alerts</p>
+            <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+          </div>
         </div>
       </div>
 
@@ -215,7 +214,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
         </section>
       </Reveal>
 
-      {below}
+      <MoreLikeThis items={similar ?? []} />
 
       {bestOffer && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-brass/30 bg-vault-deep/95 px-5 py-3 backdrop-blur-xl md:hidden">
