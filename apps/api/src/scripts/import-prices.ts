@@ -106,7 +106,8 @@ async function main() {
       if (!save) console.log('Run again with --save to import.');
     }
   } finally {
-    await app.close();
+    // Closing the app can hang on the background workers (queues, Redis); the work is already saved, so don't wait forever.
+    await Promise.race([app.close(), new Promise((resolve) => setTimeout(resolve, 15_000))]);
   }
   process.exit(process.exitCode ?? 0);
 }
