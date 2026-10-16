@@ -354,6 +354,12 @@ export const waitlistEntries = pgTable('waitlist_entries', {
   interests: text('interests').array().notNull().default([]),
   source: text('source').notNull().default('landing_page'),
   confirmed: boolean('confirmed').notNull().default(true),
+  name: text('name'),
+  trackedShoes: text('tracked_shoes').array().notNull().default([]),
+  unsubscribeToken: uuid('unsubscribe_token').notNull().defaultRandom(),
+  welcomeSentAt: timestamp('welcome_sent_at', { withTimezone: true }),
+  followupSentAt: timestamp('followup_sent_at', { withTimezone: true }),
+  unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   /** Day 16 — set once this email creates a real account; never retroactively guessed, never deleted. See 0008_auth.sql. */
   linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),
