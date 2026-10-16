@@ -25,8 +25,6 @@ export interface PriceComparisonViewProps {
   badges?: ReactNode;
   /** Server-rendered notify controls. */
   notify?: ReactNode;
-  /** Side column (similar sneakers): third column on wide screens, full-width row below the hero otherwise. */
-  aside?: ReactNode;
   /** Rendered under the offers table (other colours / related sneakers with direct store links). */
   below?: ReactNode;
 }
@@ -49,7 +47,7 @@ export interface PriceComparisonViewProps {
  * copy-pasted link stay correct — it just doesn't ask Next to refetch
  * and re-render the segment, since the data's already in hand.
  */
-export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, aside, below }: PriceComparisonViewProps) {
+export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, notify, below }: PriceComparisonViewProps) {
   const [data, setData] = useState(initialData);
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const cache = useRef(new Map<number, CatalogResponse>([[initialData.variant.size, initialData]]));
@@ -115,7 +113,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
   const bestOffer = findBestOffer(data.offers);
   return (
     <div className="flex flex-col gap-10 pb-24 md:pb-0 lg:gap-14">
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_19rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
         {/* Stage */}
         {galleryImages.length > 0 ? (
           <div className="min-w-0 self-start lg:sticky lg:top-24">
@@ -192,8 +190,6 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, badges, 
             </div>
           )}
         </div>
-
-        {aside && <aside className="min-w-0 lg:col-span-2 xl:sticky xl:top-24 xl:col-span-1">{aside}</aside>}
       </div>
 
       <Reveal>

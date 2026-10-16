@@ -8,7 +8,6 @@ import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
 import { fetchAllVariantParams, fetchCatalogVariant, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
 import { MoreLikeThis } from '@/components/pricing/MoreLikeThis';
-import { SimilarRail } from '@/components/pricing/SimilarRail';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -89,7 +88,7 @@ export default async function SneakerPricePage({ params }: PageProps) {
   const imageUrl = resolveSneakerImage(sneaker.primaryImageUrl, offers);
 
   return (
-    <PageShell width="full">
+    <PageShell width="7xl">
       <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-meta text-text-soft">
         <Link href="/sneakers" className="link-underline inline-flex min-h-[44px] items-center gap-1.5 hover:text-text sm:min-h-0">
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> All sneakers
@@ -104,7 +103,6 @@ export default async function SneakerPricePage({ params }: PageProps) {
         styleCode={styleCode}
         initialData={data}
         imageUrl={imageUrl}
-        aside={<SimilarRail items={similar.slice(0, 8)} current={{ styleCode: sneaker.styleCode }} />}
         below={<MoreLikeThis items={similar} />}
         // Most sneakers have no drop_event yet — this is the normal
         // case, not a loading state, so it renders nothing.
