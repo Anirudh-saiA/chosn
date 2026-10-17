@@ -55,10 +55,10 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
   return (
     <section id="join" data-ambient={s.id} className="mx-auto w-full max-w-[90rem] px-5 pb-16 pt-8 sm:px-8" aria-labelledby="join-h">
       <Reveal>
-        <div className="glass-card glass-card-lg relative overflow-hidden bg-[#e2d5ba] text-[#14213D]">
+        <div className="glass-card glass-card-lg relative overflow-hidden bg-black text-white">
           {/* background video (walk banner) with a dark wash so the text stays readable */}
           <video
-            className="!absolute inset-0 h-full w-full object-cover opacity-[0.28] mix-blend-multiply grayscale"
+            className="!absolute inset-0 h-full w-full object-cover"
             autoPlay
             muted
             loop
@@ -71,7 +71,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
             <source src="/hero/waitlist.webm" type="video/webm" />
             <source src="/hero/waitlist.mp4" type="video/mp4" />
           </video>
-          <div aria-hidden className="!absolute inset-0 bg-gradient-to-b from-[#e2d5ba]/40 via-[#e2d5ba]/25 to-[#e2d5ba]/60" />
+          <div aria-hidden className="!absolute inset-0 bg-gradient-to-b from-black/45 via-black/35 to-black/65" />
 
           <div className="relative z-10 mx-auto flex min-h-[30rem] max-w-2xl flex-col justify-center p-8 text-center lg:p-14">
             <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em] opacity-90">Be first in</p>
@@ -109,7 +109,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   type="submit"
                   disabled={status === 'submitting'}
                   className="btn-shine btn-shine-idle whitespace-nowrap rounded-full px-8 py-4 font-sans text-[0.74rem] font-extrabold uppercase tracking-[0.2em] shadow-[0_12px_24px_-12px_rgba(0,0,0,0.6)] disabled:opacity-60"
-                  style={{ background: '#14213D', color: '#fff' }}
+                  style={{ background: '#fff', color: '#0A0A0A' }}
                 >
                   {status === 'submitting' ? 'Joining…' : 'Submit'}
                 </button>
