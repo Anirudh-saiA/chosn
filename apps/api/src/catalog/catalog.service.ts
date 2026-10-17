@@ -9,6 +9,30 @@ import {
 } from '../pricing/market-intelligence.service';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
+/** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. See scripts/offers/curated_offers.json. */
+export interface StoreOffer {
+  kind: string;
+  text: string;
+  code?: string;
+  bank?: string;
+  upTo?: number;
+  conditions?: string;
+  url?: string;
+  source?: string;
+  seenAt?: string;
+}
+
+/** A group of ways to pay (UPI, cards, wallets ...) exactly as the store shows them. */
+export interface PaymentGroup {
+  kind: string;
+  label: string;
+  items: string[];
+  note?: string;
+  unavailable?: boolean;
+  source?: string;
+  seenAt?: string;
+}
+
 export interface CatalogOffer {
   retailerSlug: string;
   retailerName: string;
@@ -42,8 +66,10 @@ export interface CatalogOffer {
   /** 'ok' | 'limited' | 'none' — how friendly the return rule is. */
   returnsTone: string | null;
   infoSourceUrl: string | null;
-  /** Live offers read from the store's own site. */
-  offers: Array<{ text: string; url?: string }>;
+  /** Live offers read from the store's own site, plus the ones checked by hand. */
+  offers: StoreOffer[];
+  /** Every way to pay, grouped. Empty = the store does not say. */
+  paymentOptions: PaymentGroup[];
   offersUpdatedAt: string | null;
   /** Older than 2x the retailer's own cadence — same rule Day 9's ranking uses. */
   isStale: boolean;
@@ -272,7 +298,8 @@ interface OfferRow {
   returns_note: string | null;
   returns_tone: string | null;
   info_source_url: string | null;
-  offers: Array<{ text: string; url?: string }> | null;
+  offers: StoreOffer[] | null;
+  payment_options: PaymentGroup[] | null;
   offers_updated_at: string | null;
   integration_type: string;
   price: string;
@@ -369,7 +396,7 @@ export class CatalogService {
              r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
              r.delivery_min_days, r.delivery_max_days, r.delivery_note, r.delivery_source_url,
              r.rating, r.review_count, r.rating_source, r.rating_url,
-             r.payment_methods, r.shipping_note, r.returns_note, r.returns_tone, r.info_source_url, r.offers, r.offers_updated_at,
+             r.payment_methods, r.shipping_note, r.returns_note, r.returns_tone, r.info_source_url, r.offers, r.payment_options, r.offers_updated_at,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.image_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
@@ -410,6 +437,7 @@ export class CatalogService {
         returnsTone: r.returns_tone,
         infoSourceUrl: r.info_source_url,
         offers: Array.isArray(r.offers) ? r.offers : [],
+        paymentOptions: Array.isArray(r.payment_options) ? r.payment_options : [],
         offersUpdatedAt: r.offers_updated_at ? new Date(r.offers_updated_at).toISOString() : null,
         isStale: Date.now() - fetchedAt.getTime() > staleCutoffMs,
         mode: retailerModeFor(r.retailer_slug, r.integration_type),

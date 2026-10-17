@@ -27,6 +27,30 @@ export interface MarketIntelligence {
   computedAt: string;
 }
 
+/** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. */
+export interface StoreOffer {
+  kind: string;
+  text: string;
+  code?: string;
+  bank?: string;
+  upTo?: number;
+  conditions?: string;
+  url?: string;
+  source?: string;
+  seenAt?: string;
+}
+
+/** A group of ways to pay (UPI, cards, wallets ...) exactly as the store shows them. */
+export interface PaymentGroup {
+  kind: string;
+  label: string;
+  items: string[];
+  note?: string;
+  unavailable?: boolean;
+  source?: string;
+  seenAt?: string;
+}
+
 export interface CatalogOffer {
   retailerSlug: string;
   retailerName: string;
@@ -59,8 +83,10 @@ export interface CatalogOffer {
   /** 'ok' | 'limited' | 'none' */
   returnsTone: string | null;
   infoSourceUrl: string | null;
-  /** Live offers read from the store's own site. */
-  offers: Array<{ text: string; url?: string }>;
+  /** Live offers read from the store's own site, plus the ones checked by hand. */
+  offers: StoreOffer[];
+  /** Every way to pay, grouped. Cached pages from before this field existed have none. */
+  paymentOptions?: PaymentGroup[];
   offersUpdatedAt: string | null;
   isStale: boolean;
   /** 'fixture' = placeholder data, not a real quote — see OfferTable's disclosure. */
