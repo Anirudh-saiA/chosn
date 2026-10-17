@@ -7,6 +7,8 @@ export const SORT_OPTIONS = [
   { value: '', label: 'Featured' },
   { value: 'price_asc', label: 'Price: low to high' },
   { value: 'price_desc', label: 'Price: high to low' },
+  { value: 'name_asc', label: 'Name: A to Z' },
+  { value: 'name_desc', label: 'Name: Z to A' },
   { value: 'stores', label: 'Most stores to compare' },
 ] as const;
 

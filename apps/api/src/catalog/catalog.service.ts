@@ -160,7 +160,7 @@ export interface CompareItem {
   }>;
 }
 
-export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'stores';
+export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stores';
 
 export interface SearchParams {
   q?: string;
@@ -568,6 +568,8 @@ export class CatalogService {
     let orderBy = tsQuery || fuzzy ? sql`rank DESC, ${inStockFirst}, ${alpha}` : sql`${inStockFirst}, ${alpha}`;
     if (params.sort === 'price_asc') orderBy = sql`${inStockFirst}, best_available_price ASC, ${alpha}`;
     else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
+    else if (params.sort === 'name_asc') orderBy = sql`lower(model) ASC, lower(brand) ASC, colorway ASC`;
+    else if (params.sort === 'name_desc') orderBy = sql`lower(model) DESC, lower(brand) DESC, colorway DESC`;
     else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
 
     // Shared CTEs. real_offers = latest in-stock listings with a real link (the demo fixtures are left out), so
@@ -612,7 +614,7 @@ export class CatalogService {
                  COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  st.min_price AS current_price, st.min_price AS best_available_price,
                  ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count,
-                 lower(s.brand) || '|' || btrim(regexp_replace(lower(s.model), '[^a-z0-9]+', ' ', 'g')) AS grp,
+                 lower(s.brand) || '|' || regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
@@ -647,7 +649,7 @@ export class CatalogService {
         )
         SELECT
           (SELECT COALESCE(json_agg(b), '[]'::json) FROM (
-             SELECT brand AS value, count(*) AS n FROM base GROUP BY brand ORDER BY count(*) DESC, lower(brand) LIMIT 40) b) AS brands,
+             SELECT brand AS value, count(*) AS n FROM base GROUP BY brand ORDER BY lower(brand) LIMIT 120) b) AS brands,
           (SELECT COALESCE(json_agg(x), '[]'::json) FROM (
              SELECT r.slug, r.name, count(*) AS n
              FROM base CROSS JOIN LATERAL unnest(base.store_slugs) AS u(slug)
@@ -822,11 +824,11 @@ export class CatalogService {
    */
   async colours(styleCode: string): Promise<ColourOption[]> {
     const { rows } = await this.db.execute(sql`
-      WITH t AS (SELECT id, lower(brand) AS b, btrim(regexp_replace(lower(model), '[^a-z0-9]+', ' ', 'g')) AS m FROM sneakers WHERE style_code = ${styleCode})
+      WITH t AS (SELECT id, lower(brand) AS b, regexp_replace(lower(model), '[^a-z0-9]+', '', 'g') AS m FROM sneakers WHERE style_code = ${styleCode})
       SELECT s.style_code, s.colorway, s.primary_image_url, (s.id = t.id) AS is_current,
              bp.size, bp.price, bp.sizes
       FROM sneakers s
-      JOIN t ON lower(s.brand) = t.b AND btrim(regexp_replace(lower(s.model), '[^a-z0-9]+', ' ', 'g')) = t.m
+      JOIN t ON lower(s.brand) = t.b AND regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') = t.m
       LEFT JOIN LATERAL (
         SELECT (array_agg(v.size ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency)))[1] AS size,
                min(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS price,

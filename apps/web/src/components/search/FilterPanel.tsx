@@ -125,11 +125,14 @@ function PriceFilter({ facets, get, set }: { facets: SearchFacets; get: (k: stri
 /** The whole filter column. Brand = "company"; every other filter narrows the same live catalog. */
 export function FilterPanel({ facets, total }: { facets: SearchFacets; total: number }) {
   const { get, set, clearAll, activeCount, pending } = useFilterParams();
-  const [allBrands, setAllBrands] = useState(false);
+  const [brandQuery, setBrandQuery] = useState('');
   const brands = splitList(get('brand'));
   const stores = splitList(get('store'));
   const colors = splitList(get('color'));
-  const shownBrands = allBrands ? facets.brands : facets.brands.slice(0, 8);
+  // A to Z, whatever order the API sent them in; the box under the heading narrows a long list.
+  const sortedBrands = [...facets.brands].sort((a, b) => a.value.localeCompare(b.value, 'en', { sensitivity: 'base' }));
+  const shownBrands = brandQuery.trim() ? sortedBrands.filter((b) => b.value.toLowerCase().includes(brandQuery.trim().toLowerCase())) : sortedBrands;
+  const sortedStores = [...facets.stores].sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
   const minStores = get('minStores') ?? '';
 
   return (
@@ -145,21 +148,27 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
         )}
       </div>
 
-      <Section title="Company" hint={`${facets.brands.length} brands`}>
-        <div className={allBrands ? 'max-h-72 overflow-y-auto pr-1' : ''}>
+      <Section title="Company" hint={`${facets.brands.length} brands · A to Z`}>
+        {facets.brands.length > 8 && (
+          <input
+            type="search"
+            value={brandQuery}
+            onChange={(e) => setBrandQuery(e.target.value)}
+            placeholder="Find a company"
+            aria-label="Find a company"
+            className="mb-2 h-9 w-full rounded-full border border-text/15 bg-white px-4 text-[0.85rem] text-text outline-none placeholder:text-text-faint focus:border-text"
+          />
+        )}
+        <div className="max-h-64 overflow-y-auto pr-1">
           {shownBrands.map((b) => (
             <CheckRow key={b.value} label={b.value} count={b.count} checked={brands.includes(b.value)} onChange={() => set({ brand: toggleInList(get('brand'), b.value) || null })} />
           ))}
+          {shownBrands.length === 0 && <p className="py-2 text-[0.85rem] text-text-soft">No company matches.</p>}
         </div>
-        {facets.brands.length > 8 && (
-          <button type="button" onClick={() => setAllBrands((v) => !v)} className="mt-2 font-mono text-[0.7rem] font-bold uppercase tracking-[0.12em] text-text-soft hover:text-text">
-            {allBrands ? 'Show fewer' : `Show all ${facets.brands.length}`}
-          </button>
-        )}
       </Section>
 
-      <Section title="Store" hint="where it's in stock">
-        {facets.stores.map((s) => (
+      <Section title="Store" hint="where it's in stock · A to Z">
+        {sortedStores.map((s) => (
           <CheckRow key={s.slug} label={s.name} count={s.count} checked={stores.includes(s.slug)} onChange={() => set({ store: toggleInList(get('store'), s.slug) || null })} />
         ))}
       </Section>

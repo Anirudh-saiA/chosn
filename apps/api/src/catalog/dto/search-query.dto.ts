@@ -66,7 +66,7 @@ export class SearchQueryDto {
   soldOut?: string;
 
   @IsOptional()
-  @IsIn(['relevance', 'price_asc', 'price_desc', 'stores'])
+  @IsIn(['relevance', 'price_asc', 'price_desc', 'name_asc', 'name_desc', 'stores'])
   sort?: string;
 
   @IsOptional()
