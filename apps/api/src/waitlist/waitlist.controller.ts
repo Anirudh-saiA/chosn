@@ -16,7 +16,7 @@ export class WaitlistController {
   @UseGuards(RateLimitGuard)
   @RateLimit({ limit: 5, windowSeconds: 3600 }) // signups are one-shot; 5/hr covers retries, not bots
   async join(@Body() dto: JoinWaitlistDto) {
-    const result = await this.waitlist.join(dto.name, dto.email, dto.interests, dto.shoes);
+    const result = await this.waitlist.join(dto.name, dto.email, dto.interests, dto.shoes, dto.phone);
 
     if (result.status === 'duplicate') {
       throw new ConflictException({

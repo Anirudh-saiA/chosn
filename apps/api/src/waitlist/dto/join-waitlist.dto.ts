@@ -1,4 +1,4 @@
-import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
 
 export const ALLOWED_INTERESTS = ['Jordan', 'Nike', 'Yeezy', 'Price alerts', 'Drop news'] as const;
 
@@ -9,6 +9,12 @@ export class JoinWaitlistDto {
 
   @IsEmail({}, { message: 'That email looks invalid.' })
   email!: string;
+
+  /** Optional. Digits with an optional leading +, spaces, dashes or brackets; an empty string counts as not given. */
+  @IsOptional()
+  @IsString()
+  @Matches(/^$|^\+?[0-9][0-9 ()-]{5,16}[0-9]$/, { message: 'That phone number looks invalid.' })
+  phone?: string;
 
   @IsOptional()
   @IsArray()

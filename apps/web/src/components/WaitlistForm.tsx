@@ -19,11 +19,13 @@ export function WaitlistForm() {
   const [name, setName] = useState('');
   const [shoe, setShoe] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const emailId = useId();
   const nameId = useId();
+  const phoneId = useId();
   const shoeId = useId();
   const statusId = useId();
 
@@ -47,6 +49,7 @@ export function WaitlistForm() {
         body: JSON.stringify({
           name: name.trim(),
           email,
+          phone: phone.trim() || undefined,
           interests: interests.length ? interests : undefined,
           shoes: shoe.trim() ? [shoe.trim()] : undefined,
         }),
@@ -123,6 +126,20 @@ export function WaitlistForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="mb-4 mt-2 min-h-[48px]"
+      />
+
+      <label htmlFor={phoneId} className={labelClass}>
+        Phone number <span className="normal-case tracking-normal text-text-faint">(optional)</span>
+      </label>
+      <Input
+        id={phoneId}
+        type="tel"
+        name="phone"
+        autoComplete="tel"
+        placeholder="+91 98765 43210"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="mb-5 mt-2 min-h-[48px]"
       />
 
       <label htmlFor={emailId} className={labelClass}>
