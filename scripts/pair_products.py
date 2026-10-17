@@ -75,6 +75,13 @@ def strip_brand(brand, tokens):
     return tokens[i:]
 
 
+def myntra_title(model, flag):
+    """'Men Navy Solid Court Royale Sneakers' -> 'Navy Solid Court Royale'; women's pairs get ' (W)'."""
+    t = re.sub(r"^(men|women|unisex|boys|girls|kids)\s+", "", model.strip(), flags=re.I)
+    t = re.sub(r"\s+(casual |sports |running |training )?(sneakers?|shoes?)$", "", t, flags=re.I).strip() or model.strip()
+    return t + (" (W)" if flag == "w" else "")
+
+
 def title(tokens):
     return " ".join(t.upper() if len(t) <= 2 and not t.isalpha() else t.capitalize() for t in tokens)
 
@@ -122,6 +129,8 @@ def main():
         """-> (model tokens, colour tokens, flag, display model, display colour)."""
         brand_l = canon_brand(r["brand"])
         name, flag = split_flags(strip_brand(r["brand"], toks(r["model"])))
+        if r["retailer"] == "Myntra":  # "Men Air Force 1 '07 Casual Sneakers": drop the category words Myntra adds
+            name = [t for t in name if t not in {"casual", "sports", "running", "training", "walking", "lifestyle"}] or name
         colour_raw = (r.get("colorway") or "").strip()
         if r["retailer"] == "Crepdog Crew":
             best = None
@@ -137,6 +146,8 @@ def main():
                 ct, cf = split_flags(toks(colour_raw))
                 return list(best), ct, flag or cf, disp, colour_raw
         ct, cf = split_flags(toks(colour_raw))
+        if r["retailer"] == "Myntra":
+            return name, ct, flag or cf, myntra_title(r["model"], flag or cf), colour_raw
         return name, ct, flag or cf, r["model"].strip(), colour_raw
 
     parsed = []
@@ -212,7 +223,7 @@ def main():
                 paired += 1
         elif code in code_alias:
             code = code_alias[code]
-        if r["retailer"] == "Crepdog Crew" and (dm != r["model"].strip() or dc != (r.get("colorway") or "").strip()):
+        if r["retailer"] in ("Crepdog Crew", "Myntra") and (dm != r["model"].strip() or dc != (r.get("colorway") or "").strip()):
             name_fixes.setdefault(code, (dm, dc, r["model"].strip(), (r.get("colorway") or "").strip()))
             r["model"], r["colorway"] = dm, dc
         r["style_code"] = code

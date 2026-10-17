@@ -4,6 +4,9 @@ Myntra embeds each listing page's products as JSON in `window.__myx`, so plain H
 Myntra exposes no manufacturer style code (only its own Style ID) and its delivery estimate comes from a
 pincode API that robots.txt disallows, so style_code is blank and delivery_time says so.
 
+Besides the price CSV it writes <out>-ratings.json: every product's Myntra rating and rating count (the listing page
+carries them, so this costs no extra requests) plus its MRP, keyed by the product URL. The importer maps the URL to the shoe.
+
 Usage: python scripts/scrape_myntra_prices.py [out.csv]
 """
 import csv
@@ -55,6 +58,17 @@ def pdp_sizes(landing):
     return {re.sub(r"(?i)^uk", "", str(z["label"])).strip(): bool(z.get("available")) for z in sizes}
 
 
+def meta_for(p):
+    """Rating, rating count and MRP as Myntra shows them on the listing (None when Myntra shows none)."""
+    count = int(p.get("ratingCount") or 0)
+    return {
+        "url": "https://www.myntra.com/" + p["landingPageUrl"],
+        "rating": round(float(p["rating"]), 2) if p.get("rating") and count else None,
+        "ratingCount": count or None,
+        "mrp": int(p["mrp"]) if p.get("mrp") else None,
+    }
+
+
 def rows_for(p):
     brand = p["brand"]
     name = re.sub(r"\s+", " ", p["productName"]).strip()
@@ -77,12 +91,14 @@ def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "chosn-myntra-prices.csv"
     # Checkpoint: one JSON line per finished product, so a stopped run resumes where it left off.
     ckpt = out_path.replace(".csv", ".partial.jsonl")
-    seen, rows = set(), []
+    seen, rows, metas = set(), [], {}
     if os.path.exists(ckpt):
         for line in open(ckpt, encoding="utf-8"):
             rec = json.loads(line)
             seen.add(rec["id"])
             rows += rec["rows"]
+            if rec.get("meta"):
+                metas[rec["id"]] = rec["meta"]
         print(f"resuming: {len(seen)} products already done", flush=True)
     # Myntra only server-renders page 1 of a listing (later pages come from an internal API we don't use),
     # so widen coverage with gender/category variants of each brand page instead of paginating.
@@ -94,14 +110,20 @@ def main():
                 seen.add(p["productId"])
                 got = rows_for(p)
                 rows += got
+                meta = meta_for(p) if got else None
+                if meta:
+                    metas[p["productId"]] = meta
                 with open(ckpt, "a", encoding="utf-8") as f:
-                    f.write(json.dumps({"id": p["productId"], "rows": got}) + "\n")
+                    f.write(json.dumps({"id": p["productId"], "rows": got, "meta": meta}) + "\n")
             print(f"{path}: {len(new)} new, {len(seen)} total", flush=True)
             time.sleep(1.5)
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS)
         w.writeheader()
         w.writerows(rows)
+    with open(out_path.replace(".csv", "-ratings.json"), "w", encoding="utf-8") as f:
+        json.dump(list(metas.values()), f, ensure_ascii=False)
+    print(f"{sum(1 for m in metas.values() if m['rating'])} of {len(metas)} products have a Myntra rating")
     print(f"done: {len(rows)} rows, {len(seen)} products -> {out_path}")
 
 

@@ -395,13 +395,17 @@ export class CatalogService {
       SELECT r.slug AS retailer_slug, r.name AS retailer_name, r.logo_url AS retailer_logo_url,
              r.fetch_frequency_minutes, r.integration_type::text AS integration_type,
              r.delivery_min_days, r.delivery_max_days, r.delivery_note, r.delivery_source_url,
-             r.rating, r.review_count, r.rating_source, r.rating_url,
+             COALESCE(rp.rating, r.rating) AS rating, COALESCE(rp.rating_count, r.review_count) AS review_count,
+             CASE WHEN rp.rating IS NOT NULL THEN r.name ELSE r.rating_source END AS rating_source,
+             COALESCE(rp.source_url, r.rating_url) AS rating_url,
              r.payment_methods, r.shipping_note, r.returns_note, r.returns_tone, r.info_source_url, r.offers, r.payment_options, r.offers_updated_at,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.image_url, ps.fetched_at,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS effective_price_inr
       FROM price_snapshots ps
       JOIN retailers r ON r.id = ps.retailer_id
+      LEFT JOIN sneaker_variants sv ON sv.id = ps.sneaker_variant_id
+      LEFT JOIN retailer_product_ratings rp ON rp.sneaker_id = sv.sneaker_id AND rp.retailer_id = ps.retailer_id
       WHERE ps.sneaker_variant_id = ${variantId} AND ps.is_latest = true
       ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC NULLS LAST
     `);

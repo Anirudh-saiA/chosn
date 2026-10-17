@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, ChevronDown, Copy } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Copy, Star } from 'lucide-react';
 import { formatInr, type CatalogOffer, type PaymentGroup, type StoreOffer } from '@/lib/catalog';
 import { acceptedPayments } from '@/lib/buy-guide';
 import { formatDelivery } from '@/lib/recommend';
@@ -158,6 +158,15 @@ export function StoreRow({
               {ship.free ? ' · Free shipping' : ''}
               {offers.length > 0 ? ` · ${offers.length} offer${offers.length === 1 ? '' : 's'}` : ''}
             </span>
+            {offer.rating != null && (offer.reviewCount ?? 0) > 0 && (
+              <span className="mt-0.5 flex items-center gap-1 text-[0.82rem] font-semibold text-text">
+                <Star className="h-3.5 w-3.5 fill-[#FFB400] text-[#FFB400]" aria-hidden />
+                {offer.rating.toFixed(1)}
+                <span className="font-normal text-text-soft">
+                  ({offer.reviewCount!.toLocaleString('en-IN')} ratings{offer.ratingSource ? ` on ${offer.ratingSource}` : ''})
+                </span>
+              </span>
+            )}
             {pays.length > 0 && <span className="mt-0.5 block text-[0.78rem] text-text-faint">Pay: {pays.join(' · ')}</span>}
           </span>
           <ChevronDown className={`ml-auto h-5 w-5 shrink-0 text-text-faint transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
