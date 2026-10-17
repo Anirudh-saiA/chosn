@@ -192,7 +192,16 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
     }
 
     this.logger.log(`market intelligence refresh: ${processed} ok, ${failed} failed`);
+    await this.refreshCatalogViews();
     return { processed, failed };
+  }
+
+  /** The browse page reads these two materialized views (drizzle/0026); bring them up to date with the prices. */
+  async refreshCatalogViews(): Promise<void> {
+    await this.db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY catalog_default_variant_mv`);
+    await this.db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY catalog_stats_mv`);
+    await this.db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY catalog_colors_mv`);
+    this.logger.log('catalog views refreshed');
   }
 
   private async refreshOne(variantId: string): Promise<void> {

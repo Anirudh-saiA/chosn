@@ -576,37 +576,14 @@ export class CatalogService {
     else if (params.sort === 'name_desc') orderBy = sql`lower(model) DESC, lower(brand) DESC, colorway DESC`;
     else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
 
-    // Shared CTEs. real_offers = latest in-stock listings with a real link (the demo fixtures are left out), so
-    // price / store filters and counts only ever reflect stores a shopper can actually buy from.
+    // Shared CTEs. Both read materialized views (drizzle/0026) that are refreshed after every price import: the cheapest
+    // in-stock price, store count and size per shoe (demo fixtures left out), and the variant whose signal a card shows.
     const ctes = sql`
-      default_variant AS (
-        -- The variant whose market summary (signal) a card shows; the smallest size when none has a price.
-        SELECT DISTINCT ON (v.sneaker_id) v.sneaker_id, v.id AS variant_id, v.size, v.size_system
-        FROM sneaker_variants v
-        LEFT JOIN market_summaries mv ON mv.sneaker_variant_id = v.id
-        ORDER BY v.sneaker_id, (mv.best_available_price IS NULL), mv.best_available_price ASC, v.size ASC
-      ),
-      real_offers AS (
-        SELECT v.sneaker_id, v.size, v.size_system, ps.retailer_id, r.slug,
-               effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price
-        FROM price_snapshots ps
-        JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
-        JOIN retailers r ON r.id = ps.retailer_id
-        WHERE ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
-      ),
-      st AS (
-        SELECT sneaker_id,
-               count(DISTINCT retailer_id) AS store_count,
-               array_agg(DISTINCT slug) AS store_slugs,
-               min(price) AS min_price,
-               (array_agg(size ORDER BY price))[1] AS min_size,
-               (array_agg(size_system ORDER BY price))[1] AS min_size_system
-        FROM real_offers
-        GROUP BY sneaker_id
-      )`;
+      default_variant AS (SELECT sneaker_id, variant_id, size, size_system FROM catalog_default_variant_mv),
+      st AS (SELECT sneaker_id, store_count, store_slugs, min_price, min_size, min_size_system FROM catalog_stats_mv)`;
 
     const colorCounts = sql.join(
-      Object.keys(COLOR_FAMILIES).map((family) => sql`'${sql.raw(family)}', count(*) FILTER (WHERE lower(colorway) ~ ${colorRegex(family)})`),
+      Object.keys(COLOR_FAMILIES).map((family) => sql`'${sql.raw(family)}', COALESCE((SELECT n FROM color_counts WHERE family = '${sql.raw(family)}'), 0)`),
       sql`, `,
     );
 
@@ -648,8 +625,12 @@ export class CatalogService {
       this.db.execute(sql`
         WITH ${ctes},
         base AS MATERIALIZED (
-          SELECT s.brand, s.colorway, st.store_slugs, st.min_price
-          FROM sneakers s LEFT JOIN st ON st.sneaker_id = s.id ${baseWhere}
+          SELECT s.brand, s.colorway, st.store_slugs, st.min_price, cm.families
+          FROM sneakers s LEFT JOIN st ON st.sneaker_id = s.id
+          LEFT JOIN catalog_colors_mv cm ON cm.sneaker_id = s.id ${baseWhere}
+        ),
+        color_counts AS (
+          SELECT f AS family, count(*) AS n FROM base CROSS JOIN LATERAL unnest(COALESCE(base.families, ARRAY[]::text[])) AS f GROUP BY f
         )
         SELECT
           (SELECT COALESCE(json_agg(b), '[]'::json) FROM (
@@ -659,7 +640,7 @@ export class CatalogService {
              FROM base CROSS JOIN LATERAL unnest(base.store_slugs) AS u(slug)
              JOIN retailers r ON r.slug = u.slug
              GROUP BY r.slug, r.name ORDER BY count(*) DESC) x) AS stores,
-          (SELECT json_build_object(${colorCounts}) FROM base) AS colors,
+          (SELECT json_build_object(${colorCounts}) ) AS colors,
           (SELECT json_build_object('lo', min(min_price), 'hi', max(min_price),
                                     'p98', percentile_cont(0.98) WITHIN GROUP (ORDER BY min_price))
              FROM base WHERE min_price IS NOT NULL) AS price
