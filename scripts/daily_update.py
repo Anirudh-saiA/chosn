@@ -8,7 +8,8 @@ r"""Daily CHOSN update: scrape the stores, clean the data, import it, record pri
 Steps (each logged to logs/daily-YYYY-MM-DD.log, files kept in data/daily/YYYY-MM-DD/):
   1. Superkicks + Crepdog Crew   scripts/scrape_shopify_prices.py   (public Shopify product data)
   2. VegNonVeg                   scripts/crawl/vegnonveg.mjs        (Crawlee, polite: <= 60 requests/minute)
-  3. Merge + clean               scripts/clean_price_csv.py
+  3. Pair + merge + clean        scripts/pair_products.py (same shoe across stores by brand + model + colour; listings
+                                 with no style code get a code instead of being dropped), then scripts/clean_price_csv.py
   4. Safety check                a store with < 70% of last run's rows means the scrape probably broke: stop, import nothing
   5. Validate, then import       apps/api import-prices (--save --mark-missing): every price becomes a new dated
                                  snapshot (that is the price history), listings that vanished are marked out of stock,
@@ -115,8 +116,15 @@ def main():
         w.writerows(rows)
     log(f"merged {len(rows)} scraped rows: {counts(rows)}")
 
+    # Pair the same shoe across stores. Listings without a style code (about 1,500 shoes) are given a code here, and
+    # Crepdog-style names ("adidas Handball Spezial Night Indigo") are split into model + colour.
+    paired = RUN_DIR / "paired.csv"
+    pair_report = RUN_DIR / "pair_report.json"
+    missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv") if p.exists()]
+    run("Pair shoes", [sys.executable, "scripts/pair_products.py", str(merged), *map(str, missing), str(paired), "--report", str(pair_report)])
+
     clean = RUN_DIR / "clean.csv"
-    run("Clean", [sys.executable, "scripts/clean_price_csv.py", str(merged), str(clean)])
+    run("Clean", [sys.executable, "scripts/clean_price_csv.py", str(paired), str(clean)])
     cleaned = read_rows(clean)
     today_counts = counts(cleaned)
     log(f"ready to import {len(cleaned)} rows: {today_counts}")
@@ -141,6 +149,7 @@ def main():
         log("Dry run: stopping before the save.")
         return 0
 
+    run("Merge duplicate shoes", [sys.executable, "scripts/merge_sneakers.py", str(pair_report)])
     tail = run("Import + record history", [NODE, "--env-file=.env", "dist/scripts/import-prices.js", str(clean), "--save", "--mark-missing"], cwd=api)
     for line in tail[-4:]:
         log("   " + line)

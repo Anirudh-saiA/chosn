@@ -612,7 +612,7 @@ export class CatalogService {
                  COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  st.min_price AS current_price, st.min_price AS best_available_price,
                  ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count,
-                 lower(s.brand) || '|' || lower(btrim(s.model)) AS grp,
+                 lower(s.brand) || '|' || btrim(regexp_replace(lower(s.model), '[^a-z0-9]+', ' ', 'g')) AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
@@ -634,7 +634,7 @@ export class CatalogService {
                          m.size AS "defaultSize", m.best_available_price AS "bestAvailablePrice"
                   FROM matched m WHERE m.grp = p.grp
                   ORDER BY (m.style_code = p.style_code) DESC, m.best_available_price ASC NULLS LAST, m.colorway
-                  LIMIT 12) t) AS colours
+                  LIMIT 60) t) AS colours
         FROM page p
         ORDER BY ${orderBy}
       `),
@@ -822,11 +822,11 @@ export class CatalogService {
    */
   async colours(styleCode: string): Promise<ColourOption[]> {
     const { rows } = await this.db.execute(sql`
-      WITH t AS (SELECT id, lower(brand) AS b, lower(btrim(model)) AS m FROM sneakers WHERE style_code = ${styleCode})
+      WITH t AS (SELECT id, lower(brand) AS b, btrim(regexp_replace(lower(model), '[^a-z0-9]+', ' ', 'g')) AS m FROM sneakers WHERE style_code = ${styleCode})
       SELECT s.style_code, s.colorway, s.primary_image_url, (s.id = t.id) AS is_current,
              bp.size, bp.price, bp.sizes
       FROM sneakers s
-      JOIN t ON lower(s.brand) = t.b AND lower(btrim(s.model)) = t.m
+      JOIN t ON lower(s.brand) = t.b AND btrim(regexp_replace(lower(s.model), '[^a-z0-9]+', ' ', 'g')) = t.m
       LEFT JOIN LATERAL (
         SELECT (array_agg(v.size ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency)))[1] AS size,
                min(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS price,
@@ -838,7 +838,7 @@ export class CatalogService {
       ) bp ON true
       WHERE s.id = t.id OR bp.price IS NOT NULL
       ORDER BY (s.id = t.id) DESC, bp.price ASC NULLS LAST, s.colorway
-      LIMIT 24
+      LIMIT 60
     `);
     type Row = { style_code: string; colorway: string; primary_image_url: string | null; is_current: boolean; size: string | null; price: string | null; sizes: string[] | string | null };
     const out: ColourOption[] = [];
