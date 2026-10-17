@@ -90,7 +90,9 @@ async function main() {
 
     if (save && result.errors.length === 0) {
       console.log('Recomputing Compare summaries…');
-      await app.get(MarketIntelligenceService).refreshAll();
+      // --refresh-store=<slug>: a one-store import only needs that store's shoes recomputed (the daily run does them all).
+      const only = process.argv.find((a) => a.startsWith('--refresh-store='))?.split('=')[1];
+      await app.get(MarketIntelligenceService).refreshAll(only ? { retailerSlug: only } : {});
     }
 
     if (result.errors.length > 0) {

@@ -168,15 +168,18 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
    * run — the same per-source isolation principle as the price-fetch
    * queues, applied here to computation instead of fetching.
    */
-  async refreshAll(): Promise<{ processed: number; failed: number }> {
+  async refreshAll(opts: { retailerSlug?: string } = {}): Promise<{ processed: number; failed: number }> {
     await this.warnOnMissingFxRates();
 
     const { rows: variantRows } = await this.db.execute(sql`
       SELECT DISTINCT v.id
       FROM sneaker_variants v
       JOIN sneakers s ON s.id = v.sneaker_id
-      WHERE EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
-         OR EXISTS (SELECT 1 FROM price_snapshots ps WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true)
+      WHERE ${opts.retailerSlug
+        ? sql`EXISTS (SELECT 1 FROM price_snapshots ps JOIN retailers r ON r.id = ps.retailer_id
+                      WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true AND r.slug = ${opts.retailerSlug})`
+        : sql`EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
+         OR EXISTS (SELECT 1 FROM price_snapshots ps WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true)`}
     `);
 
     let processed = 0;
