@@ -21,7 +21,7 @@ export function PageShell({
   children,
   width = '6xl',
   footer = true,
-  plain = false,
+  plain: _plain = false,
   className = '',
 }: {
   children: ReactNode;
@@ -33,12 +33,6 @@ export function PageShell({
 }) {
   return (
     <div className="page-shell relative">
-      {!plain && (
-        <>
-          <div aria-hidden className="aurora !bottom-auto !h-[85vh] [mask-image:linear-gradient(to_bottom,#000_35%,transparent)]" />
-          <div aria-hidden className="grid-lines !bottom-auto !h-[85vh]" />
-        </>
-      )}
       <div className="relative z-10">
         <Masthead />
         <main id="main" className={`mx-auto px-5 py-10 sm:px-8 lg:py-14 ${WIDTHS[width]} ${className}`}>
