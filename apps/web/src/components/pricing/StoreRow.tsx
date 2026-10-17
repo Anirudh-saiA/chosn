@@ -180,7 +180,7 @@ export function StoreRow({
       </div>
 
       {open && (
-        <div className="grid gap-x-10 gap-y-6 border-t border-text/10 bg-[#F6F2EA]/60 p-4 sm:grid-cols-2 sm:p-5">
+        <div className="grid gap-x-10 gap-y-6 border-t border-text/10 bg-[#F1F7FB]/60 p-4 sm:grid-cols-2 sm:p-5">
           <div>
             <p className={label}>Pay with</p>
             <div className="mt-2.5">

@@ -335,20 +335,20 @@ html.lenis body {
     position: relative;
     isolation: isolate;
     /* Warm off-white for every page except the landing page (which doesn't use PageShell). */
-    --warm-page: #eee4d0;
-    --warm-raised: #f7f0e1;
-    --warm-frame: #e6dac2;
+    --warm-page: #eaf3fa;
+    --warm-raised: #f5fafe;
+    --warm-frame: #dce9f3;
     background-color: var(--warm-page);
   }
   html:has(.page-shell) {
-    background: #eee4d0;
+    background: #eaf3fa;
   }
   /* Anything hard-coded white inside these pages (cards, footer, sticky header) becomes warm. */
   .page-shell .bg-white {
     background-color: var(--warm-raised);
   }
   .page-shell .bg-white\/80 {
-    background-color: rgb(238 228 208 / 0.88);
+    background-color: rgb(234 243 250 / 0.88);
   }
 
   .link-underline {

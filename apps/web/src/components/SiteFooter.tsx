@@ -33,7 +33,7 @@ const COLUMNS = [
  */
 export function SiteFooter() {
   return (
-    <footer className="relative mt-24 overflow-hidden bg-[#e6dac2]">
+    <footer className="relative mt-24 overflow-hidden bg-[#dce9f3]">
       <div className="mx-auto max-w-[90rem] px-5 pb-8 pt-10 sm:px-8">
         <div className="relative flex min-h-[26rem] items-center justify-center">
           {/* outline-only wordmark in the hero's display face, orange; the links sit on top of it */}

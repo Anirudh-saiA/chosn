@@ -149,7 +149,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
           <motion.button
             type="button"
             aria-label="Close search"
-            className="absolute inset-0 cursor-default bg-[#F6F2EA]/70"
+            className="absolute inset-0 cursor-default bg-[#F1F7FB]/70"
             initial={{ backdropFilter: 'blur(0px)' }}
             animate={{ backdropFilter: 'blur(14px)' }}
             exit={{ backdropFilter: 'blur(0px)' }}
@@ -236,7 +236,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
                     transition={{ delay: 0.03 * i, duration: 0.28, ease }}
                     onClick={() => choose(i)}
                     onMouseEnter={() => setActive(i)}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors ${active === i ? 'bg-[#F6F2EA]' : 'hover:bg-text/[0.04]'}`}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors ${active === i ? 'bg-[#F1F7FB]' : 'hover:bg-text/[0.04]'}`}
                   >
                     <span className="relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-text/10">
                       {h.primaryImageUrl ? (
@@ -273,7 +273,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
                   transition={{ delay: 0.03 * hits.length + 0.05 }}
                   onClick={() => choose(hits.length)}
                   onMouseEnter={() => setActive(hits.length)}
-                  className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${active === hits.length ? 'bg-[#F6F2EA]' : 'hover:bg-text/[0.04]'}`}
+                  className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${active === hits.length ? 'bg-[#F1F7FB]' : 'hover:bg-text/[0.04]'}`}
                 >
                   <Search className="h-4 w-4 text-[#0A0A0A]" aria-hidden />
                   <span className="flex-1 truncate text-ui-label font-semibold text-text">See all results for “{term}”</span>

@@ -186,7 +186,7 @@ export function PriceHistory({ styleCode, size }: { styleCode: string; size: num
             ))}
           </ul>
           {points.length < 3 && (
-            <p className="mt-3 rounded-xl bg-[#F6F2EA] px-4 py-3 text-[0.8rem] text-text-soft">
+            <p className="mt-3 rounded-xl bg-[#F1F7FB] px-4 py-3 text-[0.8rem] text-text-soft">
               Only {points.length === 1 ? 'one day' : `${points.length} days`} of real prices so far. The lines fill in as each daily update runs, so trends become readable after a few days.
             </p>
           )}

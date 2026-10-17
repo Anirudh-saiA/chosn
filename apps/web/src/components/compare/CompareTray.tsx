@@ -52,7 +52,7 @@ export function CompareTray() {
         <Link
           href={items.length < 2 ? '/sneakers' : href}
           className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-4 font-mono text-[0.74rem] font-bold uppercase tracking-[0.12em] transition-colors ${
-            items.length < 2 ? 'bg-white/15 text-white/70' : 'bg-white text-[#14213D] hover:bg-[#F6F2EA]'
+            items.length < 2 ? 'bg-white/15 text-white/70' : 'bg-white text-[#14213D] hover:bg-[#F1F7FB]'
           }`}
         >
           {items.length < 2 ? 'Add one more' : `Compare ${items.length}`}
