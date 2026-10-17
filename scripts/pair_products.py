@@ -153,6 +153,8 @@ def main():
     parsed = []
     for r in rows:
         mt, ct, flag, dm, dc = split_name(r)
+        if not ct and r["retailer"] == "Mainstreet Marketplace":
+            ct = ["default"]  # Mainstreet puts the colour inside the title, so the model alone identifies the shoe
         key = (canon_brand(r["brand"]), " ".join(mt), flag, " ".join(ct))
         parsed.append((r, key, dm, dc))
 

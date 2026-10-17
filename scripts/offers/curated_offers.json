@@ -276,5 +276,36 @@
         "seenAt": "2026-10-17"
       }
     ]
+  },
+  "mainstreet-marketplace": {
+    "offers": [
+      {
+        "kind": "info",
+        "text": "Store banner: 100% money-back guarantee by Razorpay",
+        "conditions": "Terms are on the store",
+        "url": "https://marketplace.mainstreet.co.in/",
+        "source": "Mainstreet Marketplace home page",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "info",
+        "text": "Imported to order: listings say \"Ships in 28 days\"; no cancellation once ordered (store credit only if an item becomes unavailable)",
+        "url": "https://marketplace.mainstreet.co.in/policies/refund-policy",
+        "source": "Mainstreet Marketplace policies",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "card",
+        "label": "Payment gateway",
+        "items": [
+          "Razorpay"
+        ],
+        "note": "The store runs its checkout through Razorpay; the methods are shown at checkout.",
+        "source": "Mainstreet Marketplace home page",
+        "seenAt": "2026-10-17"
+      }
+    ]
   }
 }

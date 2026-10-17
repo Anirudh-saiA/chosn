@@ -49,9 +49,20 @@ def fetch_products(base):
         time.sleep(0.5)
 
 
+# Every kind of footwear, not just "sneakers": slides, clogs, sandals, boots, loafers, slippers ... Apparel, bags, caps and
+# accessories are left out (they have no UK shoe sizes). "Flip Straw" / "Flip Top Mug" are drinkware, not flip-flops.
+FOOTWEAR = re.compile(r"sneaker|shoe|footwear|slide|clog|sandal|boot|loafer|slipper|flip[ -]?flop|mule|trainer|runner|croc", re.I)
+NOT_FOOTWEAR = re.compile(r"straw|mug|bottle|care|cleaner|protector|sock|bag|cap\b|hat|lace|cleaner|wipe|insole|shoe ?box|shoe ?tree|keychain|sticker", re.I)
+
+
 def is_sneaker(p):
-    ptype = (p.get("product_type") or "").lower()
-    return "sneaker" in ptype or "footwear" in [t.lower() for t in p.get("tags", [])] and "sneaker" in " ".join(p["tags"]).lower()
+    """Kept the old name: True for any footwear product."""
+    ptype = (p.get("product_type") or "")
+    tags = " ".join(p.get("tags", []))
+    title = p.get("title") or ""
+    if NOT_FOOTWEAR.search(ptype) or NOT_FOOTWEAR.search(title) and not FOOTWEAR.search(ptype):
+        return False
+    return bool(FOOTWEAR.search(ptype) or ("footwear" in tags.lower() and FOOTWEAR.search(tags)))
 
 
 def find_style_code(p):

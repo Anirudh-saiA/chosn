@@ -8,6 +8,7 @@ r"""Daily CHOSN update: scrape the stores, clean the data, import it, record pri
 Steps (each logged to logs/daily-YYYY-MM-DD.log, files kept in data/daily/YYYY-MM-DD/):
   1. Superkicks + Crepdog Crew   scripts/scrape_shopify_prices.py   (public Shopify product data)
   2. VegNonVeg                   scripts/crawl/vegnonveg.mjs        (Crawlee, polite: <= 60 requests/minute)
+  2a. Mainstreet Marketplace     scripts/scrape_mainstreet_prices.py (public collection feed; footwear only)
   2b. Myntra                     scripts/scrape_myntra_prices.py    (listing pages; about 1 request/second, so it is the slow
                                  step: allow 1-2 hours. Prices + each shoe's Myntra rating. --skip-myntra leaves it out)
   3. Pair + merge + clean        scripts/pair_products.py (same shoe across stores by brand + model + colour; listings
@@ -89,6 +90,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="scrape, clean and validate; save nothing")
     ap.add_argument("--only", choices=["shopify", "vegnonveg"], help="scrape just one source")
     ap.add_argument("--force", action="store_true", help="skip the safety check")
+    ap.add_argument("--skip-mainstreet", action="store_true", help="leave Mainstreet Marketplace out")
     ap.add_argument("--skip-myntra", action="store_true", help="leave Myntra out (it is the slowest step)")
     ap.add_argument("--reuse", action="store_true", help="reuse today's already-scraped files instead of scraping again")
     args = ap.parse_args()
@@ -107,6 +109,12 @@ def main():
             run("VegNonVeg", [NODE, "vegnonveg.mjs", "100000", str(vnv_csv), str(RUN_DIR / "none.csv")], cwd=ROOT / "scripts" / "crawl")
 
     myntra_csv = RUN_DIR / "myntra.csv"
+    mainstreet_csv = RUN_DIR / "mainstreet.csv"
+    if not args.reuse and not args.skip_mainstreet and args.only is None:
+        try:
+            run("Mainstreet Marketplace", [sys.executable, "scripts/scrape_mainstreet_prices.py", str(mainstreet_csv)])
+        except RuntimeError as e:  # best effort: the other stores still update
+            log(f"Mainstreet skipped: {e}")
     myntra_ratings = RUN_DIR / "myntra-ratings.json"
     if not args.reuse and not args.skip_myntra and args.only is None:
         try:
@@ -132,7 +140,7 @@ def main():
     paired = RUN_DIR / "paired.csv"
     pair_report = RUN_DIR / "pair_report.json"
     # Myntra publishes no style code at all, so every Myntra listing goes through the pairing step like the no-code ones.
-    missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv", myntra_csv) if p.exists()]
+    missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv", myntra_csv, mainstreet_csv) if p.exists()]
     run("Pair shoes", [sys.executable, "scripts/pair_products.py", str(merged), *map(str, missing), str(paired), "--report", str(pair_report)])
 
     clean = RUN_DIR / "clean.csv"

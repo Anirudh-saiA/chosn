@@ -37,7 +37,12 @@ def main():
             dropped.append(r)
             continue
         r["size"] = m.group(1)
+        if not r["model"].strip():  # a title that is only "{ NAME": the name is the model
+            r["model"], r["colorway"] = r["colorway"].strip(), ""
         r["colorway"] = r["colorway"].strip() or "Default"
+        if not r["model"].strip():
+            dropped.append(r)
+            continue
         key = r["brand"].strip().casefold()
         r["brand"] = BRAND_FIXES.get(key, canonical.get(key, r["brand"].strip()))
         k = (r["retailer"], r["style_code"], r["size"])

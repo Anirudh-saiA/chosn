@@ -7,7 +7,7 @@
 # the PC is back (StartWhenAvailable). Docker Desktop must be running: the job starts it if it is not.
 param([switch]$Remove, [string]$At = '02:00')
 
-$name = 'CHOSN daily update'
+$name = 'CHOSN webscraper daily update'
 if ($Remove) {
   Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue
   Write-Host "Removed '$name'."
@@ -23,12 +23,12 @@ $wrapper = Join-Path $root 'scripts\run-daily.cmd'
 @echo off
 cd /d "$root"
 docker info >nul 2>&1 || (start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" & timeout /t 90 /nobreak >nul & docker compose up -d)
-"$python" scripts\daily_update.py
+"$python" scripts\webscraper\run.py all
 "@ | Set-Content -Path $wrapper -Encoding ASCII
 
 $action   = New-ScheduledTaskAction -Execute $wrapper -WorkingDirectory $root
 $trigger  = New-ScheduledTaskTrigger -Daily -At $At
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 3) -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -Description 'Scrapes Superkicks, Crepdog Crew and VegNonVeg, imports prices and records history.' -Force | Out-Null
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 5) -MultipleInstances IgnoreNew
+Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -Description 'CHOSN webscraper: Superkicks, Crepdog Crew, VegNonVeg, Mainstreet Marketplace and Myntra, then pairing, import and price history.' -Force | Out-Null
 Write-Host "Registered '$name' to run daily at $At. Logs: $root\logs\daily-<date>.log"
 Write-Host "Run it now to test:  Start-ScheduledTask -TaskName '$name'"
