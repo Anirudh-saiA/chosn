@@ -47,3 +47,4 @@ scripts/run-daily.cmd
 # local scraping toolkit environment
 tools/webscraper-venv/
 data/webscraper/
+backups/

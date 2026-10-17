@@ -49,6 +49,11 @@ def style_code(p, sku):
     return sku if CODE.match(sku) and not sku.isdigit() else ""
 
 
+# Mainstreet lists a lot of one-off pairs. A shoe with fewer than this many sizes in stock is not a shoe people can shop
+# for, so it is left out (it would only add noise to browse and search).
+MIN_SIZES_IN_STOCK = 4
+
+
 def rows_for(p):
     brand = normalize_brand((p.get("vendor") or "").strip())
     title = re.sub(r"\s+", " ", p["title"]).strip()
@@ -87,6 +92,9 @@ def main():
                     break
                 for p in batch:
                     if p["id"] in seen or not is_footwear(p):
+                        continue
+                    if sum(1 for v in p["variants"] if v.get("available")) < MIN_SIZES_IN_STOCK:
+                        seen.add(p["id"])
                         continue
                     seen.add(p["id"])
                     got += 1
