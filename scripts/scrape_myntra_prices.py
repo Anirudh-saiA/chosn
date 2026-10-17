@@ -53,7 +53,7 @@ def pdp_sizes(landing):
         return None
     try:
         sizes = json.loads(m.group(1))["pdpData"]["sizes"]
-    except (KeyError, ValueError):
+    except (KeyError, ValueError, TypeError):
         return None
     return {re.sub(r"(?i)^uk", "", str(z["label"])).strip(): bool(z.get("available")) for z in sizes}
 
