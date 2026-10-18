@@ -90,7 +90,7 @@ async function main() {
     }
 
     if (save && result.errors.length === 0) {
-      console.log('Recomputing Compare summariesâ€¦');
+      console.log('Recomputing Compare summaries…');
       // --refresh-store=<slug>: a one-store import only needs that store's shoes recomputed (the daily run does them all).
       const only = process.argv.find((a) => a.startsWith('--refresh-store='))?.split('=')[1];
       // Only sizes that got a snapshot in this run (prices + out-of-stock marks); the hourly refresh covers the rest.

@@ -5,7 +5,7 @@ import {
   type OnModuleDestroy,
   type OnModuleInit,
 } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { Queue, Worker } from 'bullmq';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { marketSummaries } from '../db/schema';
@@ -76,6 +76,8 @@ interface BestOffer {
 }
 
 const REFRESH_QUEUE = 'market-intelligence-refresh';
+/** Variants per set-based refresh statement. */
+const REFRESH_BATCH = 5000;
 
 /**
  * The computation layer behind the Market Intelligence card: turns
@@ -188,26 +190,21 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
          OR EXISTS (SELECT 1 FROM price_snapshots ps WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true)`}
     `);
 
-    // Variants are independent (each refreshOne writes only its own rows), so a few run at once. Kept well under
-    // PG_POOL_MAX (default 20) so the API and queues still get connections during a daily refresh.
+    // Set-based: a few statements per batch of variants instead of ~5 per variant. A failing batch is logged and
+    // skipped, the batch-level version of the old per-variant isolation.
     const ids = (variantRows as { id: string }[]).map((r) => r.id);
-    const concurrency = Math.max(1, Number(process.env.MI_REFRESH_CONCURRENCY || 8));
     let processed = 0;
     let failed = 0;
-    let next = 0;
-    const worker = async () => {
-      while (next < ids.length) {
-        const id = ids[next++]!;
-        try {
-          await this.refreshOne(id);
-          processed += 1;
-        } catch (err) {
-          failed += 1;
-          this.logger.error(`refresh failed for variant ${id}: ${(err as Error).message}`);
-        }
+    for (let i = 0; i < ids.length; i += REFRESH_BATCH) {
+      const batch = ids.slice(i, i + REFRESH_BATCH);
+      try {
+        await this.refreshBatch(batch);
+        processed += batch.length;
+      } catch (err) {
+        failed += batch.length;
+        this.logger.error(`refresh failed for ${batch.length} variants (first ${batch[0]}): ${(err as Error).message}`);
       }
-    };
-    await Promise.all(Array.from({ length: concurrency }, worker));
+    }
 
     this.logger.log(`market intelligence refresh: ${processed} ok, ${failed} failed`);
     await this.refreshCatalogViews();
@@ -222,161 +219,120 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
     this.logger.log('catalog views refreshed');
   }
 
-  private async refreshOne(variantId: string): Promise<void> {
-    const [current, best] = await Promise.all([
-      this.currentPriceNow(variantId),
-      this.bestPriceNow(variantId),
-    ]);
+  /**
+   * Refreshes a batch of variants in set-based SQL. Same rules the per-variant version had:
+   *
+   * - "Best Available" (Day 9 task 2): the cheapest in-stock effective price across retailers, using only each
+   *   retailer's current row (is_latest) and excluding anything older than twice that retailer's own fetch cadence.
+   * - "Current Price" (Day 9 task 1/5): the freshest valid snapshot regardless of stock, so a variant out of stock
+   *   everywhere still shows what it costs. Deliberately not the same as best_available_price.
+   * - Today's best goes into daily_best_prices; no row when nothing is in stock and fresh (a day with no valid offer
+   *   is absent from the average, not counted as free).
+   * - Trend is a fraction classified against SIGNAL_THRESHOLDS, stored as percentage points in numeric(6,2).
+   */
+  private async refreshBatch(variantIds: string[]): Promise<void> {
+    const idList = sql`SELECT unnest(ARRAY[${sql.join(variantIds.map((v) => sql`${v}`), sql`, `)}]::uuid[]) AS id`;
+    const offers = (inStockOnly: boolean) => sql`
+      SELECT ps.sneaker_variant_id, ps.retailer_id, r.slug AS retailer_slug, ps.fetched_at,
+             effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price_inr
+      FROM price_snapshots ps
+      JOIN ids ON ids.id = ps.sneaker_variant_id
+      JOIN retailers r ON r.id = ps.retailer_id
+      WHERE ps.is_latest = true
+        ${inStockOnly ? sql`AND ps.in_stock = true` : sql``}
+        AND ps.fetched_at > now() - (r.fetch_frequency_minutes * 2 || ' minutes')::interval
+        AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
+    `;
 
-    if (best) {
-      await this.db.execute(sql`
+    await this.db.transaction(async (tx) => {
+      await tx.execute(sql`
+        WITH ids AS (${idList}),
+        best AS (
+          SELECT DISTINCT ON (sneaker_variant_id) sneaker_variant_id, retailer_id, price_inr
+          FROM (${offers(true)}) o
+          ORDER BY sneaker_variant_id, price_inr ASC, retailer_id
+        )
         INSERT INTO daily_best_prices (sneaker_variant_id, day, best_price_inr, best_retailer_id, computed_at)
-        VALUES (${variantId}, CURRENT_DATE, ${best.priceInr}, ${best.retailerId}, now())
+        SELECT sneaker_variant_id, CURRENT_DATE, price_inr, retailer_id, now() FROM best
         ON CONFLICT (sneaker_variant_id, day) DO UPDATE SET
           best_price_inr   = EXCLUDED.best_price_inr,
           best_retailer_id = EXCLUDED.best_retailer_id,
           computed_at       = EXCLUDED.computed_at
       `);
-    }
-    // No row written when nothing is in stock and fresh today — a day
-    // with no valid offer is absent from the average, not counted as
-    // free or interpolated from stale data.
 
-    const { rows } = await this.db.execute(sql`
-      SELECT
-        AVG(best_price_inr) FILTER (WHERE day > CURRENT_DATE - INTERVAL '30 days')  AS avg_30d,
-        COUNT(*)            FILTER (WHERE day > CURRENT_DATE - INTERVAL '30 days')  AS days_30d,
-        AVG(best_price_inr) FILTER (WHERE day > CURRENT_DATE - INTERVAL '90 days')  AS avg_90d,
-        COUNT(*)            FILTER (WHERE day > CURRENT_DATE - INTERVAL '90 days')  AS days_90d
-      FROM daily_best_prices
-      WHERE sneaker_variant_id = ${variantId}
-    `);
-    const agg = rows[0] as {
-      avg_30d: string | null;
-      days_30d: string;
-      avg_90d: string | null;
-      days_90d: string;
-    };
+      await tx.execute(sql`
+        WITH ids AS (${idList}),
+        best AS (
+          SELECT DISTINCT ON (sneaker_variant_id) sneaker_variant_id, retailer_id, retailer_slug, price_inr
+          FROM (${offers(true)}) o
+          ORDER BY sneaker_variant_id, price_inr ASC, retailer_id
+        ),
+        cur AS (
+          SELECT DISTINCT ON (sneaker_variant_id) sneaker_variant_id, retailer_id, retailer_slug, price_inr
+          FROM (${offers(false)}) o
+          ORDER BY sneaker_variant_id, fetched_at DESC, retailer_id
+        ),
+        agg AS (
+          SELECT d.sneaker_variant_id,
+            AVG(best_price_inr) FILTER (WHERE day > CURRENT_DATE - INTERVAL '30 days')  AS avg_30d,
+            COUNT(*)            FILTER (WHERE day > CURRENT_DATE - INTERVAL '30 days')  AS days_30d,
+            AVG(best_price_inr) FILTER (WHERE day > CURRENT_DATE - INTERVAL '90 days')  AS avg_90d,
+            COUNT(*)            FILTER (WHERE day > CURRENT_DATE - INTERVAL '90 days')  AS days_90d
+          FROM daily_best_prices d JOIN ids ON ids.id = d.sneaker_variant_id
+          GROUP BY d.sneaker_variant_id
+        ),
+        calc AS (
+          SELECT ids.id,
+            cur.price_inr AS cur_price, cur.retailer_id AS cur_retailer_id, cur.retailer_slug AS cur_retailer_slug,
+            best.price_inr AS best_price, best.retailer_id AS best_retailer_id, best.retailer_slug AS best_retailer_slug,
+            agg.avg_30d, agg.avg_90d,
+            COALESCE(agg.days_30d, 0) AS days_30d, COALESCE(agg.days_90d, 0) AS days_90d,
+            COALESCE(agg.days_30d, 0) >= ${MIN_DAYS_FOR_SIGNAL} AS sufficient,
+            CASE WHEN COALESCE(agg.days_30d, 0) >= ${MIN_DAYS_FOR_SIGNAL} AND NULLIF(agg.avg_30d, 0) IS NOT NULL
+                      AND best.price_inr IS NOT NULL
+                 THEN (best.price_inr - agg.avg_30d) / agg.avg_30d END AS frac
+          FROM ids
+          LEFT JOIN cur ON cur.sneaker_variant_id = ids.id
+          LEFT JOIN best ON best.sneaker_variant_id = ids.id
+          LEFT JOIN agg ON agg.sneaker_variant_id = ids.id
+        )
+        INSERT INTO market_summaries (
+          sneaker_variant_id, current_price, current_retailer_id, current_retailer_slug,
+          best_available_price, best_retailer_id, best_retailer_slug,
+          avg_30d, avg_90d, trend_pct, signal,
+          days_history_30d, days_history_90d, sufficient_data, currency, computed_at
+        )
+        SELECT id, cur_price, cur_retailer_id, cur_retailer_slug,
+               best_price, best_retailer_id, best_retailer_slug,
+               avg_30d, avg_90d, frac * 100,
+               CASE WHEN NOT sufficient OR frac IS NULL THEN 'insufficient_data'
+                    WHEN frac <= ${SIGNAL_THRESHOLDS.buyAtOrBelow} THEN 'good_time_to_buy'
+                    WHEN frac >= ${SIGNAL_THRESHOLDS.waitAtOrAbove} THEN 'consider_waiting'
+                    ELSE 'neutral' END,
+               days_30d, days_90d, sufficient, 'INR', now()
+        FROM calc
+        ON CONFLICT (sneaker_variant_id) DO UPDATE SET
+          current_price          = EXCLUDED.current_price,
+          current_retailer_id    = EXCLUDED.current_retailer_id,
+          current_retailer_slug  = EXCLUDED.current_retailer_slug,
+          best_available_price   = EXCLUDED.best_available_price,
+          best_retailer_id       = EXCLUDED.best_retailer_id,
+          best_retailer_slug     = EXCLUDED.best_retailer_slug,
+          avg_30d                = EXCLUDED.avg_30d,
+          avg_90d                = EXCLUDED.avg_90d,
+          trend_pct               = EXCLUDED.trend_pct,
+          signal                  = EXCLUDED.signal,
+          days_history_30d       = EXCLUDED.days_history_30d,
+          days_history_90d       = EXCLUDED.days_history_90d,
+          sufficient_data         = EXCLUDED.sufficient_data,
+          currency                = EXCLUDED.currency,
+          computed_at             = EXCLUDED.computed_at
+      `);
+    });
 
-    const avg30 = agg.avg_30d !== null ? Number(agg.avg_30d) : null;
-    const avg90 = agg.avg_90d !== null ? Number(agg.avg_90d) : null;
-    const days30 = Number(agg.days_30d);
-    const days90 = Number(agg.days_90d);
-    const sufficientData = days30 >= MIN_DAYS_FOR_SIGNAL;
-
-    // A fraction first (-0.0523), classified against the ±5% thresholds
-    // as fractions — then converted to percentage points (-5.23) only
-    // for storage/display, since numeric(6,2) needs the value already
-    // scaled to keep two meaningful decimal places. Storing the raw
-    // fraction at scale 2 would round -0.0523 to -0.05, losing exactly
-    // the precision the threshold comparison needs.
-    const trendFraction =
-      sufficientData && avg30 && best ? (Number(best.priceInr) - avg30) / avg30 : null;
-    const trendPct = trendFraction !== null ? trendFraction * 100 : null;
-
-    const signal: Signal = !sufficientData
-      ? 'insufficient_data'
-      : trendFraction === null
-        ? 'insufficient_data'
-        : trendFraction <= SIGNAL_THRESHOLDS.buyAtOrBelow
-          ? 'good_time_to_buy'
-          : trendFraction >= SIGNAL_THRESHOLDS.waitAtOrAbove
-            ? 'consider_waiting'
-            : 'neutral';
-
-    await this.db.execute(sql`
-      INSERT INTO market_summaries (
-        sneaker_variant_id, current_price, current_retailer_id, current_retailer_slug,
-        best_available_price, best_retailer_id, best_retailer_slug,
-        avg_30d, avg_90d, trend_pct, signal,
-        days_history_30d, days_history_90d, sufficient_data, currency, computed_at
-      ) VALUES (
-        ${variantId}, ${current?.priceInr ?? null}, ${current?.retailerId ?? null}, ${current?.retailerSlug ?? null},
-        ${best?.priceInr ?? null}, ${best?.retailerId ?? null}, ${best?.retailerSlug ?? null},
-        ${avg30}, ${avg90}, ${trendPct}, ${signal},
-        ${days30}, ${days90}, ${sufficientData}, 'INR', now()
-      )
-      ON CONFLICT (sneaker_variant_id) DO UPDATE SET
-        current_price          = EXCLUDED.current_price,
-        current_retailer_id    = EXCLUDED.current_retailer_id,
-        current_retailer_slug  = EXCLUDED.current_retailer_slug,
-        best_available_price   = EXCLUDED.best_available_price,
-        best_retailer_id       = EXCLUDED.best_retailer_id,
-        best_retailer_slug     = EXCLUDED.best_retailer_slug,
-        avg_30d                = EXCLUDED.avg_30d,
-        avg_90d                = EXCLUDED.avg_90d,
-        trend_pct               = EXCLUDED.trend_pct,
-        signal                  = EXCLUDED.signal,
-        days_history_30d       = EXCLUDED.days_history_30d,
-        days_history_90d       = EXCLUDED.days_history_90d,
-        sufficient_data         = EXCLUDED.sufficient_data,
-        currency                = EXCLUDED.currency,
-        computed_at             = EXCLUDED.computed_at
-    `);
-
-    // Write-through: the next request for this variant should find it
-    // already warm rather than being the one paying for the Postgres
-    // read. get() re-reads to pick up exactly what was just committed
-    // rather than reassembling the row by hand here.
-    const fresh = await this.get(variantId);
-    if (fresh) await this.cache.set(variantId, fresh);
-  }
-
-  /**
-   * "Best Available" (Day 9 task 2): the cheapest in-stock effective
-   * price across retailers, using only each retailer's current row
-   * (is_latest = true — the flag price-snapshot.service.ts flips
-   * transactionally on every write) and excluding anything older than
-   * twice that retailer's own fetch cadence, so a source that has gone
-   * quiet doesn't keep contributing a stale "best" price forever.
-   */
-  private async bestPriceNow(variantId: string): Promise<BestOffer | null> {
-    const { rows } = await this.db.execute(sql`
-      SELECT ps.retailer_id, r.slug AS retailer_slug,
-             effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price_inr
-      FROM price_snapshots ps
-      JOIN retailers r ON r.id = ps.retailer_id
-      WHERE ps.sneaker_variant_id = ${variantId}
-        AND ps.is_latest = true
-        AND ps.in_stock = true
-        AND ps.fetched_at > now() - (r.fetch_frequency_minutes * 2 || ' minutes')::interval
-        AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
-      ORDER BY price_inr ASC
-      LIMIT 1
-    `);
-    const row = rows[0] as
-      | { retailer_id: string; retailer_slug: string; price_inr: string }
-      | undefined;
-    return row ? { priceInr: row.price_inr, retailerId: row.retailer_id, retailerSlug: row.retailer_slug } : null;
-  }
-
-  /**
-   * "Current Price" (Day 9 task 1/5) — ASSUMPTION, flagged alongside the
-   * signal thresholds: deliberately NOT the same as best_available_price.
-   * This is the freshest valid snapshot regardless of stock status, so a
-   * variant that's temporarily out of stock everywhere still shows "what
-   * this costs" instead of going blank, while best_available_price stays
-   * strictly the cheapest in-stock offer right now. They usually match;
-   * when they don't, current_price answers "what's the going rate" and
-   * best_available_price answers "where would I actually buy it."
-   */
-  private async currentPriceNow(variantId: string): Promise<BestOffer | null> {
-    const { rows } = await this.db.execute(sql`
-      SELECT ps.retailer_id, r.slug AS retailer_slug,
-             effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price_inr
-      FROM price_snapshots ps
-      JOIN retailers r ON r.id = ps.retailer_id
-      WHERE ps.sneaker_variant_id = ${variantId}
-        AND ps.is_latest = true
-        AND ps.fetched_at > now() - (r.fetch_frequency_minutes * 2 || ' minutes')::interval
-        AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
-      ORDER BY ps.fetched_at DESC
-      LIMIT 1
-    `);
-    const row = rows[0] as
-      | { retailer_id: string; retailer_slug: string; price_inr: string }
-      | undefined;
-    return row ? { priceInr: row.price_inr, retailerId: row.retailer_id, retailerSlug: row.retailer_slug } : null;
+    // Write-through, as before: re-read what was committed so the cache holds exactly the stored rows.
+    const fresh = await this.db.select().from(marketSummaries).where(inArray(marketSummaries.sneakerVariantId, variantIds));
+    await this.cache.setMany(fresh.map((row) => this.toSummary(row)));
   }
 
   /**
