@@ -50,6 +50,18 @@ NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 NODE = "node"
 
 
+SUMMARY_FILE = ROOT / "data" / "daily" / "last_run_summary.json"
+_summary = {}
+
+
+def write_summary(**kw):
+    """Machine-readable result of the run, for the n8n workflow (and anyone else who wants to know how it went)."""
+    _summary.update(kw)
+    _summary["updated_at"] = datetime.datetime.now().isoformat(timespec="seconds")
+    SUMMARY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY_FILE.write_text(json.dumps(_summary, indent=2), encoding="utf-8")
+
+
 def log(msg):
     line = f"[{datetime.datetime.now():%H:%M:%S}] {msg}"
     print(line, flush=True)
@@ -110,6 +122,9 @@ def main():
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     log(f"CHOSN daily update {TODAY} (dry-run={args.dry_run}, only={args.only}, force={args.force})")
     started = time.time()
+    mode = "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
+    _summary.clear()
+    write_summary(status="running", mode=mode, dry_run=args.dry_run, started_at=datetime.datetime.now().isoformat(timespec="seconds"))
 
     shopify_csv = RUN_DIR / "shopify.csv"
     vnv_csv = RUN_DIR / "vegnonveg.csv"
@@ -165,6 +180,7 @@ def main():
 
         with ThreadPoolExecutor(max_workers=len(selected)) as pool:
             results = list(pool.map(scrape, selected))
+        write_summary(scrape=[{"store": n, "minutes": round(t / 60, 1), "error": err} for n, err, t in results], not_scraped=sorted(skipped))
         log("scrape timings: " + ", ".join(f"{n} {t / 60:.1f} min{' (FAILED)' if err else ''}" for n, err, t in results))
         for n, err, _ in results:
             if err:
@@ -196,6 +212,7 @@ def main():
     cleaned = read_rows(clean)
     today_counts = counts(cleaned)
     log(f"ready to import {len(cleaned)} rows: {today_counts}")
+    write_summary(rows=today_counts)
 
     # Safety check against the previous successful run.
     last = json.loads(STATE.read_text()) if STATE.exists() else {}
@@ -208,6 +225,7 @@ def main():
         for p in problems:
             log("   - " + p)
         log("Nothing was imported. Look at the scrape, or re-run with --force if the drop is real.")
+        write_summary(status="safety_stopped", problems=problems, minutes=round((time.time() - started) / 60, 1))
         return 2
 
     api = ROOT / "apps" / "api"
@@ -215,6 +233,7 @@ def main():
     run("Validate import (nothing saved)", [NODE, "--env-file=.env", "dist/scripts/import-prices.js", str(clean)], cwd=api)
     if args.dry_run:
         log("Dry run: stopping before the save.")
+        write_summary(status="ok", dry_run=True, minutes=round((time.time() - started) / 60, 1))
         return 0
 
     run("Merge duplicate shoes", [sys.executable, "scripts/merge_sneakers.py", str(pair_report)])
@@ -240,6 +259,7 @@ def main():
     merged_state = {**last, **today_counts} if (args.only or skipped) else today_counts
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")
+    write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))
     return 0
 
 
@@ -264,6 +284,7 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception as e:  # noqa: BLE001
         log(f"FAILED: {e}")
+        write_summary(status="failed", error=str(e)[:500])
         sys.exit(1)
     finally:
         LOCK.unlink(missing_ok=True)

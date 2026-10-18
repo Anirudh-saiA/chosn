@@ -48,3 +48,6 @@ scripts/run-daily.cmd
 tools/webscraper-venv/
 data/webscraper/
 backups/
+
+# n8n workflow with the control token and email key inside
+automation/n8n/*.generated.json
