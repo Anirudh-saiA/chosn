@@ -121,6 +121,26 @@ export function PriceHistory({ styleCode, size }: { styleCode: string; size: num
         <div className="skeleton h-[300px] rounded-2xl" aria-label="Loading price history" />
       ) : points.length === 0 ? (
         <p className="py-10 text-center text-[0.9rem] text-text-soft">No prices recorded for this size yet. The chart starts as soon as the first daily update runs.</p>
+      ) : points.length === 1 ? (
+        <div className="space-y-3 py-2" aria-label="Price today at each store">
+          {(() => {
+            const day = points[0]!;
+            const rows = [...day.stores].sort((a, b) => a.price - b.price);
+            const top = Math.max(...rows.map((r) => r.price));
+            return rows.map((r) => (
+              <div key={r.slug} className="grid grid-cols-[8.5rem_1fr_5.5rem] items-center gap-3 text-[0.85rem]">
+                <span className="truncate text-text-soft">{r.name}</span>
+                <span className="h-2.5 overflow-hidden rounded-full bg-text/10">
+                  <span className="block h-full rounded-full" style={{ width: `${Math.max(8, (r.price / top) * 100)}%`, background: r.price === day.bestPrice ? '#0A0A0A' : '#D97E00' }} />
+                </span>
+                <span className={`text-right font-mono tabular-nums ${r.price === day.bestPrice ? 'font-bold text-text' : 'text-text-soft'}`}>{formatInr(r.price)}</span>
+              </div>
+            ));
+          })()}
+          <p className="rounded-xl bg-[#F1F7FB] px-4 py-3 text-[0.8rem] text-text-soft">
+            Price history starts {label(points[0]!.day)} for this size. Today&apos;s price at each store is shown above; the trend line appears after the next daily updates.
+          </p>
+        </div>
       ) : (
         <>
           <div className="relative">
