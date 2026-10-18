@@ -89,7 +89,9 @@ export function PriceHistory({ styleCode, size }: { styleCode: string; size: num
           </h2>
           <p className="mt-1.5 text-[0.85rem] text-text-soft">
             {history && history.since
-              ? `Recorded once a day since ${label(history.since)} · ${points.length} ${points.length === 1 ? 'day' : 'days'} so far`
+              ? points.length === 1
+                ? `Tracking started ${label(history.since)}. One price so far, so the line appears from tomorrow.`
+                : `Recorded once a day since ${label(history.since)} · ${points.length} days so far`
               : 'Prices are recorded once a day.'}
             {change !== null && change !== 0 && (
               <span className={`ml-2 font-mono font-semibold ${change < 0 ? 'text-[#2E7D4F]' : 'text-[#B4452A]'}`}>
