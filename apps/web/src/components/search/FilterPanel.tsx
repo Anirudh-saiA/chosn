@@ -207,7 +207,8 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
         {[
           { v: '', label: 'Any number of stores' },
           { v: '2', label: 'At 2 or more stores' },
-          { v: '3', label: 'At all 3 stores' },
+          { v: '3', label: 'At 3 or more stores' },
+          { v: '4', label: 'At 4 or more stores' },
         ].map((o) => (
           <label key={o.v} className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
             <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#14213D]" />

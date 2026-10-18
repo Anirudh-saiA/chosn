@@ -6,7 +6,7 @@ import { Marquee } from '@/components/fx/Marquee';
 import { Reveal } from '@/components/fx/Reveal';
 
 /** The retailers CHOSN reads prices from (mirrors SourcesStrip). */
-const RETAILERS = ['Flipkart', 'Myntra', 'Ajio', 'END. Clothing', 'Superkicks', 'VegNonVeg'];
+const RETAILERS = ['Superkicks', 'Crepdog Crew', 'VegNonVeg', 'Mainstreet Marketplace', 'Myntra', 'Limited Edt', 'Puma India'];
 
 const hand = 'font-[family-name:var(--font-hand)] font-bold';
 
