@@ -2,6 +2,7 @@ r"""Daily CHOSN update: scrape the stores, clean the data, import it, record pri
 
     python scripts/daily_update.py                 # full run
     python scripts/daily_update.py --dry-run       # scrape + clean + validate, save nothing
+    python scripts/daily_update.py --quick         # the fast stores only (leaves out VegNonVeg, Myntra and Puma)
     python scripts/daily_update.py --only shopify  # Superkicks + Crepdog Crew only (about 5 minutes)
     python scripts/daily_update.py --force         # import even if a store returned far fewer rows than last time
 
@@ -32,6 +33,7 @@ import pathlib
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TODAY = datetime.date.today().isoformat()
@@ -94,8 +96,9 @@ def counts(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="scrape, clean and validate; save nothing")
-    ap.add_argument("--only", choices=["shopify", "vegnonveg"], help="scrape just one source")
+    ap.add_argument("--only", choices=["shopify", "vegnonveg", "mainstreet", "limitededt", "gullylabs", "puma", "myntra"], help="scrape just one source")
     ap.add_argument("--force", action="store_true", help="skip the safety check")
+    ap.add_argument("--quick", action="store_true", help="the fast stores only: leaves out VegNonVeg, Myntra and Puma (each takes over an hour)")
     ap.add_argument("--skip-gullylabs", action="store_true", help="leave Gully Labs out")
     ap.add_argument("--skip-puma", action="store_true", help="leave Puma India out (about 1.5 h)")
     ap.add_argument("--skip-limitededt", action="store_true", help="leave Limited Edt out")
@@ -110,50 +113,61 @@ def main():
 
     shopify_csv = RUN_DIR / "shopify.csv"
     vnv_csv = RUN_DIR / "vegnonveg.csv"
-    if not args.reuse:
-        if args.only in (None, "shopify"):
-            run("Superkicks + Crepdog Crew", [sys.executable, "scripts/scrape_shopify_prices.py", str(shopify_csv)])
-        if args.only in (None, "vegnonveg"):
-            # 4th arg points at a file that does not exist, so nothing is skipped as "already scraped".
-            run("VegNonVeg", [NODE, "vegnonveg.mjs", "100000", str(vnv_csv), str(RUN_DIR / "none.csv")], cwd=ROOT / "scripts" / "crawl")
-
     myntra_csv = RUN_DIR / "myntra.csv"
     limitededt_csv = RUN_DIR / "limitededt.csv"
     gully_csv = RUN_DIR / "gullylabs.csv"
-    if not args.reuse and not args.skip_gullylabs and args.only is None:
-        try:
-            run("Gully Labs", [sys.executable, "scripts/scrape_gullylabs_prices.py", str(gully_csv)])
-        except RuntimeError as e:  # best effort: the other stores still update
-            log(f"Gully Labs skipped: {e}")
     puma_csv = RUN_DIR / "puma.csv"
-    if not args.reuse and not args.skip_puma and args.only is None:
-        try:
-            run("Puma India", [WEBSCRAPER_PY, "scripts/scrape_puma_prices.py", str(puma_csv)])
-        except RuntimeError as e:  # best effort: the other stores still update
-            log(f"Puma India skipped: {e}")
-    if not args.reuse and not args.skip_limitededt and args.only is None:
-        try:
-            run("Limited Edt", [sys.executable, "scripts/scrape_limitededt_prices.py", str(limitededt_csv)])
-        except RuntimeError as e:  # best effort: the other stores still update
-            log(f"Limited Edt skipped: {e}")
     mainstreet_csv = RUN_DIR / "mainstreet.csv"
-    if not args.reuse and not args.skip_mainstreet and args.only is None:
-        try:
-            run("Mainstreet Marketplace", [sys.executable, "scripts/scrape_mainstreet_prices.py", str(mainstreet_csv)])
-        except RuntimeError as e:  # best effort: the other stores still update
-            log(f"Mainstreet skipped: {e}")
     myntra_ratings = RUN_DIR / "myntra-ratings.json"
-    if not args.reuse and not args.skip_myntra and args.only is None:
-        try:
-            run("Myntra", [sys.executable, "scripts/scrape_myntra_prices.py", str(myntra_csv)])
-        except RuntimeError as e:  # best effort: the other stores still update
-            log(f"Myntra skipped: {e}")
+
+    # Every store is a different website, so they are read at the same time: the run takes as long as the slowest store
+    # (Myntra, about 1.5 h) instead of the sum of all of them. Each store still paces itself politely (1.5 s between
+    # requests to its own site). A store that fails is skipped; the others still update.
+    # (key, label, command, working dir, slow?)
+    scrapers = [
+        ("shopify", "Superkicks + Crepdog Crew", [sys.executable, "scripts/scrape_shopify_prices.py", str(shopify_csv)], ROOT, False),
+        # 4th arg points at a file that does not exist, so nothing is skipped as "already scraped".
+        ("vegnonveg", "VegNonVeg", [NODE, "vegnonveg.mjs", "100000", str(vnv_csv), str(RUN_DIR / "none.csv")], ROOT / "scripts" / "crawl", True),
+        ("mainstreet", "Mainstreet Marketplace", [sys.executable, "scripts/scrape_mainstreet_prices.py", str(mainstreet_csv)], ROOT, False),
+        ("limitededt", "Limited Edt", [sys.executable, "scripts/scrape_limitededt_prices.py", str(limitededt_csv)], ROOT, False),
+        ("gullylabs", "Gully Labs", [sys.executable, "scripts/scrape_gullylabs_prices.py", str(gully_csv)], ROOT, False),
+        ("puma", "Puma India", [WEBSCRAPER_PY, "scripts/scrape_puma_prices.py", str(puma_csv)], ROOT, True),
+        ("myntra", "Myntra", [sys.executable, "scripts/scrape_myntra_prices.py", str(myntra_csv)], ROOT, True),
+    ]
+    skipped = set()
+    selected = []
+    for key, label, cmd, cwd, slow in scrapers:
+        if args.only is not None and key != args.only:
+            continue
+        if getattr(args, f"skip_{key}", False) or (args.quick and slow):
+            skipped.add(label)
+            continue
+        selected.append((key, label, cmd, cwd))
+    if skipped:
+        log(f"not scraped this run: {', '.join(sorted(skipped))}")
+
+    if not args.reuse and selected:
+        def scrape(item):
+            key, label, cmd, cwd = item
+            t0 = time.time()
+            try:
+                run(label, cmd, cwd=cwd)
+                return label, None, time.time() - t0
+            except RuntimeError as e:  # best effort: the other stores still update
+                return label, str(e), time.time() - t0
+
+        with ThreadPoolExecutor(max_workers=len(selected)) as pool:
+            results = list(pool.map(scrape, selected))
+        log("scrape timings: " + ", ".join(f"{n} {t / 60:.1f} min{' (FAILED)' if err else ''}" for n, err, t in results))
+        for n, err, _ in results:
+            if err:
+                log(f"{n} skipped: {err}")
 
     rows = []
     for path in (shopify_csv, vnv_csv):
         if path.exists():
             rows += [{c: r.get(c, "") for c in COLUMNS} for r in read_rows(path)]
-    if not rows:
+    if not rows and not any(p.exists() for p in (myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv)):
         raise RuntimeError("nothing was scraped")
     merged = RUN_DIR / "merged.csv"
     with open(merged, "w", newline="", encoding="utf-8") as f:
@@ -180,7 +194,7 @@ def main():
     last = json.loads(STATE.read_text()) if STATE.exists() else {}
     problems = [f"{s}: {n} rows vs {last[s]} last time" for s, n in today_counts.items() if s in last and n < MIN_RATIO * last[s]]
     for s in last:
-        if args.only is None and s not in today_counts:
+        if args.only is None and s not in today_counts and s not in skipped:
             problems.append(f"{s}: no rows at all (had {last[s]})")
     if problems and not args.force:
         log("SAFETY CHECK STOPPED THE IMPORT (a store returned far fewer rows than last time):")
@@ -216,15 +230,33 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
-    merged_state = {**last, **today_counts} if args.only else today_counts
+    merged_state = {**last, **today_counts} if (args.only or skipped) else today_counts
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")
     return 0
 
 
+LOCK = ROOT / "data" / "daily" / "run.lock"
+LOCK_MAX_AGE = 8 * 3600  # a lock older than this is left over from a crashed run
+
+
+def take_lock():
+    """One update at a time: the daily and the weekly task must not run together."""
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    if LOCK.exists() and time.time() - LOCK.stat().st_mtime < LOCK_MAX_AGE:
+        return False
+    LOCK.write_text(str(time.time()))
+    return True
+
+
 if __name__ == "__main__":
+    if not take_lock():
+        log("another update is already running (data/daily/run.lock): nothing to do")
+        sys.exit(0)
     try:
         sys.exit(main())
     except Exception as e:  # noqa: BLE001
         log(f"FAILED: {e}")
         sys.exit(1)
+    finally:
+        LOCK.unlink(missing_ok=True)

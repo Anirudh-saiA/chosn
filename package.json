@@ -12,6 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "scrape": "python scripts/webscraper/run.py all",
+    "scrape:fast": "python scripts/webscraper/run.py all --quick",
     "scrape:tools": "python scripts/webscraper/run.py tools"
   },
   "devDependencies": {

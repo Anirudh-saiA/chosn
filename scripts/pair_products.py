@@ -101,12 +101,18 @@ def main():
     missing_paths = args[1:-1]
 
     rows = list(csv.DictReader(open(merged_path, encoding="utf-8")))
-    cols = list(rows[0].keys())
+    # The main file is empty on a quick run that scraped only the stores listed as extra files, so the columns come
+    # from whichever file has rows.
+    cols = list(rows[0].keys()) if rows else None
     for p in missing_paths:
         extra = list(csv.DictReader(open(p, encoding="utf-8")))
         for r in extra:
             r.setdefault("delivery_time", "")
             rows.append(r)
+        if cols is None and extra:
+            cols = list(extra[0].keys())
+    if not rows:
+        raise SystemExit("nothing to pair: every input file is empty")
     for c in ("delivery_time",):
         if c not in cols and any(c in r for r in rows):
             cols.append(c)

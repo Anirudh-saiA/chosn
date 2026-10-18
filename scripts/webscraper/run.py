@@ -7,7 +7,7 @@ r"""CHOSN web scraper: one command for every scraping job, with tool fallback.
     python scripts/webscraper/run.py jobs                   list the jobs
     python scripts/webscraper/run.py job <name> [...]       run one job (shopify | vegnonveg | myntra | mainstreet | limitededt | puma | gullylabs)
     python scripts/webscraper/run.py all [--skip-myntra]    the whole daily update: scrape every store, pair, import, offers
-                                                            (also --skip-mainstreet, --reuse, --dry-run)
+                                                            (also --quick = fast stores only, --skip-<store>, --reuse, --dry-run)
 
 Fallback: tools are tried in order http -> crawl4ai -> scrapling -> firecrawl -> browser-use. A tool that hits its own limit
 (quota, credits, no key, crash) is paused for 6 hours and the next one takes over. A SITE that refuses us (403 / 429 /

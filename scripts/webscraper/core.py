@@ -115,9 +115,14 @@ def allowed(url):
     return robots_for(url).can_fetch(USER_AGENT, url) or robots_for(url).can_fetch("*", url)
 
 
+# Sites that answered HTTP 429 at the default pace get a longer pause between requests (seen 18 Oct 2026, after full
+# product-feed reads of 100+ large pages). The 429 handling still stops a site that keeps saying no.
+DOMAIN_DELAY = {"marketplace.mainstreet.co.in": 4.0, "www.superkicks.in": 3.0}
+
+
 def pace(url):
     dom = domain_of(url)
-    delay = max(MIN_DELAY, float(robots_for(url).crawl_delay(USER_AGENT) or robots_for(url).crawl_delay("*") or 0))
+    delay = max(MIN_DELAY, DOMAIN_DELAY.get(dom, 0), float(robots_for(url).crawl_delay(USER_AGENT) or robots_for(url).crawl_delay("*") or 0))
     wait = _last_hit.get(dom, 0) + delay - time.time()
     if wait > 0:
         time.sleep(wait)

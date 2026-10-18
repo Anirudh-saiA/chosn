@@ -9,6 +9,7 @@ import json
 import re
 import sys
 import time
+import os
 import urllib.request
 
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping",
@@ -28,14 +29,17 @@ CODE_RES = [
 ]
 
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "webscraper"))
+import core  # noqa: E402  (robots.txt, identified User-Agent, pacing, and a stop when a site says no)
+
+
 def get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    for attempt in range(3):
-        try:
-            return json.loads(urllib.request.urlopen(req, timeout=40).read().decode("utf-8"))
-        except Exception:
-            time.sleep(2 * (attempt + 1))
-    return None
+    """Public product feed through the shared polite fetcher. A site that says no (HTTP 429/403) raises SiteBlocked, which
+    stops that store instead of being mistaken for "no products"."""
+    try:
+        return core.polite_get(url, as_json=True)
+    except OSError:
+        return None
 
 
 def fetch_products(base):
@@ -46,7 +50,6 @@ def fetch_products(base):
             return out
         out += data["products"]
         page += 1
-        time.sleep(0.5)
 
 
 # Every kind of footwear, not just "sneakers": slides, clogs, sandals, boots, loafers, slippers ... Apparel, bags, caps and
@@ -129,10 +132,17 @@ def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "scraped-prices.csv"
     rows = []
     for store in STORES:
-        prods = [p for p in fetch_products(store["base"]) if is_sneaker(p)]
+        try:
+            prods = [p for p in fetch_products(store["base"]) if is_sneaker(p)]
+        except core.SiteBlocked as e:  # keep nothing from this store rather than a half-read list
+            print(f"{store['retailer']}: SKIPPED, {e}. The pause lasts 24 h (python scripts/webscraper/run.py status).")
+            continue
         print(f"{store['retailer']}: {len(prods)} sneaker products")
         for p in prods:
             rows += rows_for(p, store)
+    if not rows:
+        print("nothing was read from any store")
+        sys.exit(3)
     ok = [r for r in rows if r["style_code"]]
     missing = [r for r in rows if not r["style_code"]]
     for path, data in ((out_path, ok), (out_path.replace(".csv", "-missing-style-code.csv"), missing)):
