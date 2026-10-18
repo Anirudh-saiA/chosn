@@ -168,10 +168,16 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
    * run — the same per-source isolation principle as the price-fetch
    * queues, applied here to computation instead of fetching.
    */
-  async refreshAll(opts: { retailerSlug?: string } = {}): Promise<{ processed: number; failed: number }> {
+  async refreshAll(opts: { retailerSlug?: string; changedSince?: Date } = {}): Promise<{ processed: number; failed: number }> {
     await this.warnOnMissingFxRates();
 
-    const { rows: variantRows } = await this.db.execute(sql`
+    // changedSince (daily import): only the sizes that got a new snapshot in this run. Everything else keeps
+    // its summary until the regular hourly refresh, instead of recomputing ~400k sizes after every import.
+    const { rows: variantRows } = opts.changedSince
+      ? await this.db.execute(sql`
+          SELECT DISTINCT sneaker_variant_id AS id FROM price_snapshots WHERE fetched_at >= ${opts.changedSince}
+        `)
+      : await this.db.execute(sql`
       SELECT DISTINCT v.id
       FROM sneaker_variants v
       JOIN sneakers s ON s.id = v.sneaker_id
@@ -182,17 +188,26 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
          OR EXISTS (SELECT 1 FROM price_snapshots ps WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true)`}
     `);
 
+    // Variants are independent (each refreshOne writes only its own rows), so a few run at once. Kept well under
+    // PG_POOL_MAX (default 20) so the API and queues still get connections during a daily refresh.
+    const ids = (variantRows as { id: string }[]).map((r) => r.id);
+    const concurrency = Math.max(1, Number(process.env.MI_REFRESH_CONCURRENCY || 8));
     let processed = 0;
     let failed = 0;
-    for (const { id } of variantRows as { id: string }[]) {
-      try {
-        await this.refreshOne(id);
-        processed += 1;
-      } catch (err) {
-        failed += 1;
-        this.logger.error(`refresh failed for variant ${id}: ${(err as Error).message}`);
+    let next = 0;
+    const worker = async () => {
+      while (next < ids.length) {
+        const id = ids[next++]!;
+        try {
+          await this.refreshOne(id);
+          processed += 1;
+        } catch (err) {
+          failed += 1;
+          this.logger.error(`refresh failed for variant ${id}: ${(err as Error).message}`);
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
 
     this.logger.log(`market intelligence refresh: ${processed} ok, ${failed} failed`);
     await this.refreshCatalogViews();

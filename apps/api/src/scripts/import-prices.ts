@@ -29,6 +29,7 @@ async function main() {
   const save = process.argv.includes('--save');
   const markMissing = process.argv.includes('--mark-missing');
   const startedAt = new Date();
+  const secs = () => `${((Date.now() - startedAt.getTime()) / 1000).toFixed(0)}s`;
   if (!file) {
     console.error('Usage: import:prices <file.csv> [--save] [--mark-missing]');
     process.exit(1);
@@ -52,7 +53,7 @@ async function main() {
       result.pricesRecorded += part.pricesRecorded;
       result.newRetailers = [...new Set([...result.newRetailers, ...part.newRetailers])];
       result.errors.push(...part.errors.map((e) => ({ ...e, line: e.line + n * MAX_ROWS })));
-      console.log(`chunk ${n + 1}/${chunks.length}: ${part.errors.length ? part.errors.length + ' problem(s)' : 'ok'}`);
+      console.log(`chunk ${n + 1}/${chunks.length}: ${part.errors.length ? part.errors.length + ' problem(s)' : 'ok'} (${secs()})`);
       if (part.errors.length > 0) break;
     }
     if (save && markMissing && result.errors.length === 0) {
@@ -69,8 +70,8 @@ async function main() {
           AND ps.listing_url NOT LIKE '%FIXTURE%'
       `);
       const snapshots = app.get(PriceSnapshotService);
-      for (const r of stale as unknown as Array<Record<string, string | null>>) {
-        await snapshots.record({
+      await snapshots.recordMany(
+        (stale as unknown as Array<Record<string, string | null>>).map((r) => ({
           sneakerVariantId: r.sneaker_variant_id as string,
           retailerId: r.retailer_id as string,
           price: r.price as string,
@@ -83,16 +84,20 @@ async function main() {
           imageUrl: r.image_url ?? null,
           authenticityVerified: false,
           fetchedAt: new Date(),
-        });
-      }
-      console.log(`Marked ${stale.length} listings no longer on the stores as out of stock.`);
+        })),
+      );
+      console.log(`Marked ${stale.length} listings no longer on the stores as out of stock. (${secs()})`);
     }
 
     if (save && result.errors.length === 0) {
-      console.log('Recomputing Compare summaries…');
+      console.log('Recomputing Compare summariesâ€¦');
       // --refresh-store=<slug>: a one-store import only needs that store's shoes recomputed (the daily run does them all).
       const only = process.argv.find((a) => a.startsWith('--refresh-store='))?.split('=')[1];
-      await app.get(MarketIntelligenceService).refreshAll(only ? { retailerSlug: only } : {});
+      // Only sizes that got a snapshot in this run (prices + out-of-stock marks); the hourly refresh covers the rest.
+      // --refresh-all restores the old full recompute.
+      const full = process.argv.includes('--refresh-all');
+      await app.get(MarketIntelligenceService).refreshAll(only ? { retailerSlug: only } : full ? {} : { changedSince: startedAt });
+      console.log(`Compare summaries recomputed (${secs()})`);
     }
 
     if (result.errors.length > 0) {

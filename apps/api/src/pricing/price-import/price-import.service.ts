@@ -1,10 +1,19 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../../db/drizzle.provider';
 import { manualPriceEntries, retailers, sneakerVariants, sneakers } from '../../db/schema';
 import { MarketIntelligenceService } from '../market-intelligence.service';
 import { PriceSnapshotService } from '../price-snapshot.service';
 import { parsePriceCsv, slugify, type PriceRow, type RowError } from './price-csv';
+
+/** Rows per batched statement: well under Postgres's 65535-parameter limit for the widest insert here (~11 columns). */
+const BATCH = 1000;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
 
 export interface ImportSummary {
   dryRun: boolean;
@@ -84,15 +93,15 @@ export class PriceImportService {
 
     const toSnapshot: Parameters<PriceSnapshotService['record']>[0][] = [];
 
+    // Set-based writes: a handful of batched statements per 1000 rows instead of 3-5 round trips per row.
     await this.db.transaction(async (tx) => {
-      const sneakerIds = new Map<string, string>();
-      const imaged = new Set<string>();
       const storeIds = new Map<string, string>();
 
+      // stores (only a few per file)
       for (const r of rows) {
-        // store
         const storeKey = r.retailer.toLowerCase();
-        let storeId = storeIds.get(storeKey) ?? resolveStore(r.retailer)?.id;
+        if (storeIds.has(storeKey)) continue;
+        let storeId = resolveStore(r.retailer)?.id;
         if (!storeId) {
           const [created] = await tx
             .insert(retailers)
@@ -114,52 +123,78 @@ export class PriceImportService {
           }
         }
         storeIds.set(storeKey, storeId);
+      }
 
-        // sneaker
-        let sneakerId = sneakerIds.get(r.styleCode);
-        if (!sneakerId) {
-          await tx
-            .insert(sneakers)
-            .values({ brand: r.brand, model: r.model, colorway: r.colorway, styleCode: r.styleCode })
-            .onConflictDoNothing({ target: sneakers.styleCode });
-          const [s] = await tx.select({ id: sneakers.id }).from(sneakers).where(eq(sneakers.styleCode, r.styleCode));
-          sneakerId = s!.id;
-          sneakerIds.set(r.styleCode, sneakerId);
+      // sneakers: insert the new style codes (first row wins, as before), then load every id in one go
+      const firstRowByCode = new Map<string, PriceRow>();
+      for (const r of rows) if (!firstRowByCode.has(r.styleCode)) firstRowByCode.set(r.styleCode, r);
+      const codes = [...firstRowByCode.keys()];
+      const fresh = codes.filter((c) => !knownStyleCodes.has(c));
+      for (const part of chunk(fresh, BATCH)) {
+        await tx
+          .insert(sneakers)
+          .values(part.map((c) => {
+            const r = firstRowByCode.get(c)!;
+            return { brand: r.brand, model: r.model, colorway: r.colorway, styleCode: c };
+          }))
+          .onConflictDoNothing({ target: sneakers.styleCode });
+      }
+      const sneakerIds = new Map<string, string>();
+      for (const part of chunk(codes, BATCH)) {
+        const found = await tx.select({ id: sneakers.id, styleCode: sneakers.styleCode }).from(sneakers).where(inArray(sneakers.styleCode, part));
+        for (const s of found) sneakerIds.set(s.styleCode, s.id);
+      }
+
+      // Real product photo from the store's listing (first row with an image), only where the shoe has none yet.
+      const imageByCode = new Map<string, string>();
+      for (const r of rows) if (r.imageUrl && !imageByCode.has(r.styleCode)) imageByCode.set(r.styleCode, r.imageUrl);
+      for (const part of chunk([...imageByCode], BATCH)) {
+        await tx.execute(sql`
+          UPDATE sneakers s SET primary_image_url = v.url
+          FROM (VALUES ${sql.join(part.map(([c, url]) => sql`(${sneakerIds.get(c)!}::uuid, ${url})`), sql`, `)}) AS v(id, url)
+          WHERE s.id = v.id AND s.primary_image_url IS NULL
+        `);
+      }
+
+      // size variants: size is numeric(4,1), so the DB returns "8.0" for "8"; key on the normalised value
+      const variantKey = (sneakerId: string, size: string | number, system: string) => `${sneakerId}|${Number(size).toFixed(1)}|${system}`;
+      const wanted = new Map<string, { sneakerId: string; size: string; sizeSystem: PriceRow['sizeSystem'] }>();
+      for (const r of rows) {
+        const sneakerId = sneakerIds.get(r.styleCode)!;
+        wanted.set(variantKey(sneakerId, r.size, r.sizeSystem), { sneakerId, size: String(r.size), sizeSystem: r.sizeSystem });
+      }
+      const variantIds = new Map<string, string>();
+      const loadVariants = async (ids: string[]) => {
+        for (const part of chunk(ids, BATCH)) {
+          const found = await tx
+            .select({ id: sneakerVariants.id, sneakerId: sneakerVariants.sneakerId, size: sneakerVariants.size, sizeSystem: sneakerVariants.sizeSystem })
+            .from(sneakerVariants)
+            .where(and(inArray(sneakerVariants.sneakerId, part), eq(sneakerVariants.region, 'india')));
+          for (const v of found) variantIds.set(variantKey(v.sneakerId, v.size, v.sizeSystem), v.id);
         }
+      };
+      const touchedSneakers = [...new Set([...wanted.values()].map((w) => w.sneakerId))];
+      await loadVariants(touchedSneakers);
+      const missing = [...wanted].filter(([k]) => !variantIds.has(k)).map(([, w]) => w);
+      for (const part of chunk(missing, BATCH)) {
+        const created = await tx
+          .insert(sneakerVariants)
+          .values(part.map((w) => ({ ...w, region: 'india' as const })))
+          .onConflictDoNothing()
+          .returning({ id: sneakerVariants.id });
+        summary.newVariants += created.length;
+      }
+      if (missing.length > 0) await loadVariants([...new Set(missing.map((w) => w.sneakerId))]);
 
-        // Real product photo from the store's listing, so the card doesn't fall back to the placeholder art.
-        if (r.imageUrl && !imaged.has(r.styleCode)) {
-          imaged.add(r.styleCode);
-          await tx
-            .update(sneakers)
-            .set({ primaryImageUrl: r.imageUrl })
-            .where(and(eq(sneakers.id, sneakerId), isNull(sneakers.primaryImageUrl)));
-        }
-
-        // size variant
-        const [existingVariant] = await tx
-          .select({ id: sneakerVariants.id })
-          .from(sneakerVariants)
-          .where(
-            and(
-              eq(sneakerVariants.sneakerId, sneakerId),
-              eq(sneakerVariants.size, String(r.size)),
-              eq(sneakerVariants.sizeSystem, r.sizeSystem),
-              eq(sneakerVariants.region, 'india'),
-            ),
-          );
-        let variantId = existingVariant?.id;
-        if (!variantId) {
-          const [created] = await tx
-            .insert(sneakerVariants)
-            .values({ sneakerId, size: String(r.size), sizeSystem: r.sizeSystem, region: 'india' })
-            .returning({ id: sneakerVariants.id });
-          variantId = created!.id;
-          summary.newVariants += 1;
-        }
-
-        // audit row (append-only)
-        await tx.insert(manualPriceEntries).values({
+      // audit rows (append-only), batched
+      const resolved = rows.map((r) => {
+        const storeId = storeIds.get(r.retailer.toLowerCase())!;
+        const variantId = variantIds.get(variantKey(sneakerIds.get(r.styleCode)!, r.size, r.sizeSystem));
+        if (!variantId) throw new Error(`line ${r.line}: size variant was not created`);
+        return { r, storeId, variantId };
+      });
+      for (const part of chunk(resolved, BATCH)) {
+        await tx.insert(manualPriceEntries).values(part.map(({ r, storeId, variantId }) => ({
           retailerId: storeId,
           sneakerVariantId: variantId,
           price: String(r.price),
@@ -171,8 +206,10 @@ export class PriceImportService {
           imageUrl: r.imageUrl,
           recordedBy: opts.recordedBy,
           notes: `CSV import, line ${r.line}`,
-        });
+        })));
+      }
 
+      for (const { r, storeId, variantId } of resolved) {
         toSnapshot.push({
           sneakerVariantId: variantId,
           retailerId: storeId,
@@ -191,10 +228,7 @@ export class PriceImportService {
     });
 
     // Snapshots go in after the audit rows commit; each one flips is_latest atomically (see PriceSnapshotService).
-    for (const s of toSnapshot) {
-      await this.snapshots.record(s);
-      summary.pricesRecorded += 1;
-    }
+    summary.pricesRecorded = await this.snapshots.recordMany(toSnapshot);
     summary.rowsImported = rows.length;
 
     // The Compare grid reads best price / signal from Market Intelligence (normally refreshed hourly):

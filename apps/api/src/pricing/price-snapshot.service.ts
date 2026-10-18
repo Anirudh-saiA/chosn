@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { priceSnapshots } from '../db/schema';
 import type { PriceSnapshotInput } from '../retailers/retailer-adapter.interface';
@@ -48,6 +48,46 @@ export class PriceSnapshotService {
       );
       return row;
     });
+  }
+
+  /**
+   * Bulk version of record() for imports: same result as calling record() for
+   * each input in order, but in batched statements inside one transaction
+   * (a 66k-row daily import was ~130k round trips one at a time).
+   *
+   * When the same variant/retailer appears more than once, the last input is
+   * the one left with is_latest = true, exactly as sequential record() calls.
+   */
+  async recordMany(inputs: PriceSnapshotInput[], batchSize = 1000): Promise<number> {
+    if (inputs.length === 0) return 0;
+    const key = (s: PriceSnapshotInput) => `${s.sneakerVariantId}|${s.retailerId}`;
+    const lastIndex = new Map<string, number>();
+    inputs.forEach((s, i) => lastIndex.set(key(s), i));
+
+    await this.db.transaction(async (tx) => {
+      for (let start = 0; start < inputs.length; start += batchSize) {
+        const batch = inputs.slice(start, start + batchSize);
+        const pairs = [...new Map(batch.map((s) => [key(s), s])).values()];
+        await tx.execute(sql`
+          UPDATE price_snapshots ps SET is_latest = false
+          FROM (VALUES ${sql.join(
+            pairs.map((p) => sql`(${p.sneakerVariantId}::uuid, ${p.retailerId}::uuid)`),
+            sql`, `,
+          )}) AS v(variant_id, retailer_id)
+          WHERE ps.sneaker_variant_id = v.variant_id AND ps.retailer_id = v.retailer_id AND ps.is_latest = true
+        `);
+        const rows = await tx
+          .insert(priceSnapshots)
+          .values(batch.map((s, j) => ({ ...s, isLatest: lastIndex.get(key(s)) === start + j })))
+          .returning({ id: priceSnapshots.id });
+        // Same guard as record(): rows that no partition accepted must fail the import, not vanish.
+        if (rows.length !== batch.length) {
+          throw new Error(`price_snapshots bulk insert stored ${rows.length} of ${batch.length} rows`);
+        }
+      }
+    });
+    this.logger.log(`recorded ${inputs.length} snapshots in bulk`);
+    return inputs.length;
   }
 
   /**
