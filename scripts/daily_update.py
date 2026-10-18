@@ -120,6 +120,13 @@ def main():
     mainstreet_csv = RUN_DIR / "mainstreet.csv"
     myntra_ratings = RUN_DIR / "myntra-ratings.json"
 
+    if not args.reuse:
+        # Start from nothing: a leftover file from an earlier run today (for example a half-read store) must not be
+        # imported as if it were this run's scrape.
+        for f in (shopify_csv, vnv_csv, myntra_csv, limitededt_csv, gully_csv, puma_csv, mainstreet_csv, myntra_ratings,
+                  RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv"):
+            f.unlink(missing_ok=True)
+
     # Every store is a different website, so they are read at the same time: the run takes as long as the slowest store
     # (Myntra, about 1.5 h) instead of the sum of all of them. Each store still paces itself politely (1.5 s between
     # requests to its own site). A store that fails is skipped; the others still update.
