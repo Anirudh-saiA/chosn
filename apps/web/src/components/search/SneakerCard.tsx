@@ -94,6 +94,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
       className="group relative flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-[#0A0A0A]/10 bg-white p-1.5 transition-colors duration-300 hover:border-[#0A0A0A]"
       onMouseEnter={() => void loadPhotos(cur.styleCode)}
     >
+      {/* One link over the whole card (photo, name, sizes, logos) so a click anywhere opens the shoe. The colour buttons, photo arrows and
+          the wishlist/compare icons sit above it (z-10 / z-20). */}
+      <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[1.6rem]" />
       <div
         className={`relative aspect-[7/8] overflow-hidden rounded-[1.2rem] ${imageUrl ? 'bg-[#F3F5F8]' : ''}`}
         style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}
@@ -114,7 +117,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         {/* Name, colour and best price, top-left. h2: the page's h1 sits directly above. The link's ::after makes the whole card clickable. */}
         <div className="absolute left-0 top-0 z-10 max-w-[68%] p-3.5">
           <h2 className="font-display text-[1.2rem] uppercase leading-[1.05] tracking-[0.02em] text-[#0A0A0A]">
-            <Link href={href} className="line-clamp-2 after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]">
+            <Link href={href} className="line-clamp-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]">
               {item.model}
             </Link>
           </h2>
