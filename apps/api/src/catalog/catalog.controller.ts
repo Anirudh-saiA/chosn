@@ -7,6 +7,7 @@ import {
   type PriceHistory,
   type SearchResponse,
   type SearchSort,
+  type StoreSummary,
   type SearchResultItem,
 } from './catalog.service';
 import { SearchQueryDto } from './dto/search-query.dto';
@@ -39,6 +40,12 @@ export class CatalogController {
       includeSoldOut: soldOut === '1',
       sort: sort as SearchSort | undefined,
     });
+  }
+
+  /** The "Stores we compare" page: every live store with how many shoes it has and when it was last read. */
+  @Get('stores')
+  async stores(): Promise<StoreSummary> {
+    return this.catalog.storeSummary();
   }
 
   /** Feeds Next's generateStaticParams() — see listVariantParams()'s doc comment. */

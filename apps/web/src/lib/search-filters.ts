@@ -4,12 +4,12 @@
 export const FILTER_KEYS = ['brand', 'store', 'color', 'minPrice', 'maxPrice', 'minStores', 'soldOut', 'signal'] as const;
 
 export const SORT_OPTIONS = [
-  { value: '', label: 'Featured' },
+  { value: '', label: 'Most compared first' },
   { value: 'price_asc', label: 'Price: low to high' },
   { value: 'price_desc', label: 'Price: high to low' },
   { value: 'name_asc', label: 'Name: A to Z' },
   { value: 'name_desc', label: 'Name: Z to A' },
-  { value: 'stores', label: 'Most stores to compare' },
+  { value: 'stores', label: 'Most stores, then cheapest' },
 ] as const;
 
 /** Swatch colours for each colour family the API knows about (see apps/api catalog-filters.ts). */

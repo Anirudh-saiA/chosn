@@ -153,6 +153,8 @@ export interface SearchResultItem {
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
+  /** Search results: the stores that have this shoe in stock, A to Z. */
+  storeNames?: string[];
   /** Search results: every matching colourway of this model, the shown one first (one card per model). */
   colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'>>;
   /** Only on similar-sneaker results: same model in another colourway. */

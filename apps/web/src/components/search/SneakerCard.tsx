@@ -111,9 +111,9 @@ export function SneakerCard({ item }: SneakerCardProps) {
           </div>
         )}
 
-        {(item.storeCount ?? 0) > 0 && selected === 0 && colours.length === 1 && (
+        {(item.storeCount ?? 0) > 0 && selected === 0 && (
           <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/45">
-            {item.storeCount} {item.storeCount === 1 ? 'store' : 'stores'} to compare
+            {item.storeCount === 1 ? `Only at ${item.storeNames?.[0] ?? 'one store'}` : `Compared at ${item.storeCount} stores`}
           </p>
         )}
 

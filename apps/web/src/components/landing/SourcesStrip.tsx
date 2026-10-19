@@ -37,7 +37,7 @@ export function SourcesStrip() {
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-2 pb-4">
         <p className="font-mono text-[0.7rem] font-extrabold uppercase tracking-[0.26em] text-text">Where our prices come from</p>
         <Link
-          href="/transparency"
+          href="/stores"
           className="inline-flex items-center gap-1.5 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-text-soft transition-colors hover:text-text"
         >
           How we source data <ArrowRight className="h-3.5 w-3.5" aria-hidden />

@@ -18,6 +18,7 @@ const COLUMNS = [
     [FEEDBACK_MAILTO, 'Feedback'],
   ],
   [
+    ['/stores', 'Stores we compare'],
     ['/transparency', 'Transparency'],
     ['/community-guidelines', 'Guidelines'],
     ['/terms', 'Terms'],

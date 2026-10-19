@@ -466,6 +466,51 @@ export class CatalogService {
    * never a client-side filter of the whole catalog — task 3.
    */
   /** Same filters within 30 seconds return the same answer: the per-store summary behind them is the slow part. */
+  private storeSummaryCache: { at: number; value: StoreSummary } | null = null;
+
+  /**
+   * Every live store with the number of shoes and brands it has in stock right now (demo fixtures left out), its share of
+   * the catalogue, and when its prices were last read. Feeds the public "Stores we compare" page. Cached for 10 minutes.
+   */
+  async storeSummary(): Promise<StoreSummary> {
+    if (this.storeSummaryCache && Date.now() - this.storeSummaryCache.at < 600_000) return this.storeSummaryCache.value;
+    const { rows } = await this.db.execute(sql`
+      SELECT r.slug, r.name, r.base_url, r.logo_url, r.delivery_min_days, r.delivery_max_days,
+             count(DISTINCT s.id) AS shoes, count(DISTINCT s.brand) AS brands, max(ps.fetched_at) AS last_updated
+      FROM retailers r
+      JOIN price_snapshots ps ON ps.retailer_id = r.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+      JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+      JOIN sneakers s ON s.id = v.sneaker_id
+      WHERE r.status = 'active'
+      GROUP BY r.id
+      ORDER BY shoes DESC
+    `);
+    const { rows: totals } = await this.db.execute(sql`
+      SELECT count(DISTINCT s.id) AS shoes, count(DISTINCT s.brand) AS brands
+      FROM catalog_stats_mv st JOIN sneakers s ON s.id = st.sneaker_id
+    `);
+    const t = (totals[0] ?? {}) as { shoes?: string | number; brands?: string | number };
+    const totalShoes = Number(t.shoes ?? 0);
+    const value: StoreSummary = {
+      totalShoes,
+      totalBrands: Number(t.brands ?? 0),
+      stores: (rows as Array<Record<string, unknown>>).map((r) => ({
+        slug: String(r.slug),
+        name: String(r.name),
+        baseUrl: (r.base_url as string | null) ?? null,
+        logoUrl: (r.logo_url as string | null) ?? null,
+        shoes: Number(r.shoes),
+        brands: Number(r.brands),
+        sharePct: totalShoes > 0 ? Math.round((Number(r.shoes) / totalShoes) * 1000) / 10 : 0,
+        lastUpdated: r.last_updated ? new Date(r.last_updated as string).toISOString() : null,
+        deliveryMinDays: r.delivery_min_days === null ? null : Number(r.delivery_min_days),
+        deliveryMaxDays: r.delivery_max_days === null ? null : Number(r.delivery_max_days),
+      })),
+    };
+    this.storeSummaryCache = { at: Date.now(), value };
+    return value;
+  }
+
   async search(input: SearchParams): Promise<SearchResponse> {
     const params = input.q ? { ...input, q: normalizeQuery(input.q) } : input;
     const key = JSON.stringify(params);
@@ -569,7 +614,9 @@ export class CatalogService {
     // lower(): A to Z regardless of the database's collation. Shoes in stock somewhere come before sold-out ones.
     const alpha = sql`lower(brand) ASC, lower(model) ASC, colorway ASC`;
     const inStockFirst = sql`(best_available_price IS NULL) ASC`;
-    let orderBy = tsQuery || fuzzy ? sql`rank DESC, ${inStockFirst}, ${alpha}` : sql`${inStockFirst}, ${alpha}`;
+    // Default order: the shoes you can compare at the most stores first (that is what a comparison site is for), then a fixed
+    // pseudo-random mix (md5 of the style code, the same every time) so no brand or store leads just because of its name.
+    let orderBy = tsQuery || fuzzy ? sql`rank DESC, ${inStockFirst}, store_count DESC, ${alpha}` : sql`${inStockFirst}, store_count DESC, md5(style_code)`;
     if (params.sort === 'price_asc') orderBy = sql`${inStockFirst}, best_available_price ASC, ${alpha}`;
     else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
     else if (params.sort === 'name_asc') orderBy = sql`lower(model) ASC, lower(brand) ASC, colorway ASC`;
@@ -594,7 +641,7 @@ export class CatalogService {
           SELECT s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
                  COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  st.min_price AS current_price, st.min_price AS best_available_price,
-                 ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count,
+                 ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count, st.store_slugs,
                  lower(s.brand) || '|' || regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
@@ -649,6 +696,8 @@ export class CatalogService {
       this.searchCommunityPosts(params.q),
     ]);
 
+    const { rows: retailerRows } = await this.db.execute(sql`SELECT slug, name FROM retailers`);
+    const storeName = new Map((retailerRows as { slug: string; name: string }[]).map((x) => [x.slug, x.name]));
     const results = (rows as unknown as SearchRow[]).map((r) => ({
       styleCode: r.style_code,
       brand: r.brand,
@@ -663,6 +712,7 @@ export class CatalogService {
       signal: (r.signal as Signal | null) ?? null,
       currency: r.currency ?? 'INR',
       storeCount: Number(r.store_count ?? 0),
+      storeNames: (r.store_slugs ?? []).map((slug) => storeName.get(slug) ?? slug).sort((a, b) => a.localeCompare(b)),
       colours: (r.colours ?? []).map((c) => ({
         styleCode: c.styleCode,
         colorway: c.colorway,
@@ -973,9 +1023,27 @@ export class CatalogService {
   }
 }
 
+export interface StoreSummary {
+  totalShoes: number;
+  totalBrands: number;
+  stores: Array<{
+    slug: string;
+    name: string;
+    baseUrl: string | null;
+    logoUrl: string | null;
+    shoes: number;
+    brands: number;
+    sharePct: number;
+    lastUpdated: string | null;
+    deliveryMinDays: number | null;
+    deliveryMaxDays: number | null;
+  }>;
+}
+
 interface SearchRow {
   colours?: Array<{ styleCode: string; colorway: string; primaryImageUrl: string | null; defaultSize: string; bestAvailablePrice: string | null }> | null;
   store_count?: string | number;
+  store_slugs?: string[] | null;
   style_code: string;
   brand: string;
   model: string;
