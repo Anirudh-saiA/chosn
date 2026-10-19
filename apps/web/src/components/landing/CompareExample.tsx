@@ -198,14 +198,15 @@ export async function CompareExample() {
       <Reveal>
         <div className="mb-6 flex flex-col items-center">
           {image && (
-            <div className="rounded-[2rem] bg-white/80 p-4 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.4)]">
+            // The photo's white square fades into the page (a soft oval mask), and the shoe is zoomed in so it is the hero of the section.
+            <div className="relative aspect-[16/9] w-[min(44rem,96vw)] overflow-hidden [mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)]">
               <img
                 src={image}
                 alt={`${name} ${data.sneaker.colorway}`}
                 loading="lazy"
                 decoding="async"
                 draggable={false}
-                className="h-auto max-h-[16rem] w-[min(24rem,76vw)] select-none rounded-2xl object-contain"
+                className="absolute inset-0 h-full w-full scale-[1.9] select-none object-contain"
               />
             </div>
           )}
