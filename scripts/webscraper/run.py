@@ -5,7 +5,7 @@ r"""CHOSN web scraper: one command for every scraping job, with tool fallback.
     python scripts/webscraper/run.py status                 paused tools and paused sites
     python scripts/webscraper/run.py reset                  clear every pause
     python scripts/webscraper/run.py jobs                   list the jobs
-    python scripts/webscraper/run.py job <name> [...]       run one job (shopify | vegnonveg | myntra | mainstreet | limitededt | puma | gullylabs)
+    python scripts/webscraper/run.py job <name> [...]       run one job (shopify | vegnonveg | myntra | mainstreet | limitededt | puma | gullylabs | culturecircle)
     python scripts/webscraper/run.py all [--skip-myntra]    the whole daily update: scrape every store, pair, import, offers
                                                             (also --quick = fast stores only, --skip-<store>, --reuse, --dry-run)
 
@@ -36,6 +36,7 @@ JOBS = {
     "myntra": ("Myntra listings + ratings (slow, about 1.5 h)", [PY, "scripts/scrape_myntra_prices.py", "data/daily/myntra.csv"]),
     "mainstreet": ("Mainstreet Marketplace sneakers", [PY, "scripts/scrape_mainstreet_prices.py"]),
     "gullylabs": ("Gully Labs sneakers (public product feed)", [PY, "scripts/scrape_gullylabs_prices.py"]),
+    "culturecircle": ("Culture Circle shoes (a time-budgeted chunk per run)", [PY, "scripts/scrape_culturecircle_prices.py"]),
     "puma": ("Puma India footwear (rendered pages, about 1.5 h)", [PY, "scripts/scrape_puma_prices.py"]),
     "limitededt": ("Limited Edt footwear (public product feed)", [PY, "scripts/scrape_limitededt_prices.py"]),
 }

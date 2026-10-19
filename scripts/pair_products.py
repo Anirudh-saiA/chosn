@@ -159,8 +159,8 @@ def main():
     parsed = []
     for r in rows:
         mt, ct, flag, dm, dc = split_name(r)
-        if not ct and r["retailer"] == "Mainstreet Marketplace":
-            ct = ["default"]  # Mainstreet puts the colour inside the title, so the model alone identifies the shoe
+        if not ct and r["retailer"] in ("Mainstreet Marketplace", "Culture Circle"):
+            ct = ["default"]  # these put the colour inside the title (and Culture Circle has no style code), so the name alone identifies the shoe
         key = (canon_brand(r["brand"]), " ".join(mt), flag, " ".join(ct))
         parsed.append((r, key, dm, dc))
 

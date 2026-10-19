@@ -9,7 +9,7 @@ import { Marquee } from '@/components/fx/Marquee';
  * mean the brand's own store is a price source - the two groups are labelled
  * separately for that reason. Add a name here only once its adapter exists.
  */
-const RETAILERS = ['Superkicks', 'Crepdog Crew', 'VegNonVeg', 'Mainstreet Marketplace', 'Myntra', 'Limited Edt', 'Puma India'];
+const RETAILERS = ['Superkicks', 'Crepdog Crew', 'VegNonVeg', 'Mainstreet Marketplace', 'Myntra', 'Limited Edt', 'Puma India', 'Gully Labs', 'Culture Circle'];
 const BRANDS = ['Nike', 'Jordan', 'adidas', 'Yeezy', 'New Balance', 'Converse', 'Vans', 'ASICS', 'Puma'];
 
 function Group({ label, names }: { label: string; names: string[] }) {

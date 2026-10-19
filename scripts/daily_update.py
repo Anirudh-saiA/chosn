@@ -109,9 +109,10 @@ def counts(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="scrape, clean and validate; save nothing")
-    ap.add_argument("--only", choices=["shopify", "vegnonveg", "mainstreet", "limitededt", "gullylabs", "puma", "myntra"], help="scrape just one source")
+    ap.add_argument("--only", choices=["shopify", "vegnonveg", "mainstreet", "limitededt", "gullylabs", "culturecircle", "puma", "myntra"], help="scrape just one source")
     ap.add_argument("--force", action="store_true", help="skip the safety check")
     ap.add_argument("--quick", action="store_true", help="the fast stores only: leaves out VegNonVeg, Myntra and Puma (each takes over an hour)")
+    ap.add_argument("--skip-culturecircle", action="store_true", help="leave Culture Circle out")
     ap.add_argument("--skip-gullylabs", action="store_true", help="leave Gully Labs out")
     ap.add_argument("--skip-puma", action="store_true", help="leave Puma India out (about 1.5 h)")
     ap.add_argument("--skip-limitededt", action="store_true", help="leave Limited Edt out")
@@ -133,13 +134,14 @@ def main():
     limitededt_csv = RUN_DIR / "limitededt.csv"
     gully_csv = RUN_DIR / "gullylabs.csv"
     puma_csv = RUN_DIR / "puma.csv"
+    culture_csv = RUN_DIR / "culturecircle.csv"
     mainstreet_csv = RUN_DIR / "mainstreet.csv"
     myntra_ratings = RUN_DIR / "myntra-ratings.json"
 
     if not args.reuse:
         # Start from nothing: a leftover file from an earlier run today (for example a half-read store) must not be
         # imported as if it were this run's scrape.
-        for f in (shopify_csv, vnv_csv, myntra_csv, limitededt_csv, gully_csv, puma_csv, mainstreet_csv, myntra_ratings,
+        for f in (shopify_csv, vnv_csv, myntra_csv, limitededt_csv, gully_csv, puma_csv, culture_csv, mainstreet_csv, myntra_ratings,
                   RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv"):
             f.unlink(missing_ok=True)
 
@@ -154,13 +156,15 @@ def main():
         ("mainstreet", "Mainstreet Marketplace", [sys.executable, "scripts/scrape_mainstreet_prices.py", str(mainstreet_csv)], ROOT, False),
         ("limitededt", "Limited Edt", [sys.executable, "scripts/scrape_limitededt_prices.py", str(limitededt_csv)], ROOT, False),
         ("gullylabs", "Gully Labs", [sys.executable, "scripts/scrape_gullylabs_prices.py", str(gully_csv)], ROOT, False),
+        # Culture Circle has ~7,000 shoe pages (about 5 h in all): each run reads for a time budget and carries on next time.
+        ("culturecircle", "Culture Circle", [sys.executable, "scripts/scrape_culturecircle_prices.py", str(culture_csv), "--minutes", "25" if args.quick else "120"], ROOT, False),
         ("puma", "Puma India", [WEBSCRAPER_PY, "scripts/scrape_puma_prices.py", str(puma_csv)], ROOT, True),
         ("myntra", "Myntra", [sys.executable, "scripts/scrape_myntra_prices.py", str(myntra_csv)], ROOT, True),
     ]
     # Which stores (as the importer names them) each scraper feeds, so a scraper that fails can be left out of the safety check.
     retailers_of = {"Superkicks + Crepdog Crew": ["Superkicks", "Crepdog Crew"], "VegNonVeg": ["VegNonVeg"],
                     "Mainstreet Marketplace": ["Mainstreet Marketplace"], "Limited Edt": ["Limited Edt"],
-                    "Gully Labs": ["Gully Labs"], "Puma India": ["Puma India"], "Myntra": ["Myntra"]}
+                    "Gully Labs": ["Gully Labs"], "Culture Circle": ["Culture Circle"], "Puma India": ["Puma India"], "Myntra": ["Myntra"]}
     failed_retailers = set()
     skipped = set()
     selected = []
@@ -197,7 +201,7 @@ def main():
     for path in (shopify_csv, vnv_csv):
         if path.exists():
             rows += [{c: r.get(c, "") for c in COLUMNS} for r in read_rows(path)]
-    if not rows and not any(p.exists() for p in (myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv)):
+    if not rows and not any(p.exists() for p in (myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv, culture_csv)):
         raise RuntimeError("nothing was scraped")
     merged = RUN_DIR / "merged.csv"
     with open(merged, "w", newline="", encoding="utf-8") as f:
@@ -211,7 +215,7 @@ def main():
     paired = RUN_DIR / "paired.csv"
     pair_report = RUN_DIR / "pair_report.json"
     # Myntra publishes no style code at all, so every Myntra listing goes through the pairing step like the no-code ones.
-    missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv", myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv) if p.exists()]
+    missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv", myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv, culture_csv) if p.exists()]
     run("Pair shoes", [sys.executable, "scripts/pair_products.py", str(merged), *map(str, missing), str(paired), "--report", str(pair_report)])
 
     clean = RUN_DIR / "clean.csv"

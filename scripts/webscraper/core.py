@@ -117,7 +117,7 @@ def allowed(url):
 
 # Sites that answered HTTP 429 at the default pace get a longer pause between requests (seen 18 Oct 2026, after full
 # product-feed reads of 100+ large pages). The 429 handling still stops a site that keeps saying no.
-DOMAIN_DELAY = {"marketplace.mainstreet.co.in": 4.0, "www.superkicks.in": 3.0}
+DOMAIN_DELAY = {"marketplace.mainstreet.co.in": 4.0, "www.superkicks.in": 3.0, "www.culture-circle.com": 2.0}
 
 
 def pace(url):
