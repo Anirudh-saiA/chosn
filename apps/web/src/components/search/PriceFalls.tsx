@@ -78,7 +78,7 @@ export async function fetchSale(limit: number): Promise<Deal[]> {
  * against the store's own "was" price. Hidden when both are empty, so it never shows filler.
  */
 export async function PriceFalls() {
-  const [falls, sale] = await Promise.all([fetchFalls(8), fetchSale(8)]);
+  const [falls, sale] = await Promise.all([fetchFalls(24), fetchSale(24)]);
   if (falls.length === 0 && sale.length === 0) return null;
   return <DealsTabs falls={falls} sale={sale} />;
 }

@@ -54,6 +54,7 @@ const TABS = [
 
 export function DealsTabs({ falls, sale }: { falls: Deal[]; sale: Deal[] }) {
   const [tab, setTab] = useState<'falls' | 'sale'>(falls.length > 0 ? 'falls' : 'sale');
+  const [more, setMore] = useState(false);
   const list = tab === 'falls' ? falls : sale;
   const hint = TABS.find((t) => t.id === tab)!.hint;
   return (
@@ -76,7 +77,10 @@ export function DealsTabs({ falls, sale }: { falls: Deal[]; sale: Deal[] }) {
                   role="tab"
                   aria-selected={tab === t.id}
                   disabled={count === 0}
-                  onClick={() => setTab(t.id)}
+                  onClick={() => {
+                    setTab(t.id);
+                    setMore(false);
+                  }}
                   className={`px-3.5 py-1.5 text-[0.74rem] font-bold uppercase tracking-[0.08em] transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${tab === t.id ? 'bg-[#0A0A0A] text-white' : 'text-[#0A0A0A]/65 hover:bg-[#0A0A0A]/5'}`}
                 >
                   {t.label}
@@ -91,12 +95,28 @@ export function DealsTabs({ falls, sale }: { falls: Deal[]; sale: Deal[] }) {
       </div>
       <p className="mb-3 text-[0.8rem] text-[#0A0A0A]/55">{hint}</p>
       <ul className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-        {list.slice(0, 8).map((d) => (
+        {list.slice(0, more ? 24 : 8).map((d) => (
           <li key={d.key} className="w-[15rem] shrink-0 snap-start sm:w-auto">
             <DealCard d={d} />
           </li>
         ))}
       </ul>
+      {list.length > 8 && (
+        <div className="mt-3 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMore((m) => !m)}
+            className="rounded-full border border-[#0A0A0A]/15 px-5 py-2 text-[0.78rem] font-bold uppercase tracking-[0.1em] text-[#0A0A0A]/70 transition-colors hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
+          >
+            {more ? 'Show fewer' : `Show ${Math.min(list.length, 24) - 8} more`}
+          </button>
+        </div>
+      )}
+      {list.length <= 8 && (
+        <p className="mt-2 text-center text-[0.75rem] text-[#0A0A0A]/45">
+          That is all of them right now: {list.length} {tab === 'falls' ? 'price cuts of 15% or more since yesterday' : 'store discounts of 20% or more'}.
+        </p>
+      )}
     </section>
   );
 }
