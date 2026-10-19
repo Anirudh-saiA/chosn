@@ -157,6 +157,11 @@ def main():
         ("puma", "Puma India", [WEBSCRAPER_PY, "scripts/scrape_puma_prices.py", str(puma_csv)], ROOT, True),
         ("myntra", "Myntra", [sys.executable, "scripts/scrape_myntra_prices.py", str(myntra_csv)], ROOT, True),
     ]
+    # Which stores (as the importer names them) each scraper feeds, so a scraper that fails can be left out of the safety check.
+    retailers_of = {"Superkicks + Crepdog Crew": ["Superkicks", "Crepdog Crew"], "VegNonVeg": ["VegNonVeg"],
+                    "Mainstreet Marketplace": ["Mainstreet Marketplace"], "Limited Edt": ["Limited Edt"],
+                    "Gully Labs": ["Gully Labs"], "Puma India": ["Puma India"], "Myntra": ["Myntra"]}
+    failed_retailers = set()
     skipped = set()
     selected = []
     for key, label, cmd, cwd, slow in scrapers:
@@ -186,6 +191,7 @@ def main():
         for n, err, _ in results:
             if err:
                 log(f"{n} skipped: {err}")
+                failed_retailers.update(retailers_of.get(n, []))
 
     rows = []
     for path in (shopify_csv, vnv_csv):
@@ -218,8 +224,11 @@ def main():
     # Safety check against the previous successful run.
     last = json.loads(STATE.read_text()) if STATE.exists() else {}
     problems = [f"{s}: {n} rows vs {last[s]} last time" for s, n in today_counts.items() if s in last and n < MIN_RATIO * last[s]]
+    # A store that was left out on purpose, or whose scraper failed or is paused (the site said no), keeps its previous data
+    # untouched: it is not in the file, so nothing about it is marked out of stock. The email says it failed.
+    not_updated = set(failed_retailers) | {r for lbl in skipped for r in retailers_of.get(lbl, [])}
     for s in last:
-        if args.only is None and s not in today_counts and s not in skipped:
+        if args.only is None and s not in today_counts and s not in not_updated:
             problems.append(f"{s}: no rows at all (had {last[s]})")
     if problems and not args.force:
         log("SAFETY CHECK STOPPED THE IMPORT (a store returned far fewer rows than last time):")
@@ -257,7 +266,7 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
-    merged_state = {**last, **today_counts} if (args.only or skipped) else today_counts
+    merged_state = {**last, **today_counts} if (args.only or skipped or failed_retailers) else today_counts
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")
     write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))

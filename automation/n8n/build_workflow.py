@@ -22,7 +22,9 @@ for line in (ROOT / "apps" / "api" / ".env").read_text(encoding="utf-8").splitli
         env[m.group(1)] = m.group(2).strip()
 RESEND_KEY = env.get("RESEND_API_KEY", "")
 FROM = env.get("RESEND_FROM", "CHOSN <onboarding@resend.dev>")
-TO = env.get("RESEND_REPLY_TO", "join.sneakercommunity@gmail.com")
+# Until a domain is verified in Resend, an account can only email its own owner address, so alerts go there. Set
+# ALERT_EMAIL in apps/api/.env to send them somewhere else once a domain is verified.
+TO = env.get("ALERT_EMAIL", "anirudhsai356@gmail.com")
 BASE = "http://host.docker.internal:8765"
 HEAD = {"parameters": [{"name": "X-Control-Token", "value": token}]}
 
