@@ -49,14 +49,24 @@ def running():
     p = _proc["p"]
     if p is not None and p.poll() is None:
         return True
-    return os.path.exists(LOCK) and time.time() - os.path.getmtime(LOCK) < LOCK_MAX_AGE
+    if not (os.path.exists(LOCK) and time.time() - os.path.getmtime(LOCK) < LOCK_MAX_AGE):
+        return False
+    try:
+        pid = int(open(LOCK).read().strip())
+    except (OSError, ValueError):
+        return False  # no process id in it: a stale lock
+    out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else ""
+    return str(pid) in out if os.name == "nt" else True
 
 
 def summary():
     try:
-        return json.load(open(SUMMARY, encoding="utf-8"))
+        d = json.load(open(SUMMARY, encoding="utf-8"))
     except (OSError, ValueError):
         return None
+    if d.get("status") == "running" and not running():
+        d["status"] = "interrupted"  # the run was killed (PC slept or shut down) before it could write its result
+    return d
 
 
 class Handler(BaseHTTPRequestHandler):

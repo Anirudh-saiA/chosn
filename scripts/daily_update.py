@@ -29,6 +29,7 @@ import argparse
 import csv
 import datetime
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -267,12 +268,34 @@ LOCK = ROOT / "data" / "daily" / "run.lock"
 LOCK_MAX_AGE = 8 * 3600  # a lock older than this is left over from a crashed run
 
 
+def _pid_alive(pid):
+    try:
+        import ctypes
+        if sys.platform == "win32":
+            handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not handle:
+                return False
+            code = ctypes.c_ulong()
+            ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return code.value == 259  # STILL_ACTIVE
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 def take_lock():
-    """One update at a time: the daily and the weekly task must not run together."""
+    """One update at a time: the daily and the weekly task must not run together. The lock holds the running process's id,
+    so a lock left behind by a killed run (the PC went to sleep, the task was stopped) is recognised as stale and ignored."""
     LOCK.parent.mkdir(parents=True, exist_ok=True)
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < LOCK_MAX_AGE:
-        return False
-    LOCK.write_text(str(time.time()))
+        try:
+            if _pid_alive(int(LOCK.read_text().strip())):
+                return False
+        except ValueError:
+            pass  # an old-format lock with no process id: treat as stale
+    LOCK.write_text(str(os.getpid()))
     return True
 
 
