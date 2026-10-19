@@ -115,12 +115,16 @@ export interface CatalogVariant {
 export interface SiblingSize {
   size: number;
   sizeSystem: string;
+  /** At least one connected store has this size in stock right now (undefined from an older API: treat as available). */
+  available?: boolean;
 }
 
 export interface CatalogResponse {
   sneaker: CatalogSneaker;
   variant: CatalogVariant;
   siblingSizes: SiblingSize[];
+  /** Every store CHOSN reads prices from. */
+  connectedStores?: Array<{ slug: string; name: string }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligence | null;
 }

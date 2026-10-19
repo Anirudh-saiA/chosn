@@ -105,12 +105,16 @@ export interface CatalogSneaker {
 export interface SiblingSize {
   size: number;
   sizeSystem: string;
+  /** True when at least one connected store has this size in stock right now. */
+  available: boolean;
 }
 
 export interface CatalogResponse {
   sneaker: CatalogSneaker;
   variant: CatalogVariant;
   siblingSizes: SiblingSize[];
+  /** Every store CHOSN reads prices from, so the page can show the ones that do not have this size (a grey crossed button). */
+  connectedStores: Array<{ slug: string; name: string }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligenceSummary | null;
 }
@@ -349,10 +353,11 @@ export class CatalogService {
       throw new NotFoundException(`No variant for style_code "${styleCode}" size ${size}`);
     }
 
-    const [siblings, offers, marketIntelligence] = await Promise.all([
+    const [siblings, offers, marketIntelligence, stores] = await Promise.all([
       this.siblingSizes(variantRow.sneaker_id),
       this.offersFor(variantRow.variant_id),
       this.intelligence.getCached(variantRow.variant_id),
+      this.storeSummary(),
     ]);
 
     return {
@@ -373,6 +378,7 @@ export class CatalogService {
         region: variantRow.region,
       },
       siblingSizes: siblings,
+      connectedStores: stores.stores.map((s) => ({ slug: s.slug, name: s.name })),
       offers,
       marketIntelligence,
     };
@@ -380,13 +386,18 @@ export class CatalogService {
 
   private async siblingSizes(sneakerId: string): Promise<SiblingSize[]> {
     const { rows } = await this.db.execute(sql`
-      SELECT size, size_system FROM sneaker_variants
-      WHERE sneaker_id = ${sneakerId}
-      ORDER BY size ASC
+      SELECT v.size, v.size_system,
+             EXISTS (SELECT 1 FROM price_snapshots ps
+                     WHERE ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true
+                       AND ps.listing_url NOT LIKE '%FIXTURE%') AS available
+      FROM sneaker_variants v
+      WHERE v.sneaker_id = ${sneakerId}
+      ORDER BY v.size ASC
     `);
-    return (rows as unknown as { size: string; size_system: string }[]).map((r) => ({
+    return (rows as unknown as { size: string; size_system: string; available: boolean }[]).map((r) => ({
       size: Number(r.size),
       sizeSystem: r.size_system,
+      available: r.available,
     }));
   }
 

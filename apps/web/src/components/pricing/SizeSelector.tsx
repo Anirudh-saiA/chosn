@@ -17,12 +17,15 @@ export function SizeSelector({ sizes, currentSize, pendingSize, onSelect, onPref
       {sizes.map((s) => {
         const active = s.size === currentSize;
         const pending = pendingSize === s.size;
+        // A size no connected store has in stock stays visible (you can still open it to see who sold out) but is crossed out.
+        const soldOut = s.available === false;
         return (
           <button
             key={s.size}
             type="button"
             aria-pressed={active}
-            aria-label={`${s.sizeSystem.toUpperCase()} ${formatSize(s.size)}`}
+            aria-label={`${s.sizeSystem.toUpperCase()} ${formatSize(s.size)}${soldOut ? ', sold out everywhere' : ''}`}
+            title={soldOut ? 'Sold out at every store we compare' : undefined}
             aria-current={active ? 'true' : undefined}
             onMouseEnter={() => onPrefetch(s.size)}
             onFocus={() => onPrefetch(s.size)}
@@ -31,7 +34,11 @@ export function SizeSelector({ sizes, currentSize, pendingSize, onSelect, onPref
               'relative flex min-h-[44px] min-w-[3.5rem] items-center justify-center border px-3 font-mono text-data-inline tabular-nums transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright',
               active
                 ? 'cursor-default border-brass-bright/60 bg-brass-gradient font-semibold text-vault-deep shadow-glow-brass'
-                : 'border-text/15 bg-vault-raised/60 text-text hover:-translate-y-px hover:border-brass/60 hover:bg-vault-high',
+                : soldOut
+                  ? 'border-text/10 bg-text/[0.03] text-text-faint hover:border-text/25'
+                  : 'border-text/15 bg-vault-raised/60 text-text hover:-translate-y-px hover:border-brass/60 hover:bg-vault-high',
+              // the cross: one thin diagonal line through the size
+              soldOut && "after:pointer-events-none after:absolute after:inset-x-1 after:top-1/2 after:h-px after:-rotate-[24deg] after:bg-text/45 after:content-['']",
               pending && !active && 'animate-pulse border-brass/50',
             )}
           >

@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 import { StoreRow } from './StoreRow';
 import { buildBuyGuide } from '@/lib/buy-guide';
 import { formatInr, type CatalogOffer } from '@/lib/catalog';
@@ -9,15 +9,43 @@ import { deliveryDays, isEligible } from '@/lib/recommend';
  * quiet row per store that opens to show how you can pay, every offer, shipping and returns. Stores whose prices are
  * demo data are not shown as offers; stores that are sold out in this size are named underneath.
  */
-export function OfferCards({ offers, size }: { offers: CatalogOffer[]; size: string }) {
+export function OfferCards({ offers, size, connectedStores = [] }: { offers: CatalogOffer[]; size: string; connectedStores?: Array<{ slug: string; name: string }> }) {
   const live = offers.filter(isEligible).sort((a, b) => (a.effectivePriceInr as number) - (b.effectivePriceInr as number));
   const soldOut = offers.filter((o) => o.mode !== 'fixture' && !isEligible(o));
   const demo = offers.filter((o) => o.mode === 'fixture');
+
+  // Stores we read that cannot sell this size: grey crossed buttons under the offers. "Sold out" = the store lists the size but has none;
+  // otherwise the store does not list this size (or shoe) at all.
+  const liveSlugs = new Set(live.map((o) => o.retailerSlug));
+  const soldOutSlugs = new Set(soldOut.map((o) => o.retailerSlug));
+  const without = connectedStores.filter((s) => !liveSlugs.has(s.slug));
+  const crossed = without.length > 0 && (
+    <div className="mt-5">
+      <p className="mb-2 font-mono text-[0.68rem] font-bold uppercase tracking-[0.16em] text-text-faint">Not available in UK {size}</p>
+      <ul className="flex flex-wrap gap-2">
+        {without.map((s) => (
+          <li
+            key={s.slug}
+            title={soldOutSlugs.has(s.slug) ? `${s.name} has UK ${size} listed but it is sold out` : `${s.name} does not list UK ${size} of this shoe`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint"
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+            <span className="line-through decoration-text/30">{s.name}</span>
+            <span className="sr-only">{soldOutSlugs.has(s.slug) ? 'sold out' : 'not listed'}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
   if (live.length === 0) {
     return (
-      <div className="rounded-2xl border border-text/10 bg-white p-8 text-center">
-        <p className="text-[1.05rem] font-semibold text-text">No connected store has UK {size} in stock right now.</p>
-        {soldOut.length > 0 && <p className="mt-2 text-text-soft">Sold out at {soldOut.map((o) => o.retailerName).join(', ')}.</p>}
+      <div>
+        <div className="rounded-2xl border border-text/10 bg-white p-8 text-center">
+          <p className="text-[1.05rem] font-semibold text-text">No connected store has UK {size} in stock right now.</p>
+          <p className="mt-2 text-[0.9rem] text-text-soft">Pick another size above. Sizes with a line through them are sold out everywhere.</p>
+        </div>
+        {crossed}
       </div>
     );
   }
@@ -70,13 +98,10 @@ export function OfferCards({ offers, size }: { offers: CatalogOffer[]; size: str
         ))}
       </ul>
 
-      {(soldOut.length > 0 || demo.length > 0) && (
+      {crossed}
+
+      {demo.length > 0 && (
         <div className="mt-4 space-y-1 text-[0.84rem] text-text-soft">
-          {soldOut.length > 0 && (
-            <p>
-              <strong className="text-text">Sold out in UK {size}:</strong> {soldOut.map((o) => o.retailerName).join(', ')}.
-            </p>
-          )}
           {demo.length > 0 && (
             <p>
               <strong className="text-text">Not connected yet:</strong> {demo.map((o) => o.retailerName).join(', ')} (placeholder prices, not shown as offers).

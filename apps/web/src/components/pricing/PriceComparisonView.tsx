@@ -213,7 +213,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
               {data.offers.length === 1 ? 'retailer' : 'retailers'}
             </p>
           </div>
-          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} />
+          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} connectedStores={data.connectedStores ?? []} />
           <AffiliateDisclosure />
         </section>
       </Reveal>
