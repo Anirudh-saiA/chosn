@@ -9,6 +9,7 @@ const LINK = 'font-display text-[1.15rem] uppercase tracking-[0.12em] text-[#0A0
 const COLUMNS = [
   [
     ['/sneakers', 'Compare'],
+    ['/brands', 'Brands'],
     ['/drops', 'Drops'],
     ['/news', 'News'],
     ['/community', 'Community'],
