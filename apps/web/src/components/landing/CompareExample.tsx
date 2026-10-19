@@ -6,7 +6,17 @@ import { Marquee } from '@/components/fx/Marquee';
 import { Reveal } from '@/components/fx/Reveal';
 
 /** The retailers CHOSN reads prices from (mirrors SourcesStrip). */
-const RETAILERS = ['Superkicks', 'Crepdog Crew', 'VegNonVeg', 'Mainstreet Marketplace', 'Myntra', 'Limited Edt', 'Puma India', 'Gully Labs', 'Culture Circle'];
+const RETAILERS = [
+  { name: 'Superkicks', logo: '/stores/superkicks.png' },
+  { name: 'Crepdog Crew', logo: '/stores/crepdog-crew.png' },
+  { name: 'VegNonVeg', logo: '/stores/vegnonveg.png' },
+  { name: 'Mainstreet Marketplace', logo: '/stores/mainstreet-marketplace.png' },
+  { name: 'Myntra', logo: '/stores/myntra.png' },
+  { name: 'Limited Edt', logo: '/stores/limited-edt.png' },
+  { name: 'Puma India', logo: '/stores/puma-india.png' },
+  { name: 'Gully Labs', logo: '/stores/gully-labs.png' },
+  { name: 'Culture Circle', logo: '/stores/culture-circle.png' },
+];
 
 const hand = 'font-[family-name:var(--font-hand)] font-bold';
 
@@ -107,8 +117,11 @@ export function CompareExample() {
         <Marquee duration={30} repeat={2}>
           <span className="mx-6 shrink-0 rounded-full bg-text px-3.5 py-1.5 font-mono text-[0.62rem] font-extrabold uppercase tracking-[0.22em] text-[#F4F1EA]">Retailers</span>
           {RETAILERS.map((r) => (
-            <span key={r} className="flex shrink-0 items-center">
-              <span className="px-8 font-display text-[clamp(1.6rem,3vw,2.4rem)] font-bold leading-none tracking-tight text-text">{r}</span>
+            <span key={r.name} className="flex shrink-0 items-center">
+              <span className="flex items-center gap-3.5 px-8">
+                <img src={r.logo} alt="" className="h-9 w-auto max-w-[6rem] object-contain" loading="lazy" draggable={false} />
+                <span className="font-display text-[clamp(1.6rem,3vw,2.4rem)] font-bold leading-none tracking-tight text-text">{r.name}</span>
+              </span>
               <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass" />
             </span>
           ))}

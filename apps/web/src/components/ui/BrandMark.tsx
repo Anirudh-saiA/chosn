@@ -25,6 +25,11 @@ const FILES: Record<string, string> = {
   jordan: 'jordan.svg',
 };
 
+/** The logo file for a brand (in /public/brands), or null when there is none. */
+export function brandLogoFile(brand: string): string | null {
+  return FILES[brand.trim().toLowerCase()] ?? null;
+}
+
 export function BrandMark({ brand, className = '' }: { brand: string; className?: string }) {
   const file = FILES[brand.trim().toLowerCase()];
   if (file) {
