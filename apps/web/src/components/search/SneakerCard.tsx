@@ -182,14 +182,14 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
       </div>
 
       {/* Photo with arrows and dots. */}
-      <div className="relative aspect-[16/9] overflow-hidden bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#F4F5F7]">
         {imageUrl ? (
           // Plain <img>: no known remote domain to allow-list yet. Falls back to the illustration if the photo can't load.
           <ShoePhoto
             key={imageUrl}
             src={imageUrl}
             alt={`${item.brand} ${item.model} ${cur.colorway}`}
-            className="absolute inset-0 h-full w-full object-contain p-1.5 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.06]"
             fallback={<SneakerArt colorway={cur.colorway} brand={item.brand} palette={palette} className="absolute inset-0 m-auto h-[80%] w-[88%]" />}
           />
         ) : (
