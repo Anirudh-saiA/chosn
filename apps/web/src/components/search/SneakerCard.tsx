@@ -151,45 +151,45 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
 
   return (
     <div
-      className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]"
       onMouseEnter={() => void loadPhotos(cur.styleCode)}
     >
       {/* One link over the whole card so a click anywhere opens the shoe. The colour, size and photo buttons and the wishlist/compare
           icons sit above it (z-10 / z-20). */}
-      <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[1.75rem]" />
+      <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[1.4rem]" />
 
       {/* Header: brand logo, discount badge, name, colour, price. */}
-      <div className="relative z-10 px-5 pt-5">
+      <div className="relative z-10 px-4 pt-4">
         <div className="flex items-start justify-between gap-3">
-          <BrandMark brand={item.brand} className="!h-9 !max-w-[7rem]" />
-          {pct >= 1 && <span className="rounded-full bg-[#FDE7E9] px-3.5 py-1.5 font-display text-[1rem] uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
+          <BrandMark brand={item.brand} className="!h-6 !max-w-[5rem]" />
+          {pct >= 1 && <span className="rounded-full bg-[#FDE7E9] px-2.5 py-1 font-display text-[0.8rem] uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
         </div>
-        <h2 className="mt-3 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] uppercase leading-[0.95] tracking-[0.01em] text-[#0A0A0A]">
+        <h2 className="mt-2 font-display text-[clamp(1.3rem,1.8vw,1.6rem)] uppercase leading-[0.98] tracking-[0.01em] text-[#0A0A0A]">
           <Link href={href} className="line-clamp-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]">
             {item.model}
           </Link>
         </h2>
-        <p className="mt-1.5 truncate text-[0.95rem] font-medium text-[#0A0A0A]/55">{cur.colorway}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <p className="mt-1 truncate text-[0.78rem] font-medium text-[#0A0A0A]/55">{cur.colorway}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           {bestPrice !== null ? (
-            <span className="font-sans text-[clamp(1.6rem,2.4vw,2rem)] font-extrabold leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
+            <span className="font-sans text-[clamp(1.25rem,1.7vw,1.5rem)] font-extrabold leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
           ) : (
-            <span className="text-[1.1rem] font-bold text-[#0A0A0A]/50">Sold out in UK {formatSize(size)}</span>
+            <span className="text-[0.95rem] font-bold text-[#0A0A0A]/50">Sold out in UK {formatSize(size)}</span>
           )}
-          {was && <span className="text-[0.95rem] tabular-nums text-[#0A0A0A]/45 line-through">{formatInr(was)}</span>}
-          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2.5 py-1 text-[0.8rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
+          {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/45 line-through">{formatInr(was)}</span>}
+          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
         </div>
       </div>
 
       {/* Photo with arrows and dots. */}
-      <div className="relative mt-2 aspect-[4/3] overflow-hidden bg-white">
+      <div className="relative mt-1 aspect-[16/11] overflow-hidden bg-white">
         {imageUrl ? (
           // Plain <img>: no known remote domain to allow-list yet. Falls back to the illustration if the photo can't load.
           <ShoePhoto
             key={imageUrl}
             src={imageUrl}
             alt={`${item.brand} ${item.model} ${cur.colorway}`}
-            className="absolute inset-0 h-full w-full object-contain p-5 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            className="absolute inset-0 h-full w-full object-contain p-3 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             fallback={<SneakerArt colorway={cur.colorway} brand={item.brand} palette={palette} className="absolute inset-0 m-auto h-[80%] w-[88%]" />}
           />
         ) : (
@@ -203,30 +203,30 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             disabled={known !== undefined && photos.length <= 1}
             aria-label={dir === 'next' ? 'Next photo' : 'Previous photo'}
             title={known !== undefined && photos.length <= 1 ? 'No more photos of this colour yet' : dir === 'next' ? 'Next photo' : 'Previous photo'}
-            className={`absolute top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-3' : 'left-3'}`}
+            className={`absolute top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
           >
-            {dir === 'next' ? <ChevronRight className="h-5 w-5" strokeWidth={2.25} aria-hidden /> : <ChevronLeft className="h-5 w-5" strokeWidth={2.25} aria-hidden />}
+            {dir === 'next' ? <ChevronRight className="h-4 w-4" strokeWidth={2.25} aria-hidden /> : <ChevronLeft className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
           </button>
         ))}
         {photos.length > 1 && (
-          <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5" aria-hidden>
+          <span className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1" aria-hidden>
             {photos.map((_, i) => (
-              <span key={i} className={`h-2 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-3.5 bg-[#0A0A0A]' : 'w-2 bg-[#0A0A0A]/18'}`} />
+              <span key={i} className={`h-1.5 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-3 bg-[#0A0A0A]' : 'w-1.5 bg-[#0A0A0A]/18'}`} />
             ))}
           </span>
         )}
         <WishlistButton
           item={{ styleCode: cur.styleCode, size: String(formatSize(size)), brand: item.brand, model: item.model, colorway: cur.colorway, imageUrl, price: bestPrice }}
-          className="absolute bottom-3 right-3 z-20"
+          className="absolute bottom-2 right-2 z-20"
         />
         <CompareToggle
           variant="icon"
-          className="absolute bottom-3 right-[3.6rem] z-20"
+          className="absolute bottom-2 right-[3.2rem] z-20"
           entry={{ styleCode: cur.styleCode, brand: item.brand, model: item.model, colorway: cur.colorway, imageUrl }}
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 px-5 pb-4 pt-3">
+      <div className="flex flex-1 flex-col gap-2.5 px-4 pb-3 pt-1.5">
         {/* Colours. */}
         {colours.length > 1 && (
           <div className="relative z-10 flex items-center gap-2" role="group" aria-label={`${colours.length} colours`}>
@@ -241,7 +241,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                     onMouseEnter={() => pickColour(i)}
                     onFocus={() => pickColour(i)}
                     onClick={() => pickColour(i)}
-                    className={`relative h-9 w-9 overflow-hidden rounded-xl bg-[#F3F5F8] transition-shadow ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
+                    className={`relative h-7 w-7 overflow-hidden rounded-lg bg-[#F3F5F8] transition-shadow ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
                   >
                     {c.primaryImageUrl ? (
                       <ShoePhoto key={c.primaryImageUrl} src={c.primaryImageUrl} alt="" className="h-full w-full object-contain p-0.5" fallback={<span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />} />
@@ -260,14 +260,14 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         {/* Available sizes: sold-out ones are crossed out. */}
         <div>
           <div className="flex items-center justify-between">
-            <h3 className="text-[1.05rem] font-bold text-[#0A0A0A]">Available Sizes</h3>
-            <span className={`flex items-center gap-1.5 text-[0.88rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/40'}`}>
+            <h3 className="text-[0.88rem] font-bold text-[#0A0A0A]">Available Sizes</h3>
+            <span className={`flex items-center gap-1.5 text-[0.74rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/40'}`}>
               <span className={`h-2 w-2 rounded-full ${anyStock ? 'bg-[#1FA34A]' : 'bg-[#0A0A0A]/25'}`} aria-hidden />
               {anyStock ? 'In Stock' : 'Sold out'}
             </span>
           </div>
           {sizeList.length > 0 ? (
-            <ul className="relative z-10 mt-2.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
+            <ul className="relative z-10 mt-1.5 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
               {sizeList.map((s, idx) => {
                 const active = s.size === size;
                 return (
@@ -278,7 +278,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                       aria-pressed={active}
                       aria-label={`UK ${formatSize(s.size)}${s.available ? '' : ', sold out everywhere'}`}
                       title={s.available ? undefined : 'Sold out at every store we compare'}
-                      className={`relative flex h-11 min-w-[2.9rem] items-center justify-center rounded-xl border px-3 text-[0.95rem] font-semibold tabular-nums transition-colors ${
+                      className={`relative flex h-8 min-w-[2.2rem] items-center justify-center rounded-lg border px-2 text-[0.8rem] font-semibold tabular-nums transition-colors ${
                         active
                           ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
                           : s.available
@@ -300,13 +300,13 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         {/* Compare prices: one tile per store for the chosen size. */}
         <div className="mt-auto">
           <div className="flex items-center justify-between">
-            <h3 className="text-[1.05rem] font-bold text-[#0A0A0A]">Compare Prices</h3>
-            <span className="text-[0.88rem] text-[#0A0A0A]/45">
+            <h3 className="text-[0.88rem] font-bold text-[#0A0A0A]">Compare Prices</h3>
+            <span className="text-[0.74rem] text-[#0A0A0A]/45">
               {storeCount} {storeCount === 1 ? 'Store' : 'Stores'}
             </span>
           </div>
           {tiles.length > 0 ? (
-            <ul className="relative z-10 mt-2.5 grid grid-flow-col auto-cols-[minmax(5.6rem,1fr)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <ul className="relative z-10 mt-1.5 grid grid-flow-col auto-cols-[minmax(4.4rem,1fr)] gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {tiles.slice(0, MAX_TILES + 3).map((o) => {
                 const st = stores[o.slug];
                 const lowest = best !== null && o.slug === best.slug && o.inStock;
@@ -314,19 +314,19 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   <li
                     key={o.slug}
                     title={st?.name ?? o.slug}
-                    className={`flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-2.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} ${o.inStock ? '' : 'opacity-60'}`}
+                    className={`flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} ${o.inStock ? '' : 'opacity-60'}`}
                   >
-                    <span className="flex h-7 items-center justify-center">
+                    <span className="flex h-5 items-center justify-center">
                       {st?.logoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={st.logoUrl} alt={st.name} className="max-h-7 max-w-[4.2rem] object-contain" loading="lazy" />
+                        <img src={st.logoUrl} alt={st.name} className="max-h-5 max-w-[3.6rem] object-contain" loading="lazy" />
                       ) : (
-                        <span className="max-w-[4.4rem] truncate text-[0.74rem] font-bold text-[#0A0A0A]/70">{st?.name ?? o.slug}</span>
+                        <span className="max-w-[3.8rem] truncate text-[0.66rem] font-bold text-[#0A0A0A]/70">{st?.name ?? o.slug}</span>
                       )}
                     </span>
-                    <span className={`text-[1rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/40 line-through'}`}>{formatInr(o.price)}</span>
+                    <span className={`text-[0.84rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/40 line-through'}`}>{formatInr(o.price)}</span>
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-[0.72rem] font-semibold ${
+                      className={`rounded-full px-2 py-px text-[0.62rem] font-semibold ${
                         lowest ? 'bg-[#C9EDD3] text-[#1B7A34]' : o.inStock ? 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/55' : 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/45'
                       }`}
                     >
@@ -342,11 +342,11 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         </div>
 
         {/* Footer wordmark. */}
-        <div className="flex items-center gap-3 pt-1" aria-hidden>
+        <div className="flex items-center gap-2.5" aria-hidden>
           <span className="h-px flex-1 bg-[#0A0A0A]/10" />
           <span className="text-center leading-none">
-            <span className="block font-display text-[1.1rem] uppercase tracking-[0.04em] text-[#0A0A0A]">CHOSN</span>
-            <span className="mt-1 block font-mono text-[0.5rem] font-bold uppercase tracking-[0.3em] text-[#0A0A0A]/45">Compare · Find · Cop</span>
+            <span className="block font-display text-[0.9rem] uppercase tracking-[0.04em] text-[#0A0A0A]">CHOSN</span>
+            <span className="mt-0.5 block font-mono text-[0.42rem] font-bold uppercase tracking-[0.28em] text-[#0A0A0A]/45">Compare · Find · Cop</span>
           </span>
           <span className="h-px flex-1 bg-[#0A0A0A]/10" />
         </div>

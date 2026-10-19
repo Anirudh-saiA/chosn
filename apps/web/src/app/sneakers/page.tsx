@@ -66,7 +66,7 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           {results.length === 0 ? (
             <EmptyState query={q} />
           ) : (
-            <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 min-[1700px]:grid-cols-3">
+            <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
               {results.map((item, i) => (
                 <Reveal as="li" key={item.styleCode} delay={(i % 3) * 0.06} y={18}>
                   <SneakerCard item={item} stores={stores} />
