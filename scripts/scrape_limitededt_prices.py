@@ -23,7 +23,7 @@ from scrape_shopify_prices import normalize_brand  # noqa: E402
 
 BASE = "https://limitededt.in"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition"]
+           "image_url", "size_system", "condition", "gallery_urls"]
 SIZE_SUFFIX = re.compile(r"-(\d{1,2}(?:\.5)?)(?:EU\d+)?$")
 CODE = re.compile(r"^[A-Z0-9]{5,}(?:-[A-Z0-9]{2,4})?$")
 BRANDS = {"jordan brand": "Jordan", "adidas originals": "adidas", "asics": "ASICS", "new balance": "New Balance"}
@@ -47,6 +47,7 @@ def rows_for(p):
     model, colorway = (m.group(1).strip(), m.group(2).strip().title()) if m else (title, "")
     model = re.sub(r"^Wmns\s+", "Wmns ", model, flags=re.I)
     image = p["images"][0]["src"] if p.get("images") else ""
+    gallery = "|".join(i["src"] for i in p.get("images", [])[:5])
     out = []
     for v in p["variants"]:
         size = clean_size(v["title"])
@@ -56,6 +57,7 @@ def rows_for(p):
             "brand": brand, "model": model or title, "colorway": colorway, "style_code": style_code(v.get("sku")), "size": size,
             "retailer": "Limited Edt", "price": int(float(v["price"])), "shipping": "", "url": f"{BASE}/products/{p['handle']}",
             "in_stock": "yes" if v.get("available") else "no", "image_url": image, "size_system": "uk", "condition": "new",
+            "gallery_urls": gallery,
         })
     return out
 

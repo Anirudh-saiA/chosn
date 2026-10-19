@@ -27,7 +27,7 @@ import core  # noqa: E402
 BASE = "https://in.puma.com"
 SITEMAP = f"{BASE}/sitemaps/urls/in/sitemap_index.xml"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition"]
+           "image_url", "size_system", "condition", "gallery_urls"]
 CHECKPOINT = os.path.join(ROOT, "data", "webscraper", "puma-checkpoint.jsonl")
 # Slugs that are plainly not shoes: skipped without opening them (the page is checked again for "Footwear" anyway).
 NOT_SHOES = re.compile(r"(^|-)(tee|t-shirt|tshirt|shirt|polo|jersey|shorts?|jacket|hoodie|sweatshirt|sweatpants|pants|trousers|"
@@ -68,7 +68,10 @@ def parse(url, html):
     price = offer.get("price")
     if not price:
         return []
-    image = (ld.get("image") or [""])[0]
+    images = ld.get("image") or [""]
+    images = images if isinstance(images, list) else [images]
+    image = images[0]
+    gallery = "|".join(u for u in images[:5] if u.startswith("https://"))
     m = re.search(r"/global/(\d{6})/(\d{2})/", image)
     code = f"{m.group(1)} {m.group(2)}" if m else ""
     name = re.sub(r"\s+", " ", ld.get("name") or "").strip()
@@ -82,7 +85,7 @@ def parse(url, html):
         rows.append({
             "brand": "Puma", "model": name, "colorway": colour, "style_code": code, "size": s.group(1), "retailer": "Puma India",
             "price": int(float(price)), "shipping": "", "url": url, "in_stock": "no" if m.group(1) == "true" else "yes",
-            "image_url": image, "size_system": "uk", "condition": "new",
+            "image_url": image, "size_system": "uk", "condition": "new", "gallery_urls": gallery,
         })
     return rows
 

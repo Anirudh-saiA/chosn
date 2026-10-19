@@ -20,7 +20,7 @@ import core  # noqa: E402
 
 BASE = "https://gullylabs.com"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition"]
+           "image_url", "size_system", "condition", "gallery_urls"]
 SIZE_SUFFIX = re.compile(r"_(\d{2})$")
 CODE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)+$")
 
@@ -38,6 +38,7 @@ def clean_size(title):
 def rows_for(p):
     title = re.sub(r"\s+", " ", p["title"]).strip()
     image = p["images"][0]["src"] if p.get("images") else ""
+    gallery = "|".join(i["src"] for i in p.get("images", [])[:5])
     out = []
     for v in p["variants"]:
         size = clean_size(v["title"])
@@ -47,6 +48,7 @@ def rows_for(p):
             "brand": "Gully Labs", "model": title, "colorway": "", "style_code": style_code(v.get("sku")), "size": size,
             "retailer": "Gully Labs", "price": int(float(v["price"])), "shipping": "", "url": f"{BASE}/products/{p['handle']}",
             "in_stock": "yes" if v.get("available") else "no", "image_url": image, "size_system": "uk", "condition": "new",
+            "gallery_urls": gallery,
         })
     return out
 

@@ -156,6 +156,20 @@ export class PriceImportService {
         `);
       }
 
+      // Extra photos (other angles) from the store's own listing, where the shoe has fewer than this store gives.
+      const galleryByCode = new Map<string, string[]>();
+      for (const r of rows) {
+        const have = galleryByCode.get(r.styleCode);
+        if (r.galleryUrls.length > (have?.length ?? 0)) galleryByCode.set(r.styleCode, r.galleryUrls);
+      }
+      for (const part of chunk([...galleryByCode], BATCH)) {
+        await tx.execute(sql`
+          UPDATE sneakers s SET gallery_image_refs = ARRAY(SELECT jsonb_array_elements_text(v.photos))
+          FROM (VALUES ${sql.join(part.map(([c, urls]) => sql`(${sneakerIds.get(c)!}::uuid, ${JSON.stringify(urls)}::jsonb)`), sql`, `)}) AS v(id, photos)
+          WHERE s.id = v.id AND COALESCE(cardinality(s.gallery_image_refs), 0) < jsonb_array_length(v.photos)
+        `);
+      }
+
       // size variants: size is numeric(4,1), so the DB returns "8.0" for "8"; key on the normalised value
       const variantKey = (sneakerId: string, size: string | number, system: string) => `${sneakerId}|${Number(size).toFixed(1)}|${system}`;
       const wanted = new Map<string, { sneakerId: string; size: string; sizeSystem: PriceRow['sizeSystem'] }>();

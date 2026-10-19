@@ -28,7 +28,7 @@ BASE = "https://www.culture-circle.com"
 SITEMAP_PARTS = ["https://www.culture-circle.com/sitemaps/sitemap-products-in-1-f8b9d2bbc3d6488292d52a13baf65189-repair-"
                  "4c703db9f2cf4bd284deeb19b01c89c6-child-part-%d.xml" % i for i in (1, 2, 3)]
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition", "delivery_time"]
+           "image_url", "size_system", "condition", "delivery_time", "gallery_urls"]
 CHECKPOINT = os.path.join(ROOT, "data", "webscraper", "cc-checkpoint.jsonl")
 URL_CACHE = os.path.join(ROOT, "data", "webscraper", "cc-urls.json")
 FRESH_DAYS = 14        # rows older than this are no longer imported
@@ -108,7 +108,9 @@ def parse(url, html):
     model = re.sub(rf"^{re.escape(vendor)}\s+", "", name, flags=re.I) if vendor else name
     if colour and model.lower().endswith(colour.lower()) and len(model) > len(colour):
         model = model[: -len(colour)].strip()
-    image = (product.get("image") or [""])[0] if isinstance(product.get("image"), list) else (product.get("image") or "")
+    imgs = product.get("image") if isinstance(product.get("image"), list) else [product.get("image") or ""]
+    image = imgs[0] if imgs else ""
+    gallery = "|".join(u for u in imgs[:5] if isinstance(u, str) and u.startswith("https://"))
     delivery = days_text(agg)
     rows = []
     for o in offers:
@@ -119,7 +121,7 @@ def parse(url, html):
             "brand": brand, "model": model, "colorway": colour, "style_code": "", "size": m.group(1), "retailer": "Culture Circle",
             "price": int(float(o["price"])), "shipping": "", "url": url,
             "in_stock": "yes" if str(o.get("availability", "")).endswith("InStock") else "no",
-            "image_url": image, "size_system": "uk", "condition": "new", "delivery_time": delivery,
+            "image_url": image, "size_system": "uk", "condition": "new", "delivery_time": delivery, "gallery_urls": gallery,
         })
     return True, rows
 

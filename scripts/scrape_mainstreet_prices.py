@@ -25,7 +25,7 @@ from scrape_shopify_prices import normalize_brand  # noqa: E402
 
 BASE = "https://marketplace.mainstreet.co.in"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition", "delivery_time"]
+           "image_url", "size_system", "condition", "delivery_time", "gallery_urls"]
 FOOT = re.compile(r"sneaker|shoe|slide|clog|sandal|boot|loafer|slipper|mule|trainer|runner", re.I)
 NOT_FOOT = re.compile(r"\b(tee|t-shirt|tshirt|hoodie|jacket|pants|shorts|socks?|cap|hat|bag|backpack|watch|belt|sweat|jersey|denim|jeans)\b", re.I)
 CODE = re.compile(r"^[A-Z0-9]{5,}(?:-[A-Z0-9]{2,4})?$")
@@ -59,6 +59,7 @@ def rows_for(p):
     title = re.sub(r"\s+", " ", p["title"]).strip()
     model = re.sub(rf"^{re.escape(brand)}\s+", "", title, flags=re.I) or title
     image = p["images"][0]["src"] if p.get("images") else ""
+    gallery = "|".join(i["src"] for i in p.get("images", [])[:5])  # the feed already lists every photo: no extra requests
     out = []
     for v in p["variants"]:
         size = re.sub(r"(?i)^\s*uk\s*", "", v["title"].split("/")[0]).strip()
@@ -66,7 +67,7 @@ def rows_for(p):
             "brand": brand, "model": model, "colorway": "", "style_code": style_code(p, v.get("sku")), "size": size,
             "retailer": "Mainstreet Marketplace", "price": int(float(v["price"])), "shipping": "",
             "url": f"{BASE}/products/{p['handle']}", "in_stock": "yes" if v.get("available") else "no", "image_url": image,
-            "size_system": "uk", "condition": "new", "delivery_time": "Ships in about 28 days (imported to order)",
+            "size_system": "uk", "condition": "new", "delivery_time": "Ships in about 28 days (imported to order)", "gallery_urls": gallery,
         })
     return out
 

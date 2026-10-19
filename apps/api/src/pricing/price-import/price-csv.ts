@@ -29,6 +29,7 @@ export const CSV_COLUMNS = [
   'image_url',
   'size_system',
   'condition',
+  'gallery_urls',
 ] as const;
 
 const REQUIRED = ['brand', 'model', 'colorway', 'style_code', 'size', 'retailer', 'price', 'url'] as const;
@@ -50,6 +51,8 @@ export interface PriceRow {
   url: string;
   inStock: boolean;
   imageUrl: string | null;
+  /** Other photos of the same pair (optional column gallery_urls: https links separated by |). */
+  galleryUrls: string[];
   condition: 'new' | 'used';
 }
 
@@ -232,6 +235,19 @@ export function parsePriceCsv(text: string): ParseResult {
       }
     }
 
+    // Optional extra photos: bad links are skipped quietly, they are a nice-to-have and never block a price.
+    const galleryUrls = cell(r, 'gallery_urls')
+      .split('|')
+      .map((x) => x.trim())
+      .filter((x) => {
+        try {
+          return new URL(x).protocol === 'https:';
+        } catch {
+          return false;
+        }
+      })
+      .slice(0, 6);
+
     // The same store can't have two prices for the same shoe and size in one upload.
     const key = `${retailer.toLowerCase()}|${styleCode}|${sizeSystemRaw}|${size}`;
     const firstLine = seen.get(key);
@@ -252,6 +268,7 @@ export function parsePriceCsv(text: string): ParseResult {
       url: url.toString(),
       inStock,
       imageUrl,
+      galleryUrls,
       condition: conditionRaw,
     });
   });

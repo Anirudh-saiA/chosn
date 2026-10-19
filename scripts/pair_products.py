@@ -108,12 +108,13 @@ def main():
         extra = list(csv.DictReader(open(p, encoding="utf-8")))
         for r in extra:
             r.setdefault("delivery_time", "")
+            r.setdefault("gallery_urls", "")
             rows.append(r)
         if cols is None and extra:
             cols = list(extra[0].keys())
     if not rows:
         raise SystemExit("nothing to pair: every input file is empty")
-    for c in ("delivery_time",):
+    for c in ("delivery_time", "gallery_urls"):
         if c not in cols and any(c in r for r in rows):
             cols.append(c)
     for r in rows:

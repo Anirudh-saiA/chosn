@@ -114,15 +114,15 @@ export function SneakerCard({ item }: SneakerCardProps) {
             disabled={known !== undefined && photos.length <= 1}
             aria-label={dir === 'next' ? 'Next photo' : 'Previous photo'}
             title={known !== undefined && photos.length <= 1 ? 'No more photos of this colour yet' : dir === 'next' ? 'Next photo' : 'Previous photo'}
-            className={`absolute top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#0A0A0A]/15 bg-white/90 text-[#0A0A0A] shadow-sm transition hover:border-[#0A0A0A] hover:bg-white disabled:cursor-not-allowed disabled:opacity-35 ${dir === 'next' ? 'right-3' : 'left-3'}`}
+            className={`absolute top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-[#0A0A0A]/70 opacity-60 ring-1 ring-[#0A0A0A]/10 backdrop-blur-sm transition duration-200 hover:bg-white hover:text-[#0A0A0A] hover:ring-[#0A0A0A]/30 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-20 disabled:hover:bg-white/85 disabled:hover:ring-[#0A0A0A]/10 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
           >
-            {dir === 'next' ? <ChevronRight className="h-5 w-5" aria-hidden /> : <ChevronLeft className="h-5 w-5" aria-hidden />}
+            {dir === 'next' ? <ChevronRight className="h-4 w-4" strokeWidth={2.25} aria-hidden /> : <ChevronLeft className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
           </button>
         ))}
         {photos.length > 1 && (
-          <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5" aria-hidden>
+          <span className="pointer-events-none absolute bottom-2.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1" aria-hidden>
             {photos.map((_, i) => (
-              <span key={i} className={`h-1.5 rounded-full transition-all ${i === photoIdx ? 'w-4 bg-[#0A0A0A]' : 'w-1.5 bg-[#0A0A0A]/25'}`} />
+              <span key={i} className={`h-1 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-3.5 bg-[#0A0A0A]/80' : 'w-1 bg-[#0A0A0A]/20'}`} />
             ))}
           </span>
         )}

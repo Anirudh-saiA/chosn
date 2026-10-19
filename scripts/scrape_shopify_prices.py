@@ -13,7 +13,7 @@ import os
 import urllib.request
 
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping",
-           "url", "in_stock", "image_url", "size_system", "condition"]
+           "url", "in_stock", "image_url", "size_system", "condition", "gallery_urls"]
 
 STORES = [
     {"retailer": "Superkicks", "base": "https://www.superkicks.in"},
@@ -110,6 +110,7 @@ def rows_for(p, store):
         colorway = color_opt["values"][0].title()
     code = find_style_code(p)
     image = p["images"][0]["src"] if p.get("images") else ""
+    gallery = "|".join(i["src"] for i in p.get("images", [])[:5])
     base_url = f"{store['base']}/products/{p['handle']}"
     out = []
     for v in p["variants"]:
@@ -123,7 +124,7 @@ def rows_for(p, store):
             "colorway": colorway, "style_code": vcode, "size": size, "retailer": store["retailer"],
             "price": int(float(v["price"])), "shipping": "", "url": base_url,
             "in_stock": "yes" if v["available"] else "no", "image_url": image,
-            "size_system": "uk", "condition": "new",
+            "size_system": "uk", "condition": "new", "gallery_urls": gallery,
         })
     return out
 
