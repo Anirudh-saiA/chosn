@@ -76,6 +76,10 @@ export interface CatalogOffer {
   reviewCount: number | null;
   ratingSource: string | null;
   ratingUrl: string | null;
+  /** The store's Trust score (0-100), how much evidence is behind it, and the working. Null until computed. */
+  trustScore?: number | null;
+  trustConfidence?: 'high' | 'medium' | 'low' | null;
+  trustDetail?: { parts: Record<string, number>; why: string[]; sources: Array<{ title: string; url: string }>; formula: string; computed: string } | null;
   /** Payment methods the store says it accepts; empty = the store doesn't say (nothing is shown). */
   paymentMethods: string[];
   shippingNote: string | null;

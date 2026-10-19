@@ -196,6 +196,14 @@ export function StoreRow({
             {extra < 1 ? 'Lowest price' : `+${formatInr(extra)}`}
             {slowerDays >= 1 ? ` · ${Math.round(slowerDays)}d slower` : ''}
           </p>
+          {offer.trustScore != null && (
+            <p className="mt-1" title={`Trust ${offer.trustScore}/100 (${offer.trustConfidence ?? 'low'} confidence). ${(offer.trustDetail?.why ?? []).join(' ')}`}>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#1B7A34]/10 px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#1B7A34]">
+                Trust {offer.trustScore}
+                <span className="font-semibold normal-case opacity-70">· {offer.trustConfidence ?? 'low'} confidence</span>
+              </span>
+            </p>
+          )}
           {value && (
             <p className="mt-1" title={value.note}>
               <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#14213D]/[0.07] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#14213D]">Value {value.score}/100</span>
@@ -243,6 +251,35 @@ export function StoreRow({
               <dd className="mt-1 leading-snug text-text">{offer.returnsNote ?? 'Not stated'}</dd>
             </div>
           </dl>
+          {offer.trustScore != null && offer.trustDetail && (
+            <div className="sm:col-span-2">
+              <p className={label}>
+                Trust score {offer.trustScore}/100 · {offer.trustConfidence ?? 'low'} confidence
+              </p>
+              <ul className="mt-2 space-y-1 text-[0.82rem] leading-snug text-text">
+                {offer.trustDetail.why.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[0.74rem] text-text-faint">
+                {offer.trustDetail.formula}. A part with no evidence stays neutral, so a store we know little about sits near 50 and says so.
+                {offer.trustDetail.sources.length > 0 && (
+                  <>
+                    {' '}Sources:{' '}
+                    {offer.trustDetail.sources.map((src, i) => (
+                      <span key={src.url}>
+                        {i > 0 && ', '}
+                        <a href={src.url} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-text">
+                          {src.title.length > 60 ? `${src.title.slice(0, 58)}…` : src.title}
+                        </a>
+                      </span>
+                    ))}
+                    .
+                  </>
+                )}
+              </p>
+            </div>
+          )}
           {offer.infoSourceUrl && (
             <p className="text-[0.72rem] text-text-faint sm:col-span-2">
               From the store&apos;s own{' '}

@@ -96,7 +96,6 @@ function returnsLabel(o: CatalogOffer): string {
   if (o.returnsTone === 'none') return 'No returns';
   return 'Not stated';
 }
-const toneRank = (o: CatalogOffer) => (o.returnsTone === 'ok' ? 2 : o.returnsTone === 'limited' ? 1 : 0);
 const short = (t: string | null, n = 70) => (t ? (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t) : undefined);
 
 /**
@@ -187,7 +186,8 @@ export async function CompareExample() {
   const fasterIsA = bothDays && (daysA as number) < (daysB as number);
   const fasterIsB = bothDays && (daysB as number) < (daysA as number);
   const dayGap = bothDays ? Math.round(Math.abs((daysA as number) - (daysB as number))) : 0;
-  const tonesDiffer = toneRank(a) !== toneRank(b);
+  // Positive when store B scores higher on trust, negative when A does (0 when either has no score).
+  const trustDiff = a.trustScore != null && b.trustScore != null ? b.trustScore - a.trustScore : 0;
   const readOn = [a.fetchedAt, b.fetchedAt].sort().slice(-1)[0] ?? a.fetchedAt;
   const name = `${data.sneaker.brand} ${data.sneaker.model}`;
   const image = resolveSneakerImage(data.sneaker.primaryImageUrl);
@@ -230,9 +230,21 @@ export async function CompareExample() {
           <Note>{bothDays ? `${dayGap} ${dayGap === 1 ? 'day' : 'days'} faster${fasterIsB ? ' →' : ''}` : 'Check each store'}</Note>
           <Cell site={b.retailerName} label="Delivery" value={formatDelivery(b) ?? 'Not stated'} best={fasterIsB} sub={b.shippingNote ? short(b.shippingNote, 46) : "The store's own estimate"} />
 
-          <Cell site={a.retailerName} label="Returns" value={returnsLabel(a)} best={tonesDiffer && toneRank(a) > toneRank(b)} sub={short(a.returnsNote)} />
-          <Note>{tonesDiffer ? 'Different return rules' : 'Read each store’s terms'}</Note>
-          <Cell site={b.retailerName} label="Returns" value={returnsLabel(b)} best={tonesDiffer && toneRank(b) > toneRank(a)} sub={short(b.returnsNote)} />
+          <Cell
+            site={a.retailerName}
+            label="Store trust score"
+            value={a.trustScore != null ? `${a.trustScore}/100` : 'Not scored'}
+            best={trustDiff < 0}
+            sub={a.trustScore != null ? `${a.trustConfidence ?? 'low'} confidence · ${returnsLabel(a).toLowerCase()}` : undefined}
+          />
+          <Note>{trustDiff !== 0 ? `+${Math.abs(trustDiff)} trust points` : 'Similar trust'}</Note>
+          <Cell
+            site={b.retailerName}
+            label="Store trust score"
+            value={b.trustScore != null ? `${b.trustScore}/100` : 'Not scored'}
+            best={trustDiff > 0}
+            sub={b.trustScore != null ? `${b.trustConfidence ?? 'low'} confidence · ${returnsLabel(b).toLowerCase()}` : undefined}
+          />
         </div>
       </Reveal>
     </section>

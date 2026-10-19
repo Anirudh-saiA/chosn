@@ -59,6 +59,10 @@ export interface CatalogOffer {
   reviewCount: number | null;
   ratingSource: string | null;
   ratingUrl: string | null;
+  /** The store's Trust score (0-100), how much evidence is behind it, and the working (see scripts/trust). Null until computed. */
+  trustScore: number | null;
+  trustConfidence: 'high' | 'medium' | 'low' | null;
+  trustDetail: { parts: Record<string, number>; why: string[]; sources: Array<{ title: string; url: string }>; formula: string; computed: string } | null;
   /** Payment methods the store says it accepts (empty = the store doesn't say, so none are shown). */
   paymentMethods: string[];
   shippingNote: string | null;
@@ -308,6 +312,9 @@ interface OfferRow {
   review_count: number | null;
   rating_source: string | null;
   rating_url: string | null;
+  trust_score: number | null;
+  trust_confidence: string | null;
+  trust_detail: Record<string, unknown> | null;
   payment_methods: string[] | string | null;
   shipping_note: string | null;
   returns_note: string | null;
@@ -420,6 +427,7 @@ export class CatalogService {
              COALESCE(rp.rating, r.rating) AS rating, COALESCE(rp.rating_count, r.review_count) AS review_count,
              CASE WHEN rp.rating IS NOT NULL THEN r.name ELSE r.rating_source END AS rating_source,
              COALESCE(rp.source_url, r.rating_url) AS rating_url,
+             r.trust_score, r.trust_confidence, r.trust_detail,
              r.payment_methods, r.shipping_note, r.returns_note, r.returns_tone, r.info_source_url, r.offers, r.payment_options, r.offers_updated_at,
              ps.price, ps.shipping_cost, ps.currency, ps.condition, ps.in_stock,
              ps.listing_url, ps.image_url, ps.fetched_at,
@@ -457,6 +465,9 @@ export class CatalogService {
         reviewCount: r.review_count,
         ratingSource: r.rating_source,
         ratingUrl: r.rating_url,
+        trustScore: r.trust_score ?? null,
+        trustConfidence: (r.trust_confidence as 'high' | 'medium' | 'low' | null) ?? null,
+        trustDetail: (r.trust_detail as CatalogOffer['trustDetail']) ?? null,
         paymentMethods: parsePgArray(r.payment_methods),
         shippingNote: r.shipping_note,
         returnsNote: r.returns_note,

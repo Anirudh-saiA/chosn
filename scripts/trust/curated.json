@@ -1,0 +1,18 @@
+{
+  "_note": "Facts about each store that can be cited, with where they came from (read 19 Oct 2026). Only what a source says is recorded: a store with no entry has no cited standing, and that counts as unknown (neutral), never as bad.",
+  "puma-india": {
+    "type": "official_brand_store",
+    "summary": "The brand's own online store (in.puma.com).",
+    "sources": [{ "title": "Puma India, official site", "url": "https://in.puma.com" }]
+  },
+  "culture-circle": {
+    "type": "authenticated_resale",
+    "summary": "Authenticated resale marketplace founded in 2023. It says it checks items with CheckCheck and ships a certificate of authenticity (its own claim, reported by the press).",
+    "independent_articles": 3,
+    "sources": [
+      { "title": "YourStory: Culture Circle bridging the trust gap in India's luxury resale market (Feb 2025)", "url": "https://cwv.yourstory.com/2025/02/culture-circle-bridging-trust-gap-india-luxury-resale-market" },
+      { "title": "Tribune India: Culture Circle reports Rs 153 crore GMV in FY26 (company figure)", "url": "https://www.tribuneindia.com/news/business/culture-circle-achieves-%E2%82%B9153-crore-gmv-sales-in-fy26-sets-sights-on-%E2%82%B91000-crore-run-rate-by-fy27/" },
+      { "title": "Apparel Resources: Culture Circle targets US$100 million revenue in FY27", "url": "https://apparelresources.com/business-news/retail/fashion-resale-platform-culture-circle-targets-us-100-million-revenue-fy-27/" }
+    ]
+  }
+}
