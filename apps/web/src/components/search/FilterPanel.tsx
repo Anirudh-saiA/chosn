@@ -52,7 +52,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
-function CheckRow({ checked, onChange, label, count }: { checked: boolean; onChange: () => void; label: string; count?: number }) {
+export function CheckRow({ checked, onChange, label, count }: { checked: boolean; onChange: () => void; label: string; count?: number }) {
   return (
     <label className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
       <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#14213D]" />
@@ -62,7 +62,7 @@ function CheckRow({ checked, onChange, label, count }: { checked: boolean; onCha
   );
 }
 
-function PriceFilter({ facets, get, set }: { facets: SearchFacets; get: (k: string) => string | null; set: (n: Record<string, string | null>) => void }) {
+export function PriceFilter({ facets, get, set }: { facets: SearchFacets; get: (k: string) => string | null; set: (n: Record<string, string | null>) => void }) {
   const urlMin = get('minPrice') ?? '';
   const urlMax = get('maxPrice') ?? '';
   const [min, setMin] = useState(urlMin);
