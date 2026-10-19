@@ -466,6 +466,16 @@ export class CatalogService {
    * never a client-side filter of the whole catalog — task 3.
    */
   /** Same filters within 30 seconds return the same answer: the per-store summary behind them is the slow part. */
+  /** The photos of one shoe (main photo first, then the other angles), fetched when a card's photo buttons are used. */
+  async photos(styleCode: string): Promise<{ photos: string[] }> {
+    const { rows } = await this.db.execute(sql`
+      SELECT primary_image_url, gallery_image_refs FROM sneakers WHERE style_code = ${styleCode} LIMIT 1
+    `);
+    const r = rows[0] as { primary_image_url: string | null; gallery_image_refs: string[] | null } | undefined;
+    if (!r) return { photos: [] };
+    return { photos: [...new Set([r.primary_image_url, ...(r.gallery_image_refs ?? [])].filter((u): u is string => Boolean(u)))].slice(0, 6) };
+  }
+
   private storeSummaryCache: { at: number; value: StoreSummary } | null = null;
 
   /**
@@ -1041,7 +1051,7 @@ export interface StoreSummary {
 }
 
 interface SearchRow {
-  colours?: Array<{ styleCode: string; colorway: string; primaryImageUrl: string | null; defaultSize: string; bestAvailablePrice: string | null }> | null;
+  colours?: Array<{ styleCode: string; colorway: string; primaryImageUrl: string | null; defaultSize: string; bestAvailablePrice: string | null}> | null;
   store_count?: string | number;
   store_slugs?: string[] | null;
   style_code: string;

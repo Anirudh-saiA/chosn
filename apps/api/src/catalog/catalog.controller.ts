@@ -61,6 +61,12 @@ export class CatalogController {
   }
 
   /** Colourways of the same model, for the colour picker: /catalog/DD1391-100/colours */
+  /** Photos of one shoe for the card's photo buttons. */
+  @Get(':styleCode/photos')
+  async photos(@Param('styleCode') styleCode: string): Promise<{ photos: string[] }> {
+    return this.catalog.photos(styleCode);
+  }
+
   @Get(':styleCode/colours')
   async colours(@Param('styleCode') styleCode: string): Promise<{ colours: ColourOption[] }> {
     return { colours: await this.catalog.colours(styleCode) };

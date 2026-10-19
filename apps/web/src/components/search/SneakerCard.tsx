@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SneakerArt } from '@/components/ui/SneakerArt';
 import { formatInr, formatSize, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
@@ -34,17 +34,54 @@ export function SneakerCard({ item }: SneakerCardProps) {
       ? item.colours
       : [{ styleCode: item.styleCode, colorway: item.colorway, primaryImageUrl: item.primaryImageUrl, defaultSize: item.defaultSize, bestAvailablePrice: item.bestAvailablePrice }];
   const [selected, setSelected] = useState(0);
+  const [photo, setPhoto] = useState(0);
+  // Each colour's extra photos are fetched once, the first time the card is hovered or a photo button is used.
+  const [fetched, setFetched] = useState<Record<string, string[]>>({});
+
   const cur = colours[Math.min(selected, colours.length - 1)] ?? colours[0]!;
+  // Changing colour starts that colour's photos again from the first one.
+  const pick = (i: number) => {
+    if (i === selected) return;
+    setSelected(i);
+    setPhoto(0);
+  };
+  const loadPhotos = useCallback(
+    async (code: string) => {
+      if (fetched[code]) return fetched[code];
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/catalog/${encodeURIComponent(code)}/photos`);
+        const list = res.ok ? ((await res.json()) as { photos: string[] }).photos : [];
+        setFetched((f) => ({ ...f, [code]: list }));
+        return list;
+      } catch {
+        return [];
+      }
+    },
+    [fetched],
+  );
+  // The photos of the shown colour: the main one, then the other angles the stores gave. Until they are fetched, just the main one.
+  const known = fetched[cur.styleCode];
+  const photos = [...new Set([cur.primaryImageUrl, ...(known ?? [])].filter((u): u is string => Boolean(u)))].slice(0, 6);
+  const photoIdx = Math.min(photo, Math.max(photos.length - 1, 0));
+  const step = (dir: 1 | -1) => async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const list = known ? photos : [...new Set([cur.primaryImageUrl, ...(await loadPhotos(cur.styleCode))].filter((u): u is string => Boolean(u)))].slice(0, 6);
+    if (list.length > 1) setPhoto((photoIdx + dir + list.length) % list.length);
+  };
 
   const href = `/sneakers/${encodeURIComponent(cur.styleCode)}/${formatSize(cur.defaultSize)}`;
   const pill = selected === 0 && item.signal ? SIGNAL_PILL[item.signal] : undefined;
-  const imageUrl = resolveSneakerImage(cur.primaryImageUrl);
+  const imageUrl = resolveSneakerImage(photos[photoIdx] ?? cur.primaryImageUrl);
   const palette = paletteFor(cur.colorway, item.brand);
   const shown = colours.slice(0, MAX_DOTS);
   const extra = colours.length - shown.length;
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]">
+    <div
+      className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]"
+      onMouseEnter={() => void loadPhotos(cur.styleCode)}
+    >
       <div className={`relative aspect-square overflow-hidden ${imageUrl ? 'bg-white' : ''}`} style={imageUrl ? undefined : { background: `linear-gradient(160deg, ${palette.glow}40, ${palette.glow}14)` }}>
         {imageUrl ? (
           // Plain <img>: no known remote domain to allow-list yet. Falls back to the illustration if the photo can't load.
@@ -66,6 +103,27 @@ export function SneakerCard({ item }: SneakerCardProps) {
         {pill && (
           <span className={`absolute left-4 top-4 rounded-full px-3 py-1 font-display text-[0.8rem] uppercase tracking-[0.16em] ${pill.cls}`}>
             {pill.label}
+          </span>
+        )}
+        {/* Two buttons on every card: flip through this colour's photos. They sit above the card's link, so they do not open the shoe. */}
+        {(['prev', 'next'] as const).map((dir) => (
+          <button
+            key={dir}
+            type="button"
+            onClick={step(dir === 'next' ? 1 : -1)}
+            disabled={known !== undefined && photos.length <= 1}
+            aria-label={dir === 'next' ? 'Next photo' : 'Previous photo'}
+            title={known !== undefined && photos.length <= 1 ? 'No more photos of this colour yet' : dir === 'next' ? 'Next photo' : 'Previous photo'}
+            className={`absolute top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#0A0A0A]/15 bg-white/90 text-[#0A0A0A] shadow-sm transition hover:border-[#0A0A0A] hover:bg-white disabled:cursor-not-allowed disabled:opacity-35 ${dir === 'next' ? 'right-3' : 'left-3'}`}
+          >
+            {dir === 'next' ? <ChevronRight className="h-5 w-5" aria-hidden /> : <ChevronLeft className="h-5 w-5" aria-hidden />}
+          </button>
+        ))}
+        {photos.length > 1 && (
+          <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5" aria-hidden>
+            {photos.map((_, i) => (
+              <span key={i} className={`h-1.5 rounded-full transition-all ${i === photoIdx ? 'w-4 bg-[#0A0A0A]' : 'w-1.5 bg-[#0A0A0A]/25'}`} />
+            ))}
           </span>
         )}
       </div>
@@ -92,9 +150,9 @@ export function SneakerCard({ item }: SneakerCardProps) {
                     aria-label={`${c.colorway}${c.bestAvailablePrice !== null ? `, ${formatInr(c.bestAvailablePrice)}` : ''}`}
                     aria-pressed={i === selected}
                     title={c.colorway}
-                    onMouseEnter={() => setSelected(i)}
-                    onFocus={() => setSelected(i)}
-                    onClick={() => setSelected(i)}
+                    onMouseEnter={() => pick(i)}
+                    onFocus={() => pick(i)}
+                    onClick={() => pick(i)}
                     className={`relative h-10 w-10 overflow-hidden rounded-xl bg-white transition-shadow ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/20 hover:ring-[#0A0A0A]/60'}`}
                   >
                     {c.primaryImageUrl ? (
