@@ -7,6 +7,7 @@ import {
   type PriceHistory,
   type SearchResponse,
   type SearchSort,
+  type PriceDrop,
   type StoreSummary,
   type SearchResultItem,
 } from './catalog.service';
@@ -40,6 +41,14 @@ export class CatalogController {
       includeSoldOut: soldOut === '1',
       sort: sort as SearchSort | undefined,
     });
+  }
+
+  /** "Crazy falls": the biggest recorded price falls since the previous recorded day. */
+  @Get('price-drops')
+  async priceDrops(@Query('limit') limit?: string, @Query('minPct') minPct?: string): Promise<PriceDrop[]> {
+    const l = Math.min(Math.max(Number(limit) || 24, 1), 100);
+    const m = Math.min(Math.max(Number(minPct) || 15, 5), 70);
+    return this.catalog.priceDrops(l, m);
   }
 
   /** The "Stores we compare" page: every live store with how many shoes it has and when it was last read. */

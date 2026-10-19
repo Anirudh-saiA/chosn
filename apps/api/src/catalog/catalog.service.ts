@@ -487,6 +487,59 @@ export class CatalogService {
     return { photos: [...new Set([r.primary_image_url, ...(r.gallery_image_refs ?? [])].filter((u): u is string => Boolean(u)))].slice(0, 6) };
   }
 
+  private dropsCache = new Map<string, { at: number; value: PriceDrop[] }>();
+
+  /**
+   * "Crazy falls": shoes where the store with the cheapest in-stock price cut it by at least `minPct` since the last day we recorded
+   * before the newest one (a cheaper store merely appearing does not count), one entry per shoe (its biggest fall across sizes). Read from daily_best_prices, which holds each size's cheapest price per day, so a fall
+   * is a real recorded one. The newest recorded day must be no older than yesterday, and tiny or absurd prices are ignored.
+   */
+  async priceDrops(limit = 24, minPct = 15): Promise<PriceDrop[]> {
+    const key = `${limit}|${minPct}`;
+    const hit = this.dropsCache.get(key);
+    if (hit && Date.now() - hit.at < 600_000) return hit.value;
+    const { rows } = await this.db.execute(sql`
+      WITH r AS (
+        SELECT sneaker_variant_id, day, best_price_inr, best_retailer_id,
+               row_number() OVER (PARTITION BY sneaker_variant_id ORDER BY day DESC) AS rn
+        FROM daily_best_prices WHERE day >= CURRENT_DATE - 7
+      ),
+      c AS (SELECT * FROM r WHERE rn = 1 AND day >= CURRENT_DATE - 1),
+      p AS (SELECT * FROM r WHERE rn = 2),
+      d AS (
+        SELECT DISTINCT ON (s.id) s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size,
+               p.best_price_inr AS prev_price, c.best_price_inr AS cur_price, p.day AS prev_day, c.day AS cur_day, rt.name AS store,
+               round(((p.best_price_inr - c.best_price_inr) / p.best_price_inr * 100)::numeric, 1) AS pct
+        FROM c JOIN p USING (sneaker_variant_id)
+        JOIN sneaker_variants v ON v.id = c.sneaker_variant_id
+        JOIN sneakers s ON s.id = v.sneaker_id
+        JOIN retailers rt ON rt.id = c.best_retailer_id
+        WHERE c.best_retailer_id = p.best_retailer_id -- the same store cut its price (not a cheaper store showing up)
+          AND c.best_price_inr < p.best_price_inr * (1 - ${minPct}::numeric / 100)
+          AND c.best_price_inr > p.best_price_inr * 0.2
+          AND c.best_price_inr >= 300 AND p.best_price_inr >= 500
+        ORDER BY s.id, pct DESC
+      )
+      SELECT * FROM d ORDER BY pct DESC, brand, model LIMIT ${limit}
+    `);
+    const value = (rows as Array<Record<string, unknown>>).map((r) => ({
+      styleCode: String(r.style_code),
+      brand: String(r.brand),
+      model: String(r.model),
+      colorway: String(r.colorway),
+      primaryImageUrl: (r.primary_image_url as string | null) ?? null,
+      size: Number(r.size),
+      previousPrice: Math.round(Number(r.prev_price)),
+      currentPrice: Math.round(Number(r.cur_price)),
+      dropPct: Number(r.pct),
+      store: String(r.store),
+      previousDay: new Date(r.prev_day as string).toISOString().slice(0, 10),
+      currentDay: new Date(r.cur_day as string).toISOString().slice(0, 10),
+    }));
+    this.dropsCache.set(key, { at: Date.now(), value });
+    return value;
+  }
+
   private storeSummaryCache: { at: number; value: StoreSummary } | null = null;
 
   /**
@@ -1042,6 +1095,21 @@ export class CatalogService {
       size: Number(r.size),
     }));
   }
+}
+
+export interface PriceDrop {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  size: number;
+  previousPrice: number;
+  currentPrice: number;
+  dropPct: number;
+  store: string;
+  previousDay: string;
+  currentDay: string;
 }
 
 export interface StoreSummary {

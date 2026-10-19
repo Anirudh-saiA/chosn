@@ -3,6 +3,7 @@ import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
 import { BrowseShortcuts } from '@/components/search/BrowseShortcuts';
 import { FilterPanel } from '@/components/search/FilterPanel';
+import { PriceFalls } from '@/components/search/PriceFalls';
 import { ResultsToolbar } from '@/components/search/ResultsToolbar';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { Reveal } from '@/components/fx/Reveal';
@@ -48,6 +49,9 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           />
         </div>
       </header>
+
+      {/* Only on the plain Compare page: not above a filtered or searched list. */}
+      {!Object.values(query).some(Boolean) && <PriceFalls />}
 
       <div className="grid gap-8 lg:grid-cols-[16.5rem_minmax(0,1fr)] xl:grid-cols-[17.5rem_minmax(0,1fr)] xl:gap-10">
         <aside aria-label="Filters" className="hidden lg:block">

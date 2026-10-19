@@ -10,6 +10,7 @@ const COLUMNS = [
   [
     ['/sneakers', 'Compare'],
     ['/brands', 'Brands'],
+    ['/price-drops', 'Crazy falls'],
     ['/drops', 'Drops'],
     ['/news', 'News'],
     ['/community', 'Community'],
