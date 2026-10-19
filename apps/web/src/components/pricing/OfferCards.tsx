@@ -1,4 +1,4 @@
-import { Info, X } from 'lucide-react';
+import { ChevronDown, Info, X } from 'lucide-react';
 import { StoreRow } from './StoreRow';
 import { buildBuyGuide } from '@/lib/buy-guide';
 import { formatInr, type CatalogOffer } from '@/lib/catalog';
@@ -19,22 +19,40 @@ export function OfferCards({ offers, size, connectedStores = [] }: { offers: Cat
   const liveSlugs = new Set(live.map((o) => o.retailerSlug));
   const soldOutSlugs = new Set(soldOut.map((o) => o.retailerSlug));
   const without = connectedStores.filter((s) => !liveSlugs.has(s.slug));
+  const chips = (
+    <ul className="flex flex-wrap gap-2">
+      {without.map((s) => (
+        <li
+          key={s.slug}
+          title={soldOutSlugs.has(s.slug) ? `${s.name} has UK ${size} listed but it is sold out` : `${s.name} does not list UK ${size} of this shoe`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint"
+        >
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+          <span className="line-through decoration-text/30">{s.name}</span>
+          <span className="sr-only">{soldOutSlugs.has(s.slug) ? 'sold out' : 'not listed'}</span>
+        </li>
+      ))}
+    </ul>
+  );
+  // Up to four stores are shown as buttons; more than that folds into one line that opens to show them (a one-store shoe would
+  // otherwise get a wall of grey).
   const crossed = without.length > 0 && (
     <div className="mt-5">
-      <p className="mb-2 font-mono text-[0.68rem] font-bold uppercase tracking-[0.16em] text-text-faint">Not available in UK {size}</p>
-      <ul className="flex flex-wrap gap-2">
-        {without.map((s) => (
-          <li
-            key={s.slug}
-            title={soldOutSlugs.has(s.slug) ? `${s.name} has UK ${size} listed but it is sold out` : `${s.name} does not list UK ${size} of this shoe`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint"
-          >
+      {without.length <= 4 ? (
+        <>
+          <p className="mb-2 font-mono text-[0.68rem] font-bold uppercase tracking-[0.16em] text-text-faint">Not available in UK {size}</p>
+          {chips}
+        </>
+      ) : (
+        <details className="group">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint transition-colors hover:border-text/25 [&::-webkit-details-marker]:hidden">
             <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
-            <span className="line-through decoration-text/30">{s.name}</span>
-            <span className="sr-only">{soldOutSlugs.has(s.slug) ? 'sold out' : 'not listed'}</span>
-          </li>
-        ))}
-      </ul>
+            Not available at {live.length > 0 ? `${without.length} other` : `all ${without.length}`} stores in UK {size}
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="mt-3">{chips}</div>
+        </details>
+      )}
     </div>
   );
 
