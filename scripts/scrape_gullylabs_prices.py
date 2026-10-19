@@ -20,7 +20,7 @@ import core  # noqa: E402
 
 BASE = "https://gullylabs.com"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition", "gallery_urls"]
+           "image_url", "size_system", "condition", "gallery_urls", "compare_at_price"]
 SIZE_SUFFIX = re.compile(r"_(\d{2})$")
 CODE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)+$")
 
@@ -33,6 +33,15 @@ def style_code(sku):
 def clean_size(title):
     m = re.search(r"(\d{1,2}(?:\.5)?)", title)
     return m.group(1) if m else ""
+
+
+def was_price(v):
+    """The store's own "was" price (Shopify compare_at_price) when it is above today's price, else blank."""
+    try:
+        was, now = float(v.get("compare_at_price") or 0), float(v["price"])
+    except (TypeError, ValueError):
+        return ""
+    return int(was) if was > now else ""
 
 
 def rows_for(p):
@@ -48,7 +57,7 @@ def rows_for(p):
             "brand": "Gully Labs", "model": title, "colorway": "", "style_code": style_code(v.get("sku")), "size": size,
             "retailer": "Gully Labs", "price": int(float(v["price"])), "shipping": "", "url": f"{BASE}/products/{p['handle']}",
             "in_stock": "yes" if v.get("available") else "no", "image_url": image, "size_system": "uk", "condition": "new",
-            "gallery_urls": gallery,
+            "gallery_urls": gallery, "compare_at_price": was_price(v),
         })
     return out
 

@@ -42,7 +42,7 @@ RUN_DIR = ROOT / "data" / "daily" / TODAY
 STATE = ROOT / "data" / "daily" / "last_run.json"
 LOG_FILE = ROOT / "logs" / f"daily-{TODAY}.log"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
-           "image_url", "size_system", "condition", "gallery_urls"]
+           "image_url", "size_system", "condition", "gallery_urls", "compare_at_price"]
 MIN_RATIO = 0.7
 # Puma is read in a local browser (Crawl4AI), which lives in the webscraper environment.
 _VENV_PY = ROOT / "tools" / "webscraper-venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")

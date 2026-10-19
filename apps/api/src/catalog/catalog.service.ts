@@ -487,6 +487,53 @@ export class CatalogService {
     return { photos: [...new Set([r.primary_image_url, ...(r.gallery_image_refs ?? [])].filter((u): u is string => Boolean(u)))].slice(0, 6) };
   }
 
+  private discountsCache = new Map<string, { at: number; value: StoreDiscount[] }>();
+
+  /**
+   * Biggest discounts by the store's own "was" price (its compare-at price, saved with each listing). It is the store's claim about
+   * its original price, shown as such. One entry per shoe: its biggest discount. Only in-stock listings, a believable "was" price
+   * (at least 15% above the price and no more than 4 times it), and no tiny prices, so junk entries do not show.
+   */
+  async discounts(limit = 24, minPct = 20): Promise<StoreDiscount[]> {
+    const key = `${limit}|${minPct}`;
+    const hit = this.discountsCache.get(key);
+    if (hit && Date.now() - hit.at < 600_000) return hit.value;
+    const { rows } = await this.db.execute(sql`
+      WITH d AS (
+        SELECT DISTINCT ON (s.id) s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size,
+               ps.compare_at_price AS was, ps.price AS now_price, r.name AS store,
+               round(((ps.compare_at_price - ps.price) / ps.compare_at_price * 100)::numeric, 1) AS pct
+        FROM price_snapshots ps
+        JOIN retailers r ON r.id = ps.retailer_id
+        JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+        JOIN sneakers s ON s.id = v.sneaker_id
+        WHERE ps.is_latest = true AND ps.in_stock = true AND ps.compare_at_price IS NOT NULL
+          AND ps.listing_url NOT LIKE '%FIXTURE%'
+          AND ps.price >= 500
+          AND ps.compare_at_price >= ps.price * 1.15 AND ps.compare_at_price <= ps.price * 2 -- up to 50% off: beyond that a "was" price is rarely believable
+          AND (ps.compare_at_price - ps.price) / ps.compare_at_price * 100 >= ${minPct}::numeric
+        ORDER BY s.id, pct DESC
+      )
+      -- Balanced across stores: each store's best few come first (so one store cannot fill the list), then the rest by size of discount.
+      SELECT * FROM (SELECT d.*, row_number() OVER (PARTITION BY store ORDER BY pct DESC) AS store_rank FROM d) x
+      ORDER BY (store_rank > ${Math.max(2, Math.ceil(limit / 3))}), pct DESC, brand, model LIMIT ${limit}
+    `);
+    const value = (rows as Array<Record<string, unknown>>).map((r) => ({
+      styleCode: String(r.style_code),
+      brand: String(r.brand),
+      model: String(r.model),
+      colorway: String(r.colorway),
+      primaryImageUrl: (r.primary_image_url as string | null) ?? null,
+      size: Number(r.size),
+      wasPrice: Math.round(Number(r.was)),
+      price: Math.round(Number(r.now_price)),
+      discountPct: Number(r.pct),
+      store: String(r.store),
+    }));
+    this.discountsCache.set(key, { at: Date.now(), value });
+    return value;
+  }
+
   private dropsCache = new Map<string, { at: number; value: PriceDrop[] }>();
 
   /**
@@ -516,11 +563,13 @@ export class CatalogService {
         JOIN retailers rt ON rt.id = c.best_retailer_id
         WHERE c.best_retailer_id = p.best_retailer_id -- the same store cut its price (not a cheaper store showing up)
           AND c.best_price_inr < p.best_price_inr * (1 - ${minPct}::numeric / 100)
-          AND c.best_price_inr > p.best_price_inr * 0.2
+          AND c.best_price_inr > p.best_price_inr * 0.5 -- a fall of more than half in a day is far more likely a data slip than a real cut
           AND c.best_price_inr >= 300 AND p.best_price_inr >= 500
         ORDER BY s.id, pct DESC
       )
-      SELECT * FROM d ORDER BY pct DESC, brand, model LIMIT ${limit}
+      -- Balanced across stores, as in discounts(): each store's best few first, then the rest.
+      SELECT * FROM (SELECT d.*, row_number() OVER (PARTITION BY store ORDER BY pct DESC) AS store_rank FROM d) x
+      ORDER BY (store_rank > ${Math.max(2, Math.ceil(limit / 3))}), pct DESC, brand, model LIMIT ${limit}
     `);
     const value = (rows as Array<Record<string, unknown>>).map((r) => ({
       styleCode: String(r.style_code),
@@ -1110,6 +1159,19 @@ export interface PriceDrop {
   store: string;
   previousDay: string;
   currentDay: string;
+}
+
+export interface StoreDiscount {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  size: number;
+  wasPrice: number;
+  price: number;
+  discountPct: number;
+  store: string;
 }
 
 export interface StoreSummary {

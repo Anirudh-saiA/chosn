@@ -30,6 +30,7 @@ export const CSV_COLUMNS = [
   'size_system',
   'condition',
   'gallery_urls',
+  'compare_at_price',
 ] as const;
 
 const REQUIRED = ['brand', 'model', 'colorway', 'style_code', 'size', 'retailer', 'price', 'url'] as const;
@@ -53,6 +54,8 @@ export interface PriceRow {
   imageUrl: string | null;
   /** Other photos of the same pair (optional column gallery_urls: https links separated by |). */
   galleryUrls: string[];
+  /** The store's own "was" price (optional column compare_at_price); null unless it is higher than the price. */
+  compareAtPrice: number | null;
   condition: 'new' | 'used';
 }
 
@@ -248,6 +251,11 @@ export function parsePriceCsv(text: string): ParseResult {
       })
       .slice(0, 6);
 
+    // Optional "was" price: only kept when it is a real number above today's price. Never blocks a row.
+    const compareRaw = cell(r, 'compare_at_price');
+    const compareParsed = compareRaw ? parseMoney(compareRaw) : null;
+    const compareAtPrice = compareParsed !== null && compareParsed > price ? compareParsed : null;
+
     // The same store can't have two prices for the same shoe and size in one upload.
     const key = `${retailer.toLowerCase()}|${styleCode}|${sizeSystemRaw}|${size}`;
     const firstLine = seen.get(key);
@@ -269,6 +277,7 @@ export function parsePriceCsv(text: string): ParseResult {
       inStock,
       imageUrl,
       galleryUrls,
+      compareAtPrice,
       condition: conditionRaw,
     });
   });

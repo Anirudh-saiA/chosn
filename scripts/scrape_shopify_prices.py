@@ -13,7 +13,7 @@ import os
 import urllib.request
 
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping",
-           "url", "in_stock", "image_url", "size_system", "condition", "gallery_urls"]
+           "url", "in_stock", "image_url", "size_system", "condition", "gallery_urls", "compare_at_price"]
 
 STORES = [
     {"retailer": "Superkicks", "base": "https://www.superkicks.in"},
@@ -96,6 +96,15 @@ def normalize_brand(vendor):
     return vendor.title() if vendor.isupper() else vendor
 
 
+def was_price(v):
+    """The store's own "was" price (Shopify compare_at_price) when it is above today's price, else blank."""
+    try:
+        was, now = float(v.get("compare_at_price") or 0), float(v["price"])
+    except (TypeError, ValueError):
+        return ""
+    return int(was) if was > now else ""
+
+
 def rows_for(p, store):
     vendor = (p.get("vendor") or "").strip()
     brand = normalize_brand(vendor)
@@ -124,7 +133,7 @@ def rows_for(p, store):
             "colorway": colorway, "style_code": vcode, "size": size, "retailer": store["retailer"],
             "price": int(float(v["price"])), "shipping": "", "url": base_url,
             "in_stock": "yes" if v["available"] else "no", "image_url": image,
-            "size_system": "uk", "condition": "new", "gallery_urls": gallery,
+            "size_system": "uk", "condition": "new", "gallery_urls": gallery, "compare_at_price": was_price(v),
         })
     return out
 

@@ -109,12 +109,13 @@ def main():
         for r in extra:
             r.setdefault("delivery_time", "")
             r.setdefault("gallery_urls", "")
+            r.setdefault("compare_at_price", "")
             rows.append(r)
         if cols is None and extra:
             cols = list(extra[0].keys())
     if not rows:
         raise SystemExit("nothing to pair: every input file is empty")
-    for c in ("delivery_time", "gallery_urls"):
+    for c in ("delivery_time", "gallery_urls", "compare_at_price"):
         if c not in cols and any(c in r for r in rows):
             cols.append(c)
     for r in rows:

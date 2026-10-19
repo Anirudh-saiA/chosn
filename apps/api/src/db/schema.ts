@@ -211,6 +211,8 @@ export const priceSnapshots = pgTable(
     listingUrl: text('listing_url').notNull(),
     /** This retailer's own listing image, captured at fetch time — the fallback tier below sneakers.primaryImageUrl. See 0018_price_snapshot_image_url.sql. */
     imageUrl: text('image_url'),
+    /** The store's own "was" price (Shopify compare_at_price), when it shows one higher than the price. See 0033_compare_at_price.sql. */
+    compareAtPrice: numeric('compare_at_price', { precision: 12, scale: 2 }),
     authenticityVerified: boolean('authenticity_verified').notNull().default(false),
     /** Fast current-price lookup without scanning history. */
     isLatest: boolean('is_latest').notNull().default(true),

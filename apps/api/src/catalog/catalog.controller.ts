@@ -8,6 +8,7 @@ import {
   type SearchResponse,
   type SearchSort,
   type PriceDrop,
+  type StoreDiscount,
   type StoreSummary,
   type SearchResultItem,
 } from './catalog.service';
@@ -41,6 +42,14 @@ export class CatalogController {
       includeSoldOut: soldOut === '1',
       sort: sort as SearchSort | undefined,
     });
+  }
+
+  /** Biggest discounts by the store's own "was" price. */
+  @Get('discounts')
+  async discounts(@Query('limit') limit?: string, @Query('minPct') minPct?: string): Promise<StoreDiscount[]> {
+    const l = Math.min(Math.max(Number(limit) || 24, 1), 100);
+    const m = Math.min(Math.max(Number(minPct) || 20, 10), 70);
+    return this.catalog.discounts(l, m);
   }
 
   /** "Crazy falls": the biggest recorded price falls since the previous recorded day. */

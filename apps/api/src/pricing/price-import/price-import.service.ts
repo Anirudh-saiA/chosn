@@ -235,6 +235,7 @@ export class PriceImportService {
           inStock: r.inStock,
           listingUrl: r.url,
           imageUrl: r.imageUrl,
+          compareAtPrice: r.compareAtPrice !== null ? String(r.compareAtPrice) : null,
           authenticityVerified: false,
           fetchedAt: new Date(),
         });
