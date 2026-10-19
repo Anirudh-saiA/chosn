@@ -187,7 +187,10 @@ export async function CompareExample() {
   const fasterIsB = bothDays && (daysB as number) < (daysA as number);
   const dayGap = bothDays ? Math.round(Math.abs((daysA as number) - (daysB as number))) : 0;
   // Positive when store B scores higher on trust, negative when A does (0 when either has no score).
-  const trustDiff = a.trustScore != null && b.trustScore != null ? b.trustScore - a.trustScore : 0;
+  const scored = (o: CatalogOffer) => o.trustScore != null && o.trustConfidence !== 'low';
+  const trustDiff = scored(a) && scored(b) ? (b.trustScore as number) - (a.trustScore as number) : 0;
+  const trustText = (o: CatalogOffer) => (scored(o) ? `${o.trustScore}/100` : 'Not enough evidence');
+  const trustSub = (o: CatalogOffer) => (scored(o) ? `${o.trustConfidence} confidence · ${returnsLabel(o).toLowerCase()}` : 'No reviews or cited standing yet');
   const readOn = [a.fetchedAt, b.fetchedAt].sort().slice(-1)[0] ?? a.fetchedAt;
   const name = `${data.sneaker.brand} ${data.sneaker.model}`;
   const image = resolveSneakerImage(data.sneaker.primaryImageUrl);
@@ -233,17 +236,17 @@ export async function CompareExample() {
           <Cell
             site={a.retailerName}
             label="Store trust score"
-            value={a.trustScore != null ? `${a.trustScore}/100` : 'Not scored'}
+            value={trustText(a)}
             best={trustDiff < 0}
-            sub={a.trustScore != null ? `${a.trustConfidence ?? 'low'} confidence · ${returnsLabel(a).toLowerCase()}` : undefined}
+            sub={trustSub(a)}
           />
-          <Note>{trustDiff !== 0 ? `+${Math.abs(trustDiff)} trust points` : 'Similar trust'}</Note>
+          <Note>{trustDiff !== 0 ? `+${Math.abs(trustDiff)} trust points` : scored(a) && scored(b) ? 'Similar trust' : 'Needs more data'}</Note>
           <Cell
             site={b.retailerName}
             label="Store trust score"
-            value={b.trustScore != null ? `${b.trustScore}/100` : 'Not scored'}
+            value={trustText(b)}
             best={trustDiff > 0}
-            sub={b.trustScore != null ? `${b.trustConfidence ?? 'low'} confidence · ${returnsLabel(b).toLowerCase()}` : undefined}
+            sub={trustSub(b)}
           />
         </div>
       </Reveal>

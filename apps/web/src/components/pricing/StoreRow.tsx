@@ -196,14 +196,19 @@ export function StoreRow({
             {extra < 1 ? 'Lowest price' : `+${formatInr(extra)}`}
             {slowerDays >= 1 ? ` · ${Math.round(slowerDays)}d slower` : ''}
           </p>
-          {offer.trustScore != null && (
-            <p className="mt-1" title={`Trust ${offer.trustScore}/100 (${offer.trustConfidence ?? 'low'} confidence). ${(offer.trustDetail?.why ?? []).join(' ')}`}>
-              <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#1B7A34]/10 px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#1B7A34]">
-                Trust {offer.trustScore}
-                <span className="font-semibold normal-case opacity-70">· {offer.trustConfidence ?? 'low'} confidence</span>
-              </span>
-            </p>
-          )}
+          {offer.trustScore != null &&
+            (offer.trustConfidence === 'low' ? (
+              <p className="mt-1" title={`Provisional ${offer.trustScore}/100, mostly neutral because we have no reviews or cited standing for this store yet. Open the row for the working.`}>
+                <span className="inline-flex cursor-help items-center rounded-full bg-text/[0.06] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-text-soft">Trust: not enough evidence yet</span>
+              </p>
+            ) : (
+              <p className="mt-1" title={`Trust ${offer.trustScore}/100 (${offer.trustConfidence ?? 'low'} confidence). ${(offer.trustDetail?.why ?? []).join(' ')}`}>
+                <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#1B7A34]/10 px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#1B7A34]">
+                  Trust {offer.trustScore}
+                  <span className="font-semibold normal-case opacity-70">· {offer.trustConfidence ?? 'low'} confidence</span>
+                </span>
+              </p>
+            ))}
           {value && (
             <p className="mt-1" title={value.note}>
               <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#14213D]/[0.07] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#14213D]">Value {value.score}/100</span>
@@ -254,7 +259,7 @@ export function StoreRow({
           {offer.trustScore != null && offer.trustDetail && (
             <div className="sm:col-span-2">
               <p className={label}>
-                Trust score {offer.trustScore}/100 · {offer.trustConfidence ?? 'low'} confidence
+                {offer.trustConfidence === 'low' ? `Trust: not enough evidence yet (provisional ${offer.trustScore}/100)` : `Trust score ${offer.trustScore}/100 · ${offer.trustConfidence ?? 'low'} confidence`}
               </p>
               <ul className="mt-2 space-y-1 text-[0.82rem] leading-snug text-text">
                 {offer.trustDetail.why.map((w) => (
