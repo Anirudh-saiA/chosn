@@ -4,6 +4,9 @@ import { ScrollHighlight } from './ScrollHighlight';
 import { ScrollOn } from './ScrollOn';
 import { Marquee } from '@/components/fx/Marquee';
 import { Reveal } from '@/components/fx/Reveal';
+import { fetchCatalogVariant, fetchSearch, formatInr, formatSize, type CatalogOffer, type CatalogResponse } from '@/lib/catalog';
+import { deliveryDays, formatDelivery, isEligible } from '@/lib/recommend';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
 /** The retailers CHOSN reads prices from (mirrors SourcesStrip). */
 const RETAILERS = [
@@ -19,21 +22,7 @@ const RETAILERS = [
 ];
 
 const hand = 'font-[family-name:var(--font-hand)] font-bold';
-
-interface Offer {
-  site: string;
-  price: string;
-  delivery: string;
-  legit: number;
-  legitNote: string;
-  /** header colour */
-  tone: string;
-}
-
-/* One sneaker, two sites. Figures are illustrative: this is what a CHOSN comparison looks like. */
-const SNEAKER = 'Nike Dunk Low · Sail / Team Red';
-const A: Offer = { site: 'Flipkart', price: '₹9,295', delivery: 'Sat, 18 Oct', legit: 71, legitNote: 'Third-party marketplace seller', tone: '#1F5FE0' };
-const B: Offer = { site: 'Superkicks', price: '₹10,995', delivery: 'Sun, 12 Oct', legit: 98, legitNote: 'Authorised sneaker retailer', tone: '#D81E2D' };
+const REVALIDATE = { next: { revalidate: 600 } } as const;
 
 /** A wobbly hand-drawn arrow (double-headed), drawn as SVG so it reads like a pen doodle. */
 function DoodleArrow({ className = '' }: { className?: string }) {
@@ -64,11 +53,7 @@ function Cell({ site, label, value, sub, best }: { site: string; label: string; 
       </p>
       <p className="relative mt-1 inline-block font-mono text-[1.9rem] font-extrabold leading-tight text-[#0A0A0A]">
         {best && <DoodleRing />}
-        <span
-          className={`cmp-num ${best ? 'cmp-num-best' : 'cmp-num-dim'}`}
-        >
-          {value}
-        </span>
+        <span className={`cmp-num ${best ? 'cmp-num-best' : 'cmp-num-dim'}`}>{value}</span>
       </p>
       {sub && <p className="cmp-sub mt-1 text-[0.85rem] font-bold text-text-soft">{sub}</p>}
     </ScrollOn>
@@ -84,18 +69,72 @@ function Note({ children, className = '' }: { children: React.ReactNode; classNa
   );
 }
 
-function Header({ offer }: { offer: Offer }) {
+function Header({ offer }: { offer: CatalogOffer }) {
   return (
-    <div className="hidden rounded-2xl px-6 py-4 text-center font-display text-[1.7rem] uppercase tracking-[0.02em] text-white md:block" style={{ background: offer.tone }}>
-      {offer.site}
+    <div className="hidden items-center justify-center gap-3 rounded-2xl bg-[#14213D] px-6 py-4 text-center font-display text-[1.7rem] uppercase tracking-[0.02em] text-white md:flex">
+      {offer.retailerLogoUrl && (
+        <span className="flex h-9 w-14 items-center justify-center rounded-lg bg-white px-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={offer.retailerLogoUrl} alt="" className="max-h-7 max-w-full object-contain" />
+        </span>
+      )}
+      {offer.retailerName}
     </div>
   );
 }
 
-export function CompareExample() {
-  const dPrice = '₹1,700 cheaper';
-  return (
-    <section id="compare" data-ambient="dunk" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
+interface Example {
+  data: CatalogResponse;
+  a: CatalogOffer; // the cheapest in-stock store
+  b: CatalogOffer; // the store to compare it with
+}
+
+/** The returns rule as a short label, from the store's own stated policy (nothing is scored or invented). */
+function returnsLabel(o: CatalogOffer): string {
+  if (o.returnsTone === 'ok') return 'Returns accepted';
+  if (o.returnsTone === 'limited') return 'Limited returns';
+  if (o.returnsTone === 'none') return 'No returns';
+  return 'Not stated';
+}
+const toneRank = (o: CatalogOffer) => (o.returnsTone === 'ok' ? 2 : o.returnsTone === 'limited' ? 1 : 0);
+const short = (t: string | null, n = 70) => (t ? (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t) : undefined);
+
+/**
+ * A real comparison for the landing page: the most-compared shoe that two stores have in stock right now, its real prices and each
+ * store's own delivery estimate and returns rule. Nothing here is illustrative; if no such shoe can be found the example is left out.
+ */
+async function loadExample(): Promise<Example | null> {
+  try {
+    const found = await fetchSearch({}, REVALIDATE);
+    for (const r of found.results.slice(0, 12)) {
+      const c = r.colours?.[0];
+      if (!c || !r.primaryImageUrl) continue;
+      const live = (c.offers ?? []).filter((o) => o.inStock);
+      if (live.length < 2) continue;
+      const data = await fetchCatalogVariant(c.styleCode, Number(c.defaultSize), REVALIDATE);
+      if (!data) continue;
+      const pool = data.offers.filter(isEligible).sort((x, y) => (x.effectivePriceInr as number) - (y.effectivePriceInr as number));
+      if (pool.length < 2) continue;
+      const a = pool[0]!;
+      const others = pool.slice(1);
+      // The other store: the one with the quickest stated delivery; if none states one, the next cheapest.
+      const withDays = others.filter((o) => deliveryDays(o) !== null);
+      const b = withDays.length > 0 ? withDays.reduce((p, q) => ((deliveryDays(q) as number) < (deliveryDays(p) as number) ? q : p)) : others[0]!;
+      if ((b.effectivePriceInr as number) <= (a.effectivePriceInr as number)) continue;
+      return { data, a, b };
+    }
+  } catch {
+    /* no example rather than a made-up one */
+  }
+  return null;
+}
+
+const day = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+export async function CompareExample() {
+  const ex = await loadExample();
+  const header = (
+    <>
       <Reveal>
         <h2 className="sr-only">Compare</h2>
         <div className="mb-12 flex flex-wrap items-start justify-between gap-8 border-b-2 border-[#0A0A0A] pb-8">
@@ -127,37 +166,72 @@ export function CompareExample() {
           ))}
         </Marquee>
       </div>
+    </>
+  );
 
+  if (!ex) {
+    return (
+      <section id="compare" data-ambient="dunk" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
+        {header}
+      </section>
+    );
+  }
+
+  const { data, a, b } = ex;
+  const size = formatSize(data.variant.size);
+  const priceA = a.effectivePriceInr as number;
+  const priceB = b.effectivePriceInr as number;
+  const daysA = deliveryDays(a);
+  const daysB = deliveryDays(b);
+  const bothDays = daysA !== null && daysB !== null && daysA !== daysB;
+  const fasterIsA = bothDays && (daysA as number) < (daysB as number);
+  const fasterIsB = bothDays && (daysB as number) < (daysA as number);
+  const dayGap = bothDays ? Math.round(Math.abs((daysA as number) - (daysB as number))) : 0;
+  const tonesDiffer = toneRank(a) !== toneRank(b);
+  const readOn = [a.fetchedAt, b.fetchedAt].sort().slice(-1)[0] ?? a.fetchedAt;
+  const name = `${data.sneaker.brand} ${data.sneaker.model}`;
+  const image = resolveSneakerImage(data.sneaker.primaryImageUrl);
+
+  return (
+    <section id="compare" data-ambient="dunk" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
+      {header}
       <Reveal>
         <div className="mb-6 flex flex-col items-center">
-          <img
-            src="/images/hero-dunk-syracuse.png"
-            alt={`${SNEAKER} (example)`}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            className="h-auto w-[min(26rem,80vw)] select-none object-contain drop-shadow-[0_24px_24px_rgba(0,0,0,0.3)]"
-          />
-          <p className="mt-1 font-mono text-[0.6rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/40">Illustrative figures</p>
+          {image && (
+            <div className="rounded-[2rem] bg-white/80 p-4 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.4)]">
+              <img
+                src={image}
+                alt={`${name} ${data.sneaker.colorway}`}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="h-auto max-h-[16rem] w-[min(24rem,76vw)] select-none rounded-2xl object-contain"
+              />
+            </div>
+          )}
+          <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="mt-2 text-center font-display text-[1.25rem] uppercase tracking-[0.02em] text-[#0A0A0A] hover:underline">
+            {name} · UK {size}
+          </Link>
+          <p className="mt-1 font-mono text-[0.6rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/45">Real prices from our data · read {day(readOn)}</p>
         </div>
 
-        {/* [site A] [what differs] [site B] — one row per thing worth comparing */}
+        {/* [store A] [what differs] [store B] — one row per thing worth comparing */}
         <div className="grid items-stretch gap-x-4 gap-y-3 md:grid-cols-[1fr_minmax(11rem,15rem)_1fr]">
-          <Header offer={A} />
+          <Header offer={a} />
           <div className="hidden md:block" />
-          <Header offer={B} />
+          <Header offer={b} />
 
-          <Cell site={A.site} label="Price" value={A.price} best sub="Cheapest listing" />
-          <Note>{dPrice}</Note>
-          <Cell site={B.site} label="Price" value={B.price} sub="Pays for faster, safer" />
+          <Cell site={a.retailerName} label="Price" value={formatInr(priceA)} best sub="Cheapest listing" />
+          <Note>{formatInr(priceB - priceA)} cheaper</Note>
+          <Cell site={b.retailerName} label="Price" value={formatInr(priceB)} sub={`${formatInr(priceB - priceA)} more`} />
 
-          <Cell site={A.site} label="Delivery" value={A.delivery} sub="Standard shipping" />
-          <Note>6 days faster →</Note>
-          <Cell site={B.site} label="Delivery" value={B.delivery} best sub="Express included" />
+          <Cell site={a.retailerName} label="Delivery" value={formatDelivery(a) ?? 'Not stated'} best={fasterIsA} sub={a.shippingNote ? short(a.shippingNote, 46) : "The store's own estimate"} />
+          <Note>{bothDays ? `${dayGap} ${dayGap === 1 ? 'day' : 'days'} faster${fasterIsB ? ' →' : ''}` : 'Check each store'}</Note>
+          <Cell site={b.retailerName} label="Delivery" value={formatDelivery(b) ?? 'Not stated'} best={fasterIsB} sub={b.shippingNote ? short(b.shippingNote, 46) : "The store's own estimate"} />
 
-          <Cell site={A.site} label="How legit is the order" value={`${A.legit}/100`} sub={A.legitNote} />
-          <Note>+27 trust points</Note>
-          <Cell site={B.site} label="How legit is the order" value={`${B.legit}/100`} best sub={B.legitNote} />
+          <Cell site={a.retailerName} label="Returns" value={returnsLabel(a)} best={tonesDiffer && toneRank(a) > toneRank(b)} sub={short(a.returnsNote)} />
+          <Note>{tonesDiffer ? 'Different return rules' : 'Read each store’s terms'}</Note>
+          <Cell site={b.retailerName} label="Returns" value={returnsLabel(b)} best={tonesDiffer && toneRank(b) > toneRank(a)} sub={short(b.returnsNote)} />
         </div>
       </Reveal>
     </section>
