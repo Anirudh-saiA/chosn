@@ -119,12 +119,8 @@ export function ShoeWheel() {
       {/* Drops / News: sits in the hollow under the arc */}
       <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[200] flex justify-center">
         <div className="pointer-events-auto flex items-center rounded-full bg-[#0A0A0A] px-4 py-1 text-white shadow-[0_14px_30px_-12px_rgba(0,0,0,0.6)]">
-          <Link href="/drops" className="rounded-full px-3 py-2.5 font-display text-[1.05rem] uppercase tracking-[0.18em] transition-colors hover:bg-white/15">
-            Drops
-          </Link>
-          <span aria-hidden className="text-white/40">/</span>
-          <Link href="/news" className="rounded-full px-3 py-2.5 font-display text-[1.05rem] uppercase tracking-[0.18em] transition-colors hover:bg-white/15">
-            News
+          <Link href="/releases" className="rounded-full px-3 py-2.5 font-display text-[1.05rem] uppercase tracking-[0.18em] transition-colors hover:bg-white/15">
+            Releases &amp; news
           </Link>
         </div>
       </div>

@@ -6,12 +6,20 @@ import { formatInr } from '@/lib/catalog';
 import { useWishlist } from '@/lib/wishlist';
 
 export function WishlistView() {
-  const { items, remove } = useWishlist();
+  const { items, remove, setTarget } = useWishlist();
 
   return (
     <div>
       <p className="eyebrow">Saved on this device</p>
       <h1 className="mt-3 font-display text-[clamp(3rem,7vw,5.5rem)] leading-[0.92] text-[#0A0A0A]">Wishlist.</h1>
+
+      <p className="mt-3 max-w-xl text-meta text-text-soft">
+        We watch the size you saved. When it comes back, drops in price or reaches your target you will see it on the bell, and by e-mail if you add one in{' '}
+        <Link href="/notifications" className="font-semibold underline">
+          notifications
+        </Link>
+        .
+      </p>
 
       {items.length === 0 ? (
         <div className="glass-frost mt-10 flex flex-col items-center gap-5 rounded-3xl px-6 py-16 text-center">
@@ -45,6 +53,20 @@ export function WishlistView() {
                   </p>
                 </div>
               </Link>
+              <label className="flex items-center gap-2 border-t border-text/10 px-4 py-3 text-xs text-text-soft">
+                Tell me at &#8377;
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  defaultValue={i.targetPrice ?? ''}
+                  placeholder={i.price !== null ? String(Math.round(i.price * 0.9)) : 'target'}
+                  onBlur={(e) => setTarget(i.styleCode, e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-24 rounded-md border border-text/20 px-2 py-1 text-sm text-text"
+                  aria-label={`Target price for ${i.model}`}
+                />
+                or less
+              </label>
               <button
                 type="button"
                 onClick={() => remove(i.styleCode)}

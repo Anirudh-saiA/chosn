@@ -270,6 +270,14 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
+    # Wishlist alerts: compare each hearted shoe + size with last night, fill the bell inbox, send mail. Best effort.
+    try:
+        tail = run("Wishlist alerts", [NODE, "--env-file=.env", "dist/scripts/send-watch-alerts.js"], cwd=api)
+        for line in tail[-2:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"Wishlist alerts skipped: {e}")
+
     merged_state = {**last, **today_counts} if (args.only or skipped or failed_retailers) else today_counts
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")

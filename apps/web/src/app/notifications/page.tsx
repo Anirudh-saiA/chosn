@@ -5,6 +5,7 @@ import { auth } from '@/auth';
 import { PageShell } from '@/components/ui/PageShell';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { NotificationSettings } from '@/components/community/NotificationSettings';
+import { AlertsInbox } from '@/components/watch/AlertsInbox';
 import { SubscriptionPanel } from '@/components/community/SubscriptionPanel';
 import { buttonVariantClass } from '@chosn/ui';
 
@@ -20,7 +21,8 @@ export const metadata: Metadata = {
  * session, so `auth()` decides which of the two groups to show.
  * No revalidate/generateStaticParams: inherently per-visitor.
  */
-export default async function NotificationsSettingsPage() {
+export default async function NotificationsSettingsPage({ searchParams }: { searchParams: Promise<{ alerts?: string }> }) {
+  const { alerts: flash } = await searchParams;
   const session = await auth();
   const apiToken = (session as unknown as { apiToken?: string } | null)?.apiToken;
 
@@ -37,6 +39,8 @@ export default async function NotificationsSettingsPage() {
       />
 
       <div className="flex flex-col gap-8">
+        <AlertsInbox flash={flash} />
+
         <section className="panel p-5 sm:p-6" aria-labelledby="drop-alerts-h">
           <h2 id="drop-alerts-h" className="font-display text-xl font-bold text-text">
             Drop &amp; brand alerts

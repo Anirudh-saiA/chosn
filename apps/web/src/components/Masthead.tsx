@@ -9,6 +9,7 @@ import { CommandPalette, type PaletteOrigin } from '@/components/ui/CommandPalet
 import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
 import { COMING_SOON } from '@/lib/features';
+import { BellBadge } from '@/components/watch/BellBadge';
 
 /** Small tag shown next to a nav link whose section isn't open yet. */
 function SoonTag() {
@@ -21,8 +22,7 @@ function SoonTag() {
 
 const NAV: Array<{ href: string; label: string; soon?: boolean }> = [
   { href: '/sneakers', label: 'Compare' },
-  { href: '/drops', label: 'Drops', soon: COMING_SOON.drops },
-  { href: '/news', label: 'News', soon: COMING_SOON.news },
+  { href: '/releases', label: 'Releases', soon: COMING_SOON.releases },
   { href: '/community', label: 'Community', soon: COMING_SOON.community },
 ] as const;
 
@@ -255,9 +255,10 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
             <Link
               href="/notifications"
               aria-label="Notifications"
-              className="hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
+              className="relative hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
             >
               <Bell className="h-[20px] w-[20px]" strokeWidth={2.2} />
+              <BellBadge />
             </Link>
             <button
               type="button"

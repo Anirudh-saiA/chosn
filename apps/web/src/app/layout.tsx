@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Anton, Caveat, Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { ConsentBanner } from '@/components/ConsentBanner';
+import { WatchSync } from '@/components/watch/WatchSync';
 import { FeedbackReminder } from '@/components/feedback/FeedbackReminder';
 import { SmoothScroll } from '@/components/fx/SmoothScroll';
 import { MonitoringProvider } from '@/lib/monitoring';
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthSessionProvider>
           <SmoothScroll />
           <MonitoringProvider>{children}</MonitoringProvider>
+          <WatchSync />
           <FeedbackReminder />
           <ConsentBanner />
         </AuthSessionProvider>

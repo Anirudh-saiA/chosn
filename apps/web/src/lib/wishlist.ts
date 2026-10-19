@@ -11,6 +11,8 @@ export interface WishlistItem {
   colorway: string;
   imageUrl: string | null;
   price: number | null;
+  /** Tell me when it costs this much or less (Rs); the nightly check uses it. */
+  targetPrice?: number;
   savedAt: number;
 }
 
@@ -62,6 +64,8 @@ export function useWishlist() {
   const has = (styleCode: string) => items.some((i) => i.styleCode === styleCode);
   const toggle = (item: Omit<WishlistItem, 'savedAt'>) =>
     write(has(item.styleCode) ? items.filter((i) => i.styleCode !== item.styleCode) : [{ ...item, savedAt: Date.now() }, ...items]);
+  const setTarget = (styleCode: string, targetPrice: number | undefined) =>
+    write(items.map((i) => (i.styleCode === styleCode ? { ...i, targetPrice } : i)));
   const remove = (styleCode: string) => write(items.filter((i) => i.styleCode !== styleCode));
-  return { items, has, toggle, remove };
+  return { items, has, toggle, remove, setTarget };
 }
