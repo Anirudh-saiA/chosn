@@ -125,12 +125,21 @@ export function StoreRow({
   isBest,
   fastest,
   defaultOpen,
+  labels,
+  value,
+  slowerDays = 0,
 }: {
   offer: CatalogOffer;
   min: number;
   isBest: boolean;
   fastest: boolean;
   defaultOpen: boolean;
+  /** Badges to show next to the name, e.g. "Best value", "Lowest price", "Fastest". */
+  labels?: string[];
+  /** The store's Value score and how it was worked out. */
+  value?: { score: number; note: string };
+  /** How many days slower than the fastest store that publishes a time. */
+  slowerDays?: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const price = offer.effectivePriceInr as number;
@@ -150,8 +159,18 @@ export function StoreRow({
           <span className="min-w-0">
             <span className="flex flex-wrap items-center gap-2">
               <span className="font-display text-[1.45rem] font-bold leading-none text-text">{offer.retailerName}</span>
-              {isBest && <span className="rounded-full bg-[#14213D] px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">Lowest price</span>}
-              {fastest && <span className="rounded-full border border-text/20 px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text-soft">Fastest</span>}
+              {labels
+                ? labels.map((l, i) => (
+                    <span key={l} className={`rounded-full px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] ${i === 0 && isBest ? 'bg-[#14213D] text-white' : 'border border-text/20 text-text-soft'}`}>
+                      {l}
+                    </span>
+                  ))
+                : (
+                  <>
+                    {isBest && <span className="rounded-full bg-[#14213D] px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">Lowest price</span>}
+                    {fastest && <span className="rounded-full border border-text/20 px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text-soft">Fastest</span>}
+                  </>
+                )}
             </span>
             <span className="mt-1 block text-[0.82rem] text-text-soft">
               {delivery ? `Delivery ${delivery}` : 'Delivery not published'}
@@ -173,7 +192,15 @@ export function StoreRow({
         </button>
         <div className="text-right">
           <p className="font-mono text-[1.6rem] font-extrabold leading-none tabular-nums text-text">{formatInr(price)}</p>
-          <p className="mt-1 text-[0.78rem] text-text-soft">{extra < 1 ? 'Lowest price' : `+${formatInr(extra)}`}</p>
+          <p className="mt-1 text-[0.78rem] text-text-soft">
+            {extra < 1 ? 'Lowest price' : `+${formatInr(extra)}`}
+            {slowerDays >= 1 ? ` · ${Math.round(slowerDays)}d slower` : ''}
+          </p>
+          {value && (
+            <p className="mt-1" title={value.note}>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#14213D]/[0.07] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#14213D]">Value {value.score}/100</span>
+            </p>
+          )}
         </div>
         <a
           href={offer.listingUrl}

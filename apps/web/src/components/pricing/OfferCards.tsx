@@ -1,8 +1,11 @@
+'use client';
+
+import { useState } from 'react';
 import { ChevronDown, Info, X } from 'lucide-react';
 import { StoreRow } from './StoreRow';
 import { buildBuyGuide } from '@/lib/buy-guide';
 import { formatInr, type CatalogOffer } from '@/lib/catalog';
-import { deliveryDays, isEligible } from '@/lib/recommend';
+import { deliveryDays, isEligible, scoreOffers } from '@/lib/recommend';
 
 /**
  * Minimal offers section: one "best way to buy" card (lowest price, how to pay, the offers that store lists), then one
@@ -10,7 +13,17 @@ import { deliveryDays, isEligible } from '@/lib/recommend';
  * demo data are not shown as offers; stores that are sold out in this size are named underneath.
  */
 export function OfferCards({ offers, size, connectedStores = [] }: { offers: CatalogOffer[]; size: string; connectedStores?: Array<{ slug: string; name: string }> }) {
-  const live = offers.filter(isEligible).sort((a, b) => (a.effectivePriceInr as number) - (b.effectivePriceInr as number));
+  const [sortBy, setSortBy] = useState<'value' | 'price' | 'fastest'>('value');
+  const byPrice = offers.filter(isEligible).sort((a, b) => (a.effectivePriceInr as number) - (b.effectivePriceInr as number));
+  const scores = scoreOffers(byPrice);
+  const days = (o: CatalogOffer) => deliveryDays(o);
+  const score = (o: CatalogOffer) => scores.get(o.retailerSlug)?.score ?? 0;
+  // The order the stores are listed in: best value (default), lowest price, or fastest stated delivery.
+  const live = [...byPrice].sort((a, b) => {
+    if (sortBy === 'price') return (a.effectivePriceInr as number) - (b.effectivePriceInr as number);
+    if (sortBy === 'fastest') return (days(a) ?? 99) - (days(b) ?? 99) || (a.effectivePriceInr as number) - (b.effectivePriceInr as number);
+    return score(b) - score(a) || (a.effectivePriceInr as number) - (b.effectivePriceInr as number);
+  });
   const soldOut = offers.filter((o) => o.mode !== 'fixture' && !isEligible(o));
   const demo = offers.filter((o) => o.mode === 'fixture');
 
@@ -69,9 +82,18 @@ export function OfferCards({ offers, size, connectedStores = [] }: { offers: Cat
   }
 
   const guide = buildBuyGuide(offers);
-  const min = live[0]?.effectivePriceInr as number;
+  const min = byPrice[0]?.effectivePriceInr as number;
   const known = live.filter((o) => deliveryDays(o) !== null);
   const fastest = known.length > 1 ? known.reduce((a, b) => ((deliveryDays(b) as number) < (deliveryDays(a) as number) ? b : a)) : null;
+  const minDays = fastest ? (deliveryDays(fastest) as number) : 0;
+  const bestValue = byPrice.length > 1 ? [...byPrice].sort((a, b) => score(b) - score(a) || (a.effectivePriceInr as number) - (b.effectivePriceInr as number))[0] : null;
+  const labelsFor = (o: CatalogOffer) => {
+    const l: string[] = [];
+    if (bestValue && o.retailerSlug === bestValue.retailerSlug) l.push('Best value');
+    if (o.retailerSlug === byPrice[0]?.retailerSlug && byPrice.length > 1) l.push('Lowest price');
+    if (fastest && o.retailerSlug === fastest.retailerSlug) l.push('Fastest');
+    return l;
+  };
 
   return (
     <div>
@@ -110,10 +132,58 @@ export function OfferCards({ offers, size, connectedStores = [] }: { offers: Cat
         </section>
       )}
 
+      {live.length > 1 && (
+        <div className="mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.16em] text-text-faint">Where to buy · sort stores by</p>
+            <div role="group" aria-label="Sort stores" className="flex overflow-hidden rounded-full border border-text/15">
+              {(
+                [
+                  ['value', 'Best value'],
+                  ['price', 'Lowest price'],
+                  ['fastest', 'Fastest'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={sortBy === id}
+                  onClick={() => setSortBy(id)}
+                  className={`min-h-[34px] px-3.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors ${sortBy === id ? 'bg-[#14213D] text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <details className="mt-2 text-[0.8rem] text-text-soft">
+            <summary className="cursor-pointer select-none font-semibold text-text-soft hover:text-text">How the Value score works</summary>
+            <p className="mt-2 max-w-3xl leading-relaxed">
+              It weighs what matters to a shopper: the total price with shipping (55%), how soon it arrives by the store&apos;s own published estimate (30%) and how
+              easy returns are by the store&apos;s own policy (15%). Where a store has reviews we can cite, reviews count 20% and the others shrink to fit. Only
+              Myntra shows ratings today; for other stores we say so and don&apos;t guess. Nothing is predicted: every number comes from the stores&apos; own pages.
+            </p>
+          </details>
+        </div>
+      )}
+
       <ul className="flex flex-col gap-3">
-        {live.map((o, i) => (
-          <StoreRow key={o.retailerSlug} offer={o} min={min} isBest={i === 0} fastest={fastest?.retailerSlug === o.retailerSlug} defaultOpen={false} />
-        ))}
+        {live.map((o, i) => {
+          const d = deliveryDays(o);
+          return (
+            <StoreRow
+              key={o.retailerSlug}
+              offer={o}
+              min={min}
+              isBest={i === 0}
+              fastest={fastest?.retailerSlug === o.retailerSlug}
+              defaultOpen={false}
+              labels={labelsFor(o)}
+              value={live.length > 1 && scores.get(o.retailerSlug) ? { score: score(o), note: scores.get(o.retailerSlug)!.note } : undefined}
+              slowerDays={d !== null && fastest ? Math.max(0, d - minDays) : 0}
+            />
+          );
+        })}
       </ul>
 
       {crossed}
