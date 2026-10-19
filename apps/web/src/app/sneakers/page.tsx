@@ -29,7 +29,8 @@ interface PageProps {
 export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   const query = await searchParams;
   const { q } = query;
-  const { results, total, facets, communityPosts } = await fetchSearch(query, { next: { revalidate: 300 } });
+  const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(query, { next: { revalidate: 300 } });
+  const stores = Object.fromEntries((storeDirectory ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl }]));
 
   return (
     <PageShell width="full" plain>
@@ -68,7 +69,7 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
             <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
               {results.map((item, i) => (
                 <Reveal as="li" key={item.styleCode} delay={(i % 3) * 0.06} y={18}>
-                  <SneakerCard item={item} />
+                  <SneakerCard item={item} stores={stores} />
                 </Reveal>
               ))}
             </ul>

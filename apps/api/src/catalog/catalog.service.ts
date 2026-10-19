@@ -232,7 +232,7 @@ export interface SearchResultItem {
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
   /** Search results: every colourway of this model that matched, the shown one first (a card = one model). */
-  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'>>;
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'> & { sizes?: number[]; storeSlugs?: string[] }>;
   /** Only on /similar: true when this is the same model in another colourway. */
   sameModel?: boolean;
   /** Only on /similar: the cheapest in-stock store for this shoe and its direct listing link. */
@@ -252,6 +252,8 @@ export interface CommunityPostSearchResult {
 
 export interface SearchResponse {
   results: SearchResultItem[];
+  /** Name and logo of every live store, so a card can show the logos of the stores that have the shoe. */
+  storeDirectory: Array<{ slug: string; name: string; logoUrl: string | null }>;
   total: number;
   /** Every brand in the catalog, unfiltered — populates the filter UI regardless of the current query. */
   brands: string[];
@@ -819,8 +821,27 @@ export class CatalogService {
       this.searchCommunityPosts(params.q),
     ]);
 
-    const { rows: retailerRows } = await this.db.execute(sql`SELECT slug, name FROM retailers`);
+    const { rows: retailerRows } = await this.db.execute(sql`SELECT slug, name, logo_url FROM retailers WHERE status = 'active' ORDER BY name`);
     const storeName = new Map((retailerRows as { slug: string; name: string }[]).map((x) => [x.slug, x.name]));
+    // For every colour on the page: the UK sizes in stock and which stores have it (the card's bottom row).
+    const colourCodes = [...new Set((rows as unknown as SearchRow[]).flatMap((r) => (r.colours ?? []).map((c) => c.styleCode)))];
+    const perColour = new Map<string, { sizes: number[]; slugs: string[] }>();
+    if (colourCodes.length > 0) {
+      const { rows: stockRows } = await this.db.execute(sql`
+        SELECT s.style_code,
+               to_json(array_agg(DISTINCT v.size ORDER BY v.size)) AS sizes,
+               to_json(array_agg(DISTINCT r.slug)) AS slugs
+        FROM sneakers s
+        JOIN sneaker_variants v ON v.sneaker_id = s.id
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+        JOIN retailers r ON r.id = ps.retailer_id
+        WHERE s.style_code = ANY(${sql`ARRAY[${sql.join(colourCodes.map((c) => sql`${c}`), sql`, `)}]::text[]`})
+        GROUP BY s.style_code
+      `);
+      for (const r of stockRows as unknown as { style_code: string; sizes: string[]; slugs: string[] }[]) {
+        perColour.set(r.style_code, { sizes: r.sizes.map(Number), slugs: r.slugs });
+      }
+    }
     const results = (rows as unknown as SearchRow[]).map((r) => ({
       styleCode: r.style_code,
       brand: r.brand,
@@ -842,6 +863,8 @@ export class CatalogService {
         primaryImageUrl: c.primaryImageUrl,
         defaultSize: Number(c.defaultSize),
         bestAvailablePrice: c.bestAvailablePrice !== null ? Number(c.bestAvailablePrice) : null,
+        sizes: perColour.get(c.styleCode)?.sizes ?? [],
+        storeSlugs: perColour.get(c.styleCode)?.slugs ?? [],
       })),
     }));
 
@@ -855,6 +878,7 @@ export class CatalogService {
 
     return {
       results,
+      storeDirectory: (retailerRows as unknown as { slug: string; name: string; logo_url: string | null }[]).map((x) => ({ slug: x.slug, name: x.name, logoUrl: x.logo_url })),
       total: rows.length > 0 ? Number((rows[0] as unknown as SearchRow).total_count) : 0,
       brands: (brandRows as unknown as { brand: string }[]).map((b) => b.brand),
       facets: {

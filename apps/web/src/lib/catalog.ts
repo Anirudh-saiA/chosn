@@ -160,7 +160,7 @@ export interface SearchResultItem {
   /** Search results: the stores that have this shoe in stock, A to Z. */
   storeNames?: string[];
   /** Search results: every matching colourway of this model, the shown one first (one card per model). */
-  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'>>;
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'> & { sizes?: number[]; storeSlugs?: string[] }>;
   /** Only on similar-sneaker results: same model in another colourway. */
   sameModel?: boolean;
   /** Only on similar-sneaker results: cheapest in-stock store and its direct listing link. */
@@ -191,6 +191,8 @@ export interface SearchFacets {
 
 export interface SearchResponse {
   results: SearchResultItem[];
+  /** Name and logo of every live store. */
+  storeDirectory?: Array<{ slug: string; name: string; logoUrl: string | null }>;
   total: number;
   brands: string[];
   facets: SearchFacets;
