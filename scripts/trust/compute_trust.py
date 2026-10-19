@@ -36,6 +36,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SIGNALS = os.path.join(ROOT, "data", "trust", "signals.json")
 BUSINESS = os.path.join(ROOT, "data", "trust", "business.json")
 CURATED = os.path.join(ROOT, "scripts", "trust", "curated.json")
+BUYER_MIN = 10        # buyer answers needed before they count at all
+BUYER_WEIGHT = 0.30   # share of the score once they count; the other parts keep their proportions in the remaining 70%
+BUYER_PRIOR_N, BUYER_PRIOR = 10, 0.8
 W = {"reviews": 0.40, "standing": 0.15, "returns": 0.15, "clarity": 0.10, "business": 0.20}
 PRIOR_N, PRIOR_R, SELF_PUBLISHED = 100, 3.8, 0.7
 clamp = lambda x: max(0.0, min(1.0, x))  # noqa: E731
@@ -86,7 +89,21 @@ def business_part(b):
     return score, passed, [f"Business basics: {round(score * 100)}/100"] + [f"   - {t}" for _, _, t in items]
 
 
-def score_store(slug, f, sig, cur, biz=None):
+def buyer_part(b):
+    """(score 0-1, answers, reasons) from order_feedback counts (apps/api /order-feedback), or (None, n, []) below BUYER_MIN."""
+    n = (b or {}).get("bought", 0)
+    if n < BUYER_MIN:
+        return None, n, [f"Buyer outcomes: {n} answers so far, fewer than {BUYER_MIN}, so not counted yet"]
+    def rate(k, total):
+        return (b[k] + BUYER_PRIOR_N * BUYER_PRIOR) / (b[total] + BUYER_PRIOR_N)
+    on_time, described, again = rate("on_time", "delivered"), rate("as_described", "described_answers"), rate("would_buy_again", "again_answers")
+    fake = b["suspected_fake"] / n
+    score = clamp(0.4 * on_time + 0.4 * described + 0.2 * again - min(0.5, 2 * fake))
+    return score, n, [f"Buyer outcomes (from {n} shoppers who bought): {b['on_time']}/{b['delivered']} on time, {b['as_described']}/{b['described_answers']} as described, "
+                      f"{b['would_buy_again']}/{b['again_answers']} would buy again, {b['suspected_fake']} suspected fake = {round(score * 100)}/100"]
+
+
+def score_store(slug, f, sig, cur, biz=None, buyers=None):
     parts, why = {}, []
     # Reviews
     reviews = None
@@ -125,11 +142,18 @@ def score_store(slug, f, sig, cur, biz=None):
     b_score, b_passed, b_why = business_part(biz)
     parts["business"] = 0.5 if b_score is None else b_score
     why.extend(b_why)
-    score = round(100 * sum(W[k] * parts[k] for k in W))
+    bp, bn, bwhy = buyer_part(buyers)
+    why.extend(bwhy)
+    weights = dict(W)
+    if bp is not None:
+        weights = {k: w * (1 - BUYER_WEIGHT) for k, w in W.items()}
+        weights["buyers"] = BUYER_WEIGHT
+        parts["buyers"] = bp
+    score = round(100 * sum(weights[k] * parts[k] for k in weights))
     independent_n = bool(sig and "Google" in sig["source"] and sig["count"] >= 150)
-    if independent_n and (standing is not None or recorded):
+    if (independent_n and (standing is not None or recorded)) or bn >= 100:
         conf = "high"
-    elif (sig and sig["count"] >= 50) or standing is not None:
+    elif (sig and sig["count"] >= 50) or standing is not None or bn >= 30:
         conf = "medium"
     else:
         conf = "low"
@@ -141,11 +165,19 @@ def main():
     signals = json.load(open(SIGNALS, encoding="utf-8")) if os.path.exists(SIGNALS) else {}
     business = json.load(open(BUSINESS, encoding="utf-8")) if os.path.exists(BUSINESS) else {}
     curated = json.load(open(CURATED, encoding="utf-8"))
+    buyers = {}
+    for r in psql("""select retailer_slug, count(*) filter (where bought='yes'), count(*) filter (where bought='yes' and arrived_on_time is not null),
+                       count(*) filter (where arrived_on_time), count(*) filter (where bought='yes' and as_described in ('yes','no')),
+                       count(*) filter (where as_described='yes'), count(*) filter (where bought='yes' and would_buy_again is not null),
+                       count(*) filter (where would_buy_again), count(*) filter (where 'suspected_fake' = any(problems))
+                from order_feedback group by 1"""):
+        k = ("bought", "delivered", "on_time", "described_answers", "as_described", "again_answers", "would_buy_again", "suspected_fake")
+        buyers[r[0]] = dict(zip(k, map(int, r[1:])))
     sql = []
     for slug, f in sorted(facts().items()):
-        score, conf, detail = score_store(slug, f, signals.get(slug), curated.get(slug), business.get(slug))
+        score, conf, detail = score_store(slug, f, signals.get(slug), curated.get(slug), business.get(slug), buyers.get(slug))
         print(f"{slug:24} trust {score:3}  confidence {conf:6}  parts {detail['parts']}")
-        detail["formula"] = "reviews 40% / business basics 20% / standing 15% / returns 15% / clarity 10%; a part with no evidence is neutral"
+        detail["formula"] = "reviews 40% / business basics 20% / standing 15% / returns 15% / clarity 10%; once a store has 10+ buyer answers, buyer outcomes take 30% and the rest scale to 70%; a part with no evidence is neutral"
         detail["computed"] = datetime.date.today().isoformat()
         blob = json.dumps(detail).replace("'", "''")
         sql.append(f"UPDATE retailers SET trust_score = {score}, trust_confidence = '{conf}', trust_detail = '{blob}'::jsonb, trust_updated_at = now() WHERE slug = '{slug}';")

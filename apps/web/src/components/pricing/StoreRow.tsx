@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { track as trackClick } from '@/lib/track';
+import { rememberPurchase } from '@/lib/purchases';
 import { ArrowUpRight, ChevronDown, Copy, Star } from 'lucide-react';
 import { formatInr, type CatalogOffer, type PaymentGroup, type StoreOffer } from '@/lib/catalog';
 import { acceptedPayments } from '@/lib/buy-guide';
@@ -144,7 +145,7 @@ export function StoreRow({
   /** How many days slower than the fastest store that publishes a time. */
   slowerDays?: number;
   /** Where this row sits and how the list is sorted, recorded when Buy is pressed. */
-  track?: { styleCode: string; size?: number; position: number; sort: 'value' | 'price' | 'fastest' };
+  track?: { styleCode: string; size?: number; position: number; sort: 'value' | 'price' | 'fastest'; shoeName?: string };
   /** How many shoppers chose this store for this shoe lately (anonymous). */
   chosenBy?: number;
 }) {
@@ -228,7 +229,7 @@ export function StoreRow({
           target="_blank"
           rel="nofollow sponsored noopener"
           aria-label={`Buy at ${offer.retailerName} for ${formatInr(price)} (opens in a new tab)`}
-          onClick={() => trackInfo && trackClick({ event: 'click', styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, price, position: trackInfo.position, sort: trackInfo.sort })}
+          onClick={() => trackInfo && (rememberPurchase({ styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, storeName: offer.retailerName, shoeName: trackInfo.shoeName ?? trackInfo.styleCode, promisedMaxDays: offer.deliveryMaxDays }), trackClick({ event: 'click', styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, price, position: trackInfo.position, sort: trackInfo.sort }))}
           className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-5 font-mono text-[0.74rem] font-bold uppercase tracking-[0.14em] transition-colors ${
             isBest ? 'bg-[#14213D] text-white hover:bg-[#0A0A0A]' : 'border-2 border-[#14213D] text-[#14213D] hover:bg-[#14213D]/5'
           }`}

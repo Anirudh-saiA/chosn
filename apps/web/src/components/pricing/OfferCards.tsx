@@ -18,6 +18,7 @@ export function OfferCards({
   connectedStores = [],
   styleCode,
   sizeNumber,
+  shoeName,
   choices = null,
 }: {
   offers: CatalogOffer[];
@@ -25,6 +26,7 @@ export function OfferCards({
   connectedStores?: Array<{ slug: string; name: string }>;
   styleCode?: string;
   sizeNumber?: number;
+  shoeName?: string;
   choices?: { views: number; visitors: number; repeatVisitors: number; clicks: Record<string, number> } | null;
 }) {
   const [sortBy, setSortBy] = useState<'value' | 'price' | 'fastest'>('value');
@@ -200,7 +202,7 @@ export function OfferCards({
               labels={labelsFor(o)}
               value={live.length > 1 && scores.get(o.retailerSlug) ? { score: score(o), note: scores.get(o.retailerSlug)!.note } : undefined}
               slowerDays={d !== null && fastest ? Math.max(0, d - minDays) : 0}
-              track={styleCode ? { styleCode, size: sizeNumber, position: i, sort: sortBy } : undefined}
+              track={styleCode ? { styleCode, size: sizeNumber, position: i, sort: sortBy, shoeName } : undefined}
               chosenBy={choices?.clicks[o.retailerSlug] ?? 0}
             />
           );

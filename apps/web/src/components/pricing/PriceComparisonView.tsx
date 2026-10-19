@@ -228,7 +228,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
               {data.offers.length === 1 ? 'retailer' : 'retailers'}
             </p>
           </div>
-          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} connectedStores={data.connectedStores ?? []} styleCode={styleCode} sizeNumber={data.variant.size} choices={choices} />
+          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} connectedStores={data.connectedStores ?? []} styleCode={styleCode} sizeNumber={data.variant.size} shoeName={`${data.sneaker.brand} ${data.sneaker.model} ${data.sneaker.colorway}`} choices={choices} />
           <AffiliateDisclosure />
         </section>
       </Reveal>
