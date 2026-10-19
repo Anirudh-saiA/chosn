@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track as trackClick } from '@/lib/track';
 import { ArrowUpRight, ChevronDown, Copy, Star } from 'lucide-react';
 import { formatInr, type CatalogOffer, type PaymentGroup, type StoreOffer } from '@/lib/catalog';
 import { acceptedPayments } from '@/lib/buy-guide';
@@ -128,6 +129,8 @@ export function StoreRow({
   labels,
   value,
   slowerDays = 0,
+  track: trackInfo,
+  chosenBy = 0,
 }: {
   offer: CatalogOffer;
   min: number;
@@ -140,6 +143,10 @@ export function StoreRow({
   value?: { score: number; note: string };
   /** How many days slower than the fastest store that publishes a time. */
   slowerDays?: number;
+  /** Where this row sits and how the list is sorted, recorded when Buy is pressed. */
+  track?: { styleCode: string; size?: number; position: number; sort: 'value' | 'price' | 'fastest' };
+  /** How many shoppers chose this store for this shoe lately (anonymous). */
+  chosenBy?: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const price = offer.effectivePriceInr as number;
@@ -173,6 +180,7 @@ export function StoreRow({
                 )}
             </span>
             <span className="mt-1 block text-[0.82rem] text-text-soft">
+              {chosenBy >= 3 ? <span className="mr-2 font-semibold text-text">{chosenBy} shoppers chose this store for this shoe</span> : null}
               {delivery ? `Delivery ${delivery}` : 'Delivery not published'}
               {ship.free ? ' · Free shipping' : ''}
               {offers.length > 0 ? ` · ${offers.length} offer${offers.length === 1 ? '' : 's'}` : ''}
@@ -220,6 +228,7 @@ export function StoreRow({
           target="_blank"
           rel="nofollow sponsored noopener"
           aria-label={`Buy at ${offer.retailerName} for ${formatInr(price)} (opens in a new tab)`}
+          onClick={() => trackInfo && trackClick({ event: 'click', styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, price, position: trackInfo.position, sort: trackInfo.sort })}
           className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-5 font-mono text-[0.74rem] font-bold uppercase tracking-[0.14em] transition-colors ${
             isBest ? 'bg-[#14213D] text-white hover:bg-[#0A0A0A]' : 'border-2 border-[#14213D] text-[#14213D] hover:bg-[#14213D]/5'
           }`}

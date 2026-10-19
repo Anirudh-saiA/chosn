@@ -79,6 +79,12 @@ export class CatalogController {
   }
 
   /** Colourways of the same model, for the colour picker: /catalog/DD1391-100/colours */
+  /** How many shoppers viewed this shoe and which stores they chose (anonymous counts, recent days). */
+  @Get(':styleCode/choices')
+  async choices(@Param('styleCode') styleCode: string, @Query('days') days?: string) {
+    return this.catalog.choices(styleCode, Math.min(Math.max(Number(days) || 90, 7), 365));
+  }
+
   /** Sizes, stores and prices for one colour, for the card when it switches to a colour it was not sent. */
   @Get(':styleCode/card')
   async cardData(@Param('styleCode') styleCode: string) {

@@ -6,8 +6,10 @@ Only public pages and our own data, through scripts/webscraper/core.py (robots.t
 says no). What is read:
 
   myntra          the product ratings we already hold (retailer_product_ratings): count-weighted average over every rated shoe
-  culture-circle  the aggregateRating each product page publishes in its page data (a sample of pages)
-  gully-labs      the same, from the Judge.me ratings its product pages publish
+  gully-labs      the aggregateRating its product pages publish (Judge.me ratings from its own customers, counts per shoe in the tens)
+
+NOT used: Culture Circle's product-page ratings. They carry huge counts that are identical across different colours of one model (for
+example 48,849 on every Yeezy 350 V2 colour), so they are the brand's pooled reviews copied onto the page, not Culture Circle customers.
   google places   store-level Google rating and rating count for each store, ONLY when GOOGLE_PLACES_API_KEY is set (the official API)
 
 Stores with no readable review source are simply absent: nothing is guessed. Each signal carries its source and the date.
@@ -26,7 +28,7 @@ import core  # noqa: E402
 
 OUT = os.path.join(ROOT, "data", "trust", "signals.json")
 TODAY = datetime.date.today().isoformat()
-SAMPLE = {"culture-circle": 40, "gully-labs": 30}
+SAMPLE = {"gully-labs": 30}
 
 
 def psql(sql):
@@ -116,8 +118,7 @@ def main():
     m = myntra()
     if m:
         signals["myntra"] = m
-    for store, name, url in (("culture-circle", "Culture Circle's own product-page ratings (store-published, not independently verified)", "https://www.culture-circle.com"),
-                             ("gully-labs", "Judge.me ratings published on Gully Labs product pages", "https://gullylabs.com")):
+    for store, name, url in (("gully-labs", "Judge.me ratings published on Gully Labs product pages", "https://gullylabs.com"),):
         s = from_pages(store, name, url)
         if s:
             signals[store] = s

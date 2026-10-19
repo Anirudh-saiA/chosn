@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { buttonVariantClass } from '@chosn/ui';
 import { Reveal } from '@/components/fx/Reveal';
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
+import { track } from '@/lib/track';
 import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse, type ColourOption, type SearchResultItem } from '@/lib/catalog';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
@@ -89,6 +90,20 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
     // `data.siblingSizes` — the intent is to re-run once per size
     // change, not on every render.
   }, [data.variant.size]);
+
+  // Anonymous counts: one view per shoe and size opened, and how many shoppers chose each store for this shoe lately.
+  const [choices, setChoices] = useState<{ views: number; visitors: number; repeatVisitors: number; clicks: Record<string, number> } | null>(null);
+  useEffect(() => {
+    track({ event: 'view', styleCode, size: data.variant.size });
+  }, [styleCode, data.variant.size]);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/catalog/${encodeURIComponent(styleCode)}/choices`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => c && setChoices(c))
+      .catch(() => undefined);
+    return () => ctrl.abort();
+  }, [styleCode]);
 
   const handleSelect = useCallback(
     async (size: number) => {
@@ -213,7 +228,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
               {data.offers.length === 1 ? 'retailer' : 'retailers'}
             </p>
           </div>
-          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} connectedStores={data.connectedStores ?? []} />
+          <OfferCards offers={data.offers} size={formatSize(data.variant.size)} connectedStores={data.connectedStores ?? []} styleCode={styleCode} sizeNumber={data.variant.size} choices={choices} />
           <AffiliateDisclosure />
         </section>
       </Reveal>

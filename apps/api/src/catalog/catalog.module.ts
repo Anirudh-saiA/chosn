@@ -5,6 +5,7 @@ import { PricingModule } from '../pricing/pricing.module';
 import { AdminImageController } from './admin-image.controller';
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from './catalog.service';
+import { EventsController } from './events.controller';
 
 /**
  * Read-only catalog access for the price comparison page (Day 10), plus
@@ -19,7 +20,7 @@ import { CatalogService } from './catalog.service';
  */
 @Module({
   imports: [PricingModule],
-  controllers: [CatalogController, AdminImageController],
+  controllers: [CatalogController, AdminImageController, EventsController],
   providers: [CatalogService, pgPoolProvider, AdminGuard],
 })
 export class CatalogModule {}

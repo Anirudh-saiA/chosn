@@ -12,7 +12,21 @@ import { deliveryDays, isEligible, scoreOffers } from '@/lib/recommend';
  * quiet row per store that opens to show how you can pay, every offer, shipping and returns. Stores whose prices are
  * demo data are not shown as offers; stores that are sold out in this size are named underneath.
  */
-export function OfferCards({ offers, size, connectedStores = [] }: { offers: CatalogOffer[]; size: string; connectedStores?: Array<{ slug: string; name: string }> }) {
+export function OfferCards({
+  offers,
+  size,
+  connectedStores = [],
+  styleCode,
+  sizeNumber,
+  choices = null,
+}: {
+  offers: CatalogOffer[];
+  size: string;
+  connectedStores?: Array<{ slug: string; name: string }>;
+  styleCode?: string;
+  sizeNumber?: number;
+  choices?: { views: number; visitors: number; repeatVisitors: number; clicks: Record<string, number> } | null;
+}) {
   const [sortBy, setSortBy] = useState<'value' | 'price' | 'fastest'>('value');
   const byPrice = offers.filter(isEligible).sort((a, b) => (a.effectivePriceInr as number) - (b.effectivePriceInr as number));
   const scores = scoreOffers(byPrice);
@@ -163,6 +177,11 @@ export function OfferCards({ offers, size, connectedStores = [] }: { offers: Cat
               easy returns are by the store&apos;s own policy (15%). Where a store has reviews we can cite, reviews count 20% and the others shrink to fit. Only
               Myntra shows ratings today; for other stores we say so and don&apos;t guess. Nothing is predicted: every number comes from the stores&apos; own pages.
             </p>
+            <p className="mt-2 max-w-3xl leading-relaxed">
+              Where it shows &quot;N shoppers chose this store for this shoe&quot;, that is an anonymous count of people who pressed Buy at that store for this exact
+              shoe in the last 90 days. It shows what shoppers picked, not how the order went, and the order of the list nudges it, so we show it as a count and
+              do not fold it into the Value score.
+            </p>
           </details>
         </div>
       )}
@@ -181,6 +200,8 @@ export function OfferCards({ offers, size, connectedStores = [] }: { offers: Cat
               labels={labelsFor(o)}
               value={live.length > 1 && scores.get(o.retailerSlug) ? { score: score(o), note: scores.get(o.retailerSlug)!.note } : undefined}
               slowerDays={d !== null && fastest ? Math.max(0, d - minDays) : 0}
+              track={styleCode ? { styleCode, size: sizeNumber, position: i, sort: sortBy } : undefined}
+              chosenBy={choices?.clicks[o.retailerSlug] ?? 0}
             />
           );
         })}

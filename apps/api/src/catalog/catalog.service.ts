@@ -551,6 +551,38 @@ export class CatalogService {
     return perColour;
   }
 
+  /**
+   * What shoppers did on this shoe in the last `days` days: how many views, and how many chose each store (clicked Buy). Counts only; no
+   * one is identified. Repeat visitors are counted where a visitor agreed to analytics.
+   */
+  async choices(styleCode: string, days: number): Promise<{ days: number; views: number; visitors: number; repeatVisitors: number; clicks: Record<string, number> }> {
+    const { rows } = await this.db.execute(sql`
+      SELECT event, retailer_slug, count(*) AS n, count(DISTINCT visitor_id) AS visitors
+      FROM offer_events
+      WHERE style_code = ${styleCode} AND created_at > now() - make_interval(days => ${days})
+      GROUP BY event, retailer_slug
+    `);
+    const { rows: rep } = await this.db.execute(sql`
+      SELECT count(*) AS n FROM (
+        SELECT visitor_id FROM offer_events
+        WHERE style_code = ${styleCode} AND visitor_id IS NOT NULL AND created_at > now() - make_interval(days => ${days})
+        GROUP BY visitor_id HAVING count(DISTINCT created_at::date) > 1
+      ) t
+    `);
+    let views = 0;
+    let visitors = 0;
+    const clicks: Record<string, number> = {};
+    for (const r of rows as Array<{ event: string; retailer_slug: string | null; n: string; visitors: string }>) {
+      if (r.event === 'view') {
+        views += Number(r.n);
+        visitors += Number(r.visitors);
+      } else if (r.retailer_slug) {
+        clicks[r.retailer_slug] = Number(r.n);
+      }
+    }
+    return { days, views, visitors, repeatVisitors: Number((rep[0] as { n: string } | undefined)?.n ?? 0), clicks };
+  }
+
   /** One colour's card data, for a card that switches to a colour it was not sent: its default size is its cheapest in-stock one. */
   async cardData(styleCode: string): Promise<{ defaultSize: number | null; sizeList: Array<{ size: number; available: boolean }>; offers: ColourOffer[]; storeSlugs: string[] }> {
     const { rows } = await this.db.execute(sql`
