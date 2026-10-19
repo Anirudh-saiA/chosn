@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
 import { BrowseShortcuts } from '@/components/search/BrowseShortcuts';
-import { PriceFalls } from '@/components/search/PriceFalls';
 import { ResultsToolbar } from '@/components/search/ResultsToolbar';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { Reveal } from '@/components/fx/Reveal';
@@ -49,9 +48,6 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           />
         </div>
       </header>
-
-      {/* Only on the plain Compare page: not above a filtered or searched list. */}
-      {!Object.values(query).some(Boolean) && <PriceFalls />}
 
       <div>
         <div className="min-w-0">
