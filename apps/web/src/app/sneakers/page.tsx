@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
+import { BrowseShortcuts } from '@/components/search/BrowseShortcuts';
 import { FilterPanel } from '@/components/search/FilterPanel';
 import { ResultsToolbar } from '@/components/search/ResultsToolbar';
 import { SneakerCard } from '@/components/search/SneakerCard';
@@ -70,6 +71,8 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           )}
         </div>
       </div>
+
+      <BrowseShortcuts />
 
       <CommunityResults posts={communityPosts} />
     </PageShell>
