@@ -215,6 +215,15 @@ export interface ColourOption {
   current: boolean;
 }
 
+/** One store's price for a colour's default size, for the card's "Compare prices" row. */
+export interface ColourOffer {
+  slug: string;
+  price: number;
+  inStock: boolean;
+  /** The store's own "was" price for this listing, when it shows one above the price. */
+  wasPrice: number | null;
+}
+
 export interface SearchResultItem {
   styleCode: string;
   brand: string;
@@ -232,7 +241,7 @@ export interface SearchResultItem {
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
   /** Search results: every colourway of this model that matched, the shown one first (a card = one model). */
-  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'> & { sizes?: number[]; storeSlugs?: string[] }>;
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'> & { sizes?: number[]; storeSlugs?: string[]; sizeList?: Array<{ size: number; available: boolean }>; offers?: ColourOffer[] }>;
   /** Only on /similar: true when this is the same model in another colourway. */
   sameModel?: boolean;
   /** Only on /similar: the cheapest in-stock store for this shoe and its direct listing link. */
@@ -479,6 +488,73 @@ export class CatalogService {
    * never a client-side filter of the whole catalog — task 3.
    */
   /** Same filters within 30 seconds return the same answer: the per-store summary behind them is the slow part. */
+  /**
+   * For the card's bottom half: every size of each colour with whether any store has it in stock, the stores that have anything in stock,
+   * and each store's price for the colour's default size (the one the card opens on).
+   */
+  async cardStock(
+    codes: string[],
+    pairs: ReadonlyArray<readonly [string, number]>,
+  ): Promise<Map<string, { sizes: number[]; slugs: string[]; sizeList: Array<{ size: number; available: boolean }>; offers: ColourOffer[] }>> {
+    const perColour = new Map<string, { sizes: number[]; slugs: string[]; sizeList: Array<{ size: number; available: boolean }>; offers: ColourOffer[] }>();
+    if (codes.length === 0) return perColour;
+    const codeList = sql`ARRAY[${sql.join(codes.map((c) => sql`${c}`), sql`, `)}]::text[]`;
+    const { rows: sizeRows } = await this.db.execute(sql`
+      SELECT s.style_code, v.size,
+             COALESCE(bool_or(ps.in_stock), false) AS available,
+             to_json(array_agg(DISTINCT r.slug) FILTER (WHERE ps.in_stock)) AS slugs
+      FROM sneakers s
+      JOIN sneaker_variants v ON v.sneaker_id = s.id
+      LEFT JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+      LEFT JOIN retailers r ON r.id = ps.retailer_id
+      WHERE s.style_code = ANY(${codeList})
+      GROUP BY s.style_code, v.size
+      ORDER BY s.style_code, v.size
+    `);
+    for (const r of sizeRows as unknown as { style_code: string; size: string; available: boolean; slugs: string[] | null }[]) {
+      const e = perColour.get(r.style_code) ?? { sizes: [], slugs: [], sizeList: [], offers: [] };
+      const size = Number(r.size);
+      e.sizeList.push({ size, available: r.available });
+      if (r.available) e.sizes.push(size);
+      for (const slug of r.slugs ?? []) if (!e.slugs.includes(slug)) e.slugs.push(slug);
+      perColour.set(r.style_code, e);
+    }
+    if (pairs.length > 0) {
+      const { rows: offerRows } = await this.db.execute(sql`
+        SELECT s.style_code, r.slug, ps.in_stock, ps.compare_at_price,
+               effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price
+        FROM (VALUES ${sql.join(pairs.map(([c, z]) => sql`(${c}, ${z}::numeric)`), sql`, `)}) AS want(code, size)
+        JOIN sneakers s ON s.style_code = want.code
+        JOIN sneaker_variants v ON v.sneaker_id = s.id AND v.size = want.size
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.listing_url NOT LIKE '%FIXTURE%'
+        JOIN retailers r ON r.id = ps.retailer_id
+        ORDER BY s.style_code, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC NULLS LAST
+      `);
+      for (const r of offerRows as unknown as { style_code: string; slug: string; in_stock: boolean; compare_at_price: string | null; price: string | null }[]) {
+        if (r.price === null) continue;
+        const e = perColour.get(r.style_code);
+        const was = r.compare_at_price !== null ? Math.round(Number(r.compare_at_price)) : null;
+        e?.offers.push({ slug: r.slug, price: Math.round(Number(r.price)), inStock: r.in_stock, wasPrice: was !== null && was > Number(r.price) ? was : null });
+      }
+    }
+    return perColour;
+  }
+
+  /** One colour's card data, for a card that switches to a colour it was not sent: its default size is its cheapest in-stock one. */
+  async cardData(styleCode: string): Promise<{ defaultSize: number | null; sizeList: Array<{ size: number; available: boolean }>; offers: ColourOffer[]; storeSlugs: string[] }> {
+    const { rows } = await this.db.execute(sql`
+      SELECT COALESCE(st.min_size, dv.size) AS size
+      FROM sneakers s
+      LEFT JOIN catalog_stats_mv st ON st.sneaker_id = s.id
+      LEFT JOIN catalog_default_variant_mv dv ON dv.sneaker_id = s.id
+      WHERE s.style_code = ${styleCode} LIMIT 1
+    `);
+    const size = (rows[0] as { size: string } | undefined)?.size;
+    const map = await this.cardStock([styleCode], size ? [[styleCode, Number(size)] as const] : []);
+    const e = map.get(styleCode);
+    return { defaultSize: size ? Number(size) : null, sizeList: e?.sizeList ?? [], offers: e?.offers ?? [], storeSlugs: e?.slugs ?? [] };
+  }
+
   /** The photos of one shoe (main photo first, then the other angles), fetched when a card's photo buttons are used. */
   async photos(styleCode: string): Promise<{ photos: string[] }> {
     const { rows } = await this.db.execute(sql`
@@ -823,25 +899,10 @@ export class CatalogService {
 
     const { rows: retailerRows } = await this.db.execute(sql`SELECT slug, name, logo_url FROM retailers WHERE status = 'active' ORDER BY name`);
     const storeName = new Map((retailerRows as { slug: string; name: string }[]).map((x) => [x.slug, x.name]));
-    // For every colour on the page: the UK sizes in stock and which stores have it (the card's bottom row).
-    const colourCodes = [...new Set((rows as unknown as SearchRow[]).flatMap((r) => (r.colours ?? []).map((c) => c.styleCode)))];
-    const perColour = new Map<string, { sizes: number[]; slugs: string[] }>();
-    if (colourCodes.length > 0) {
-      const { rows: stockRows } = await this.db.execute(sql`
-        SELECT s.style_code,
-               to_json(array_agg(DISTINCT v.size ORDER BY v.size)) AS sizes,
-               to_json(array_agg(DISTINCT r.slug)) AS slugs
-        FROM sneakers s
-        JOIN sneaker_variants v ON v.sneaker_id = s.id
-        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
-        JOIN retailers r ON r.id = ps.retailer_id
-        WHERE s.style_code = ANY(${sql`ARRAY[${sql.join(colourCodes.map((c) => sql`${c}`), sql`, `)}]::text[]`})
-        GROUP BY s.style_code
-      `);
-      for (const r of stockRows as unknown as { style_code: string; sizes: string[]; slugs: string[] }[]) {
-        perColour.set(r.style_code, { sizes: r.sizes.map(Number), slugs: r.slugs });
-      }
-    }
+    // The sizes and store prices for each card's first colour (the one it opens on). Other colours load their own when hovered.
+    const firstColours = (rows as unknown as SearchRow[]).map((r) => r.colours?.[0]).filter((c): c is NonNullable<typeof c> => Boolean(c));
+    const perColour = await this.cardStock(firstColours.map((c) => c.styleCode), firstColours.map((c) => [c.styleCode, Number(c.defaultSize)] as const));
+
     const results = (rows as unknown as SearchRow[]).map((r) => ({
       styleCode: r.style_code,
       brand: r.brand,
@@ -865,6 +926,8 @@ export class CatalogService {
         bestAvailablePrice: c.bestAvailablePrice !== null ? Number(c.bestAvailablePrice) : null,
         sizes: perColour.get(c.styleCode)?.sizes ?? [],
         storeSlugs: perColour.get(c.styleCode)?.slugs ?? [],
+        sizeList: perColour.get(c.styleCode)?.sizeList ?? [],
+        offers: perColour.get(c.styleCode)?.offers ?? [],
       })),
     }));
 

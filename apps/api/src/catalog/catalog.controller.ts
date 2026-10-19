@@ -79,6 +79,12 @@ export class CatalogController {
   }
 
   /** Colourways of the same model, for the colour picker: /catalog/DD1391-100/colours */
+  /** Sizes, stores and prices for one colour, for the card when it switches to a colour it was not sent. */
+  @Get(':styleCode/card')
+  async cardData(@Param('styleCode') styleCode: string) {
+    return this.catalog.cardData(styleCode);
+  }
+
   /** Photos of one shoe for the card's photo buttons. */
   @Get(':styleCode/photos')
   async photos(@Param('styleCode') styleCode: string): Promise<{ photos: string[] }> {
