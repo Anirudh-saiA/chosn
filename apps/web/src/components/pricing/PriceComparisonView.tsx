@@ -235,7 +235,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
         </section>
       </Reveal>
 
-      <MoreLikeThis items={similar ?? []} />
+      <MoreLikeThis items={similar ?? []} stores={Object.fromEntries((data.connectedStores ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl ?? null }]))} />
 
       {bestOffer && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-brass/30 bg-vault-deep/95 px-5 py-3 backdrop-blur-xl md:hidden">

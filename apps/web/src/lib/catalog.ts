@@ -128,7 +128,7 @@ export interface CatalogResponse {
   variant: CatalogVariant;
   siblingSizes: SiblingSize[];
   /** Every store CHOSN reads prices from. */
-  connectedStores?: Array<{ slug: string; name: string }>;
+  connectedStores?: Array<{ slug: string; name: string; logoUrl?: string | null }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligence | null;
   /** Buy now / Wait outlook for this shoe in this size (apps/api price-outlook.ts). */

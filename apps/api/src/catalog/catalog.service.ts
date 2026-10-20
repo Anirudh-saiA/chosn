@@ -119,7 +119,7 @@ export interface CatalogResponse {
   variant: CatalogVariant;
   siblingSizes: SiblingSize[];
   /** Every store CHOSN reads prices from, so the page can show the ones that do not have this size (a grey crossed button). */
-  connectedStores: Array<{ slug: string; name: string }>;
+  connectedStores: Array<{ slug: string; name: string; logoUrl: string | null }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligenceSummary | null;
   /** Buy now / Wait outlook for this shoe in this size (price-outlook.ts). */
@@ -405,7 +405,7 @@ export class CatalogService {
         region: variantRow.region,
       },
       siblingSizes: siblings,
-      connectedStores: stores.stores.map((s) => ({ slug: s.slug, name: s.name })),
+      connectedStores: stores.stores.map((s) => ({ slug: s.slug, name: s.name, logoUrl: s.logoUrl })),
       offers,
       marketIntelligence,
       outlook: await this.outlookFor(variantRow, offers, siblings).catch(() => null),

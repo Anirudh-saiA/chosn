@@ -106,6 +106,12 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
     [fetchedPhotos],
   );
 
+  // A card that arrives without its sizes and store prices (the related-sneakers strip) loads them itself.
+  const needsLoad = !sent && !fetchedColour[cur.styleCode];
+  useEffect(() => {
+    if (needsLoad) void loadColour(cur.styleCode);
+  }, [needsLoad, cur.styleCode, loadColour]);
+
   const pickColour = (i: number) => {
     if (i === selected) return;
     setSelected(i);
@@ -172,7 +178,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
   const [outlooks, setOutlooks] = useState<Record<string, Verdict | null>>({});
   const outlookKey = `${cur.styleCode}|${size}`;
   const opened = cur.styleCode === item.styleCode && size === Number(item.defaultSize);
-  const verdict: Verdict | null | undefined = outlookKey in outlooks ? outlooks[outlookKey] : opened ? (item.outlook ?? null) : undefined;
+  const verdict: Verdict | null | undefined = outlookKey in outlooks ? outlooks[outlookKey] : opened && item.outlook !== undefined ? item.outlook : undefined;
   useEffect(() => {
     if (verdict !== undefined) return;
     let alive = true;
