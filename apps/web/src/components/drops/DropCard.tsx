@@ -66,6 +66,19 @@ export function DropCard({ drop, index = 0 }: { drop: DropListItem; index?: numb
             </span>
           </div>
 
+          {drop.sourceName && (
+            <p className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-text-faint">
+              Confirmed by{' '}
+              {drop.sourceUrl ? (
+                <a href={drop.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-text underline underline-offset-2">
+                  {drop.sourceName}
+                </a>
+              ) : (
+                drop.sourceName
+              )}
+            </p>
+          )}
+
           {drop.status === 'upcoming' && <Countdown iso={iso} />}
           {drop.status === 'live' && (
             <p className="font-mono text-ui-label font-semibold uppercase tracking-[0.14em] text-signal">Releasing now</p>

@@ -15,6 +15,9 @@ export interface DropSneakerSummary {
 
 export interface DropListItem {
   id: string;
+  /** Who confirmed this drop (a brand, retailer or publication) and where to read it. */
+  sourceName: string | null;
+  sourceUrl: string | null;
   status: DropStatus;
   releaseDate: string;
   releaseTime: string | null;
@@ -53,6 +56,7 @@ export class DropsService {
    */
   async list(params: { from?: string; to?: string; statuses?: DropStatus[] } = {}): Promise<DropListItem[]> {
     const conditions: ReturnType<typeof sql>[] = [];
+    if (!showDemo()) conditions.push(sql`NOT de.is_demo`);
     if (params.from) conditions.push(sql`de.release_date >= ${params.from}`);
     if (params.to) conditions.push(sql`de.release_date <= ${params.to}`);
     if (params.statuses && params.statuses.length > 0) {
@@ -71,7 +75,7 @@ export class DropsService {
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
     const { rows } = await this.db.execute(sql`
-      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone,
+      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url,
              de.regions, de.retail_price, de.currency,
              s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
       FROM drop_events de
@@ -85,7 +89,7 @@ export class DropsService {
 
   async getById(id: string): Promise<DropDetail | null> {
     const { rows } = await this.db.execute(sql`
-      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone,
+      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.is_demo,
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info,
              s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
       FROM drop_events de
@@ -94,7 +98,7 @@ export class DropsService {
       LIMIT 1
     `);
     const row = rows[0] as Record<string, unknown> | undefined;
-    if (!row) return null;
+    if (!row || (row.is_demo === true && !showDemo())) return null;
 
     const styleCode = String(row.style_code);
 
@@ -134,9 +138,13 @@ export class DropsService {
   }
 }
 
+const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
+
 function rowToListItem(row: Record<string, unknown>): DropListItem {
   return {
     id: String(row.id),
+    sourceName: (row.source_name as string) ?? null,
+    sourceUrl: (row.source_url as string) ?? null,
     status: row.status as DropStatus,
     releaseDate: String(row.release_date),
     releaseTime: (row.release_time as string) ?? null,

@@ -37,6 +37,9 @@ export interface DropSneakerSummary {
 /** Mirrors DropsService.DropListItem. */
 export interface DropListItem {
   id: string;
+  /** Who confirmed this drop and where to read it. */
+  sourceName?: string | null;
+  sourceUrl?: string | null;
   status: DropStatus;
   releaseDate: string;
   releaseTime: string | null;

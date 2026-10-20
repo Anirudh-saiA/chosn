@@ -39,7 +39,10 @@ export class NewsService {
     const limit = Math.min(params.limit && params.limit > 0 ? params.limit : DEFAULT_LIMIT, MAX_LIMIT);
     const offset = params.offset && params.offset > 0 ? params.offset : 0;
 
-    const where = params.dropEventId ? sql`WHERE n.drop_event_id = ${params.dropEventId}` : sql``;
+    const conds = [];
+    if (params.dropEventId) conds.push(sql`n.drop_event_id = ${params.dropEventId}`);
+    if (!showDemo()) conds.push(sql`NOT n.is_demo AND (n.drop_event_id IS NULL OR NOT de.is_demo)`);
+    const where = conds.length ? sql`WHERE ${sql.join(conds, sql` AND `)}` : sql``;
 
     const { rows } = await this.db.execute(sql`
       SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.published_at,
@@ -65,12 +68,15 @@ export class NewsService {
       LEFT JOIN drop_events de ON de.id = n.drop_event_id
       LEFT JOIN sneakers s ON s.id = de.sneaker_id
       WHERE n.id = ${id}
+        ${showDemo() ? sql`` : sql`AND NOT n.is_demo AND (n.drop_event_id IS NULL OR NOT de.is_demo)`}
       LIMIT 1
     `);
     const row = rows[0] as Record<string, unknown> | undefined;
     return row ? rowToItem(row) : null;
   }
 }
+
+const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
 
 function rowToItem(row: Record<string, unknown>): NewsListItem {
   return {

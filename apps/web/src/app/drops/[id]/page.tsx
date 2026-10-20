@@ -98,16 +98,17 @@ export default async function DropDetailPage({ params }: PageProps) {
     { icon: Clock, label: 'Time', value: drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA' },
     { icon: MapPin, label: 'Regions', value: regionText || '—' },
     ...(drop.retailPrice ? [{ icon: Tag, label: 'Retail price', value: formatInr(Number(drop.retailPrice)) }] : []),
+    ...(drop.sourceName ? [{ icon: Tag, label: 'Confirmed by', value: drop.sourceName }] : []),
   ];
 
   return (
     <PageShell width="7xl">
       <DropLiveProvider>
         <Link
-          href="/drops"
+          href="/releases?tab=drops"
           className="mb-8 inline-flex min-h-[44px] items-center gap-2 font-mono text-meta uppercase tracking-[0.14em] text-text-soft transition-colors hover:text-brass-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Drop calendar
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">

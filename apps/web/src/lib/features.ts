@@ -3,9 +3,9 @@
  * Flip a value to false to open the section again (no other change needed).
  */
 export const COMING_SOON = {
-  releases: true,
-  drops: true,
-  news: true,
+  releases: false,
+  drops: false,
+  news: false,
   community: true,
 } as const;
 

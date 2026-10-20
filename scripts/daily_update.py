@@ -270,6 +270,14 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
+    # "Just landed": note the first day each store lists each shoe (Releases page). Best effort.
+    try:
+        tail = run("New arrivals", [NODE, "--env-file=.env", "dist/scripts/track-new-arrivals.js"], cwd=api)
+        for line in tail[-2:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"New arrivals skipped: {e}")
+
     # Base rates for the Buy now / Wait outlook (how often comparable shoes got cheaper). Best effort.
     try:
         tail = run("Price outlook priors", [NODE, "--env-file=.env", "dist/scripts/compute-outlook-priors.js"], cwd=api)

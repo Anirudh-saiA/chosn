@@ -171,7 +171,7 @@ export interface CompareItem {
   }>;
 }
 
-export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stores' | 'outlook';
+export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stores' | 'outlook' | 'newest';
 
 export interface SearchParams {
   q?: string;
@@ -192,6 +192,8 @@ export interface SearchParams {
   signal?: string;
   /** Only shoes whose Buy now / Wait verdict (for the shown size) is this. */
   outlook?: string;
+  /** Only shoes a store first listed in the last N days (listing_first_seen, baseline rows excluded). */
+  newDays?: number;
   limit?: number;
   offset?: number;
   /** Internal: match ANY typed word instead of all of them (second attempt when nothing matched). */
@@ -874,6 +876,10 @@ export class CatalogService {
           GROUP BY v.sneaker_id)`
       : sql``;
     const szJoin = hasSize ? sql`JOIN sz ON sz.sneaker_id = s.id` : sql``;
+    // Just landed: the latest day any store first listed this shoe (baseline rows are not arrivals).
+    const nwJoin = params.newDays !== undefined
+      ? sql`LEFT JOIN LATERAL (SELECT max(f.first_seen) AS new_at FROM listing_first_seen f WHERE f.sneaker_id = s.id AND NOT f.is_baseline AND f.first_seen >= current_date - ${params.newDays}::int) nw ON true`
+      : sql`LEFT JOIN LATERAL (SELECT NULL::date AS new_at) nw ON true`;
 
     const baseConditions = [];
     if (tsQuery) {
@@ -897,6 +903,7 @@ export class CatalogService {
     if (params.minStores !== undefined && params.minStores > 1) conditions.push(sql`${storeCountCol} >= ${params.minStores}`);
     if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
     if (params.outlook) conditions.push(sql`ol.verdict = ${params.outlook}`);
+    if (params.newDays !== undefined) conditions.push(sql`nw.new_at IS NOT NULL`);
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
     // Rank: an exact full name or style code first, then names that contain the whole phrase, then word-by-word relevance.
@@ -929,6 +936,7 @@ export class CatalogService {
     else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
     else if (params.sort === 'name_asc') orderBy = sql`lower(model) ASC, lower(brand) ASC, colorway ASC`;
     else if (params.sort === 'name_desc') orderBy = sql`lower(model) DESC, lower(brand) DESC, colorway DESC`;
+    else if (params.sort === 'newest') orderBy = sql`nw_at DESC NULLS LAST, store_count DESC, md5(style_code)`;
     else if (params.sort === 'outlook') orderBy = sql`(outlook = 'buy_now') DESC, (outlook = 'fair') DESC, outlook_score DESC NULLS LAST, store_count DESC, md5(style_code)`;
     else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
 
@@ -952,13 +960,14 @@ export class CatalogService {
                  ${sizeCol} AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  ${priceCol} AS current_price, ${priceCol} AS best_available_price,
                  ms.signal, ms.currency, ${storeCountCol} AS store_count, ${storeSlugsCol} AS store_slugs,
-                 ol.verdict AS outlook, ol.score AS outlook_score,
+                 ol.verdict AS outlook, ol.score AS outlook_score, nw.new_at AS nw_at,
                  lower(s.brand) || '|' || regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
           LEFT JOIN st ON st.sneaker_id = s.id
           ${szJoin}
+          ${nwJoin}
           LEFT JOIN LATERAL (SELECT o.verdict, o.score FROM sneaker_variants v2 JOIN outlook_latest o ON o.sneaker_variant_id = v2.id WHERE v2.sneaker_id = s.id AND v2.size = ${sizeCol} LIMIT 1) ol ON true
           LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
           ${where}
