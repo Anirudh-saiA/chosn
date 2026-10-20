@@ -1,11 +1,25 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 /** Hero: full-bleed looping background video, CHOSN wordmark on top, "Scroll down" cue at the bottom. */
 export function HeroVideo() {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+  // The poster photo is on screen from the first paint; the video fades in over it once it is really playing, so there is no black flash or jump.
+  useEffect(() => {
+    const v = ref.current;
+    if (v && !v.paused && v.readyState >= 3) setReady(true);
+  }, []);
   return (
     <section data-ambient="hero" className="relative w-full" aria-label="CHOSN">
       <div className="relative flex h-svh min-h-[30rem] w-full flex-col items-center justify-center overflow-hidden bg-black">
+        <img src="/hero/hero-poster.jpg" alt="" aria-hidden fetchPriority="high" decoding="async" className="hero-poster absolute inset-0 h-full w-full object-cover" />
         <video
+          ref={ref}
+          data-ready={ready}
+          onPlaying={() => setReady(true)}
           className="hero-video absolute inset-0 h-full w-full object-cover"
           autoPlay
           muted
@@ -29,10 +43,10 @@ export function HeroVideo() {
         {/* tagline: each line slides up out of a mask once the wordmark has landed */}
         <p className="hero-tagline relative z-10 mt-[clamp(1rem,3vw,2.25rem)] px-6 text-center font-sans text-[clamp(1.05rem,2.4vw,2rem)] font-bold leading-snug tracking-tight text-[#FF7A1A] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)]">
           <span className="hero-line block overflow-hidden">
-            <span className="block" style={{ ['--d' as string]: '1.5s' }}>&ldquo;You don&apos;t join <span className="text-white">CHOSN</span>.</span>
+            <span className="block" style={{ ['--d' as string]: '0.9s' }}>&ldquo;You don&apos;t join <span className="text-white">CHOSN</span>.</span>
           </span>
           <span className="hero-line block overflow-hidden">
-            <span className="block" style={{ ['--d' as string]: '1.75s' }}>You belong here.&rdquo;</span>
+            <span className="block" style={{ ['--d' as string]: '1.1s' }}>You belong here.&rdquo;</span>
           </span>
         </p>
 
