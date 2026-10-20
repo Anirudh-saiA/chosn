@@ -414,7 +414,7 @@ export class CatalogService {
     const storePrices = live.map((o) => Number(o.effectivePriceInr));
     const best = storePrices.length ? Math.min(...storePrices) : null;
     const [{ rows: hist }, { rows: was }] = await Promise.all([
-      this.db.execute(sql`SELECT day::text AS day, best_price_inr::float AS price FROM daily_best_prices WHERE sneaker_variant_id = ${v.variant_id} AND day >= current_date - 90 ORDER BY day`),
+      this.db.execute(sql`SELECT d.day::text AS day, d.best_price_inr::float AS price, r.name AS store FROM daily_best_prices d LEFT JOIN retailers r ON r.id = d.best_retailer_id WHERE d.sneaker_variant_id = ${v.variant_id} AND d.day >= current_date - 90 ORDER BY d.day`),
       this.db.execute(sql`
         SELECT ps.compare_at_price::float AS was FROM price_snapshots ps
         WHERE ps.sneaker_variant_id = ${v.variant_id} AND ps.is_latest AND ps.in_stock AND ps.compare_at_price IS NOT NULL AND ps.listing_url NOT LIKE '%FIXTURE%'
@@ -434,7 +434,7 @@ export class CatalogService {
       bestPrice: best,
       storePrices,
       wasPrice: (was[0] as { was: number } | undefined)?.was ?? null,
-      history: (hist as unknown as Array<{ day: string; price: number }>).map((h) => ({ day: h.day, price: Number(h.price) })),
+      history: (hist as unknown as Array<{ day: string; price: number; store: string | null }>).map((h) => ({ day: h.day, price: Number(h.price), store: h.store })),
       storesInStock: new Set(live.map((o) => o.retailerSlug)).size,
       sizesInStock: siblings.filter((x) => x.available).length,
       sizesKnown: siblings.length,

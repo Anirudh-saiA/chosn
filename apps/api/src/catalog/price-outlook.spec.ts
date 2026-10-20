@@ -59,6 +59,15 @@ describe('scoreOutlook', () => {
   });
 });
 
+describe('cheaper store sold out', () => {
+  it('does not tell you to wait when the price only jumped because the cheap listing is gone', () => {
+    const h = [5400, 5400, 5400, 5400, 5400, 5400, 18200, 18200].map((price, k) => ({ day: `2026-10-${String(k + 1).padStart(2, '0')}`, price, store: k < 6 ? 'Superkicks' : 'Mainstreet' }));
+    const o = scoreOutlook({ ...base, bestPrice: 18200, storePrices: [18200], storesInStock: 1, history: h });
+    expect(o.verdict).not.toBe('wait');
+    expect(o.factors.some((f) => f.label === 'Cheaper listing sold out')).toBe(true);
+  });
+});
+
 describe('nextSale', () => {
   it('finds the next sale event', () => {
     expect(nextSale(new Date('2026-10-20T00:00:00+05:30'))?.name).toBe('Diwali sales');

@@ -47,7 +47,7 @@ export interface OutlookInput {
   /** The store's own crossed-out price at the cheapest store, if it shows one. */
   wasPrice: number | null;
   /** Daily best prices for this shoe and size, oldest first. */
-  history: Array<{ day: string; price: number }>;
+  history: Array<{ day: string; price: number; store?: string | null }>;
   storesInStock: number;
   /** Sizes of this shoe in stock anywhere / sizes it has been seen in. */
   sizesInStock: number;
@@ -113,8 +113,12 @@ export function scoreOutlook(i: OutlookInput): PriceOutlook {
     else if (off >= 0.1) add('Small store discount', 4, `The store shows ${pct(off)} off its own price.`);
   }
 
-  // 3. Its own history (needs a week)
-  if (days >= 7) {
+  // 3. Its own history (needs a week). If the price jumped only because the cheaper store sold out, that is not a price rise to wait out.
+  const lastStore = i.history[days - 1]?.store ?? null;
+  const goneStore = lastStore ? i.history.find((h) => h.store && h.store !== lastStore && h.price <= price * 0.85)?.store ?? null : null;
+  if (goneStore) {
+    add('Cheaper listing sold out', 0, `This shoe was cheaper at ${goneStore} and that listing is gone, so today's price is higher. It is not a rise you can wait out, unless ${goneStore} restocks.`);
+  } else if (days >= 7) {
     evidence++;
     const prices = i.history.map((h) => h.price);
     const lo = Math.min(...prices);
