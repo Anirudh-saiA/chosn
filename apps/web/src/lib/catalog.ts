@@ -173,7 +173,7 @@ export interface SearchResultItem {
   currentPrice: number | null;
   bestAvailablePrice: number | null;
   /** Buy now / Wait / Fair price for the size the card shows; null when there is too little evidence to call it. */
-  outlook?: 'buy_now' | 'wait' | 'fair' | null;
+  outlook?: 'buy_now' | 'wait' | 'fair' | 'unclear' | null;
   signal: Signal | null;
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */

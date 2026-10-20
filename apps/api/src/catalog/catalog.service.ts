@@ -249,7 +249,7 @@ export interface SearchResultItem {
   bestAvailablePrice: number | null;
   signal: Signal | null;
   /** Buy now / Wait / Fair price for the size the card shows; null when there is not enough evidence to call it (search results only). */
-  outlook?: 'buy_now' | 'wait' | 'fair' | null;
+  outlook?: 'buy_now' | 'wait' | 'fair' | 'unclear' | null;
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
@@ -1028,7 +1028,7 @@ export class CatalogService {
       currentPrice: r.current_price !== null ? Number(r.current_price) : null,
       bestAvailablePrice: r.best_available_price !== null ? Number(r.best_available_price) : null,
       signal: (r.signal as Signal | null) ?? null,
-      outlook: r.outlook === 'buy_now' || r.outlook === 'wait' || r.outlook === 'fair' ? (r.outlook as 'buy_now' | 'wait' | 'fair') : null,
+      outlook: r.outlook === 'buy_now' || r.outlook === 'wait' || r.outlook === 'fair' || r.outlook === 'unclear' ? (r.outlook as 'buy_now' | 'wait' | 'fair' | 'unclear') : null,
       currency: r.currency ?? 'INR',
       storeCount: Number(r.store_count ?? 0),
       storeNames: (r.store_slugs ?? []).map((slug) => storeName.get(slug) ?? slug).sort((a, b) => a.localeCompare(b)),

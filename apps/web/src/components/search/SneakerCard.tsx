@@ -43,6 +43,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 const MAX_DOTS = 6;
 const MAX_TILES = 5;
 
+type Verdict = 'buy_now' | 'wait' | 'fair' | 'unclear';
+const VERDICT_LOOK: Record<Verdict, { label: string; cls: string; tip: string }> = {
+  buy_now: { label: 'Buy now', cls: 'bg-[#1F8A4C] text-white', tip: 'Good price to buy now for this size' },
+  wait: { label: 'Wait', cls: 'bg-[#D97706] text-white', tip: 'Worth waiting: the price is above its usual level' },
+  fair: { label: 'Fair price', cls: 'bg-[#14213D] text-white', tip: 'A fair price: no strong reason to rush or wait' },
+  unclear: { label: 'Too early', cls: 'bg-[#0A0A0A]/10 text-[#0A0A0A]/60', tip: 'Not enough price history to call it yet' },
+};
+
 /**
  * One card per model, laid out as the CHOSN card design: the brand logo and a discount badge, the name, colour and best price (with the
  * store's "was" price when it lists one), the photo with arrows and dots, the colours, the sizes (sold-out ones crossed out), and a row
@@ -160,8 +168,22 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
   const extra = colours.length - shown.length;
   const sizeList = data?.sizeList ?? [];
   const anyStock = offers === null ? bestPrice !== null : live.length > 0;
-  // The verdict was worked out for the colour and size the card opened on; once another is picked it no longer applies.
-  const verdict = selected === 0 && size === Number(item.defaultSize) && (item.outlook === 'buy_now' || item.outlook === 'wait') ? item.outlook : null;
+  // The Buy now / Wait verdict. The list sends it for the colour and size the card opened on; for any other colour or size it is fetched once.
+  const [outlooks, setOutlooks] = useState<Record<string, Verdict | null>>({});
+  const outlookKey = `${cur.styleCode}|${size}`;
+  const opened = cur.styleCode === item.styleCode && size === Number(item.defaultSize);
+  const verdict: Verdict | null | undefined = outlookKey in outlooks ? outlooks[outlookKey] : opened ? (item.outlook ?? null) : undefined;
+  useEffect(() => {
+    if (verdict !== undefined) return;
+    let alive = true;
+    fetchCatalogVariant(cur.styleCode, size)
+      .then((v) => alive && setOutlooks((o) => ({ ...o, [outlookKey]: (v?.outlook?.verdict as Verdict | undefined) ?? null })))
+      .catch(() => alive && setOutlooks((o) => ({ ...o, [outlookKey]: null })));
+    return () => {
+      alive = false;
+    };
+  }, [outlookKey, verdict, cur.styleCode, size]);
+  const verdictLook = verdict ? VERDICT_LOOK[verdict] : null;
 
   return (
     <div
@@ -176,15 +198,12 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
       <div className="relative z-10 px-2.5 pt-2.5 sm:px-3.5 sm:pt-3.5">
         <div className="flex items-start justify-between gap-3">
           <BrandMark brand={item.brand} className="!h-4 !max-w-[3.2rem] sm:!h-5 sm:!max-w-[4rem]" />
-          {verdict && (
-            <span
-              title={verdict === 'buy_now' ? 'Good price to buy now for this size' : 'Worth waiting: the price is above its usual level'}
-              className={`rounded-full px-2 py-0.5 font-display text-[0.7rem] uppercase leading-none tracking-[0.03em] text-white sm:px-2.5 sm:py-1 sm:text-[0.8rem] ${verdict === 'buy_now' ? 'bg-[#1F8A4C]' : 'bg-[#D97706]'}`}
-            >
-              {verdict === 'buy_now' ? 'Buy now' : 'Wait'}
+          {verdictLook && (
+            <span title={verdictLook.tip} className={`rounded-full px-2 py-0.5 font-display text-[0.7rem] uppercase leading-none tracking-[0.03em] sm:px-2.5 sm:py-1 sm:text-[0.8rem] ${verdictLook.cls}`}>
+              {verdictLook.label}
             </span>
           )}
-          {!verdict && pct >= 1 && <span className="hidden rounded-full bg-[#FDE7E9] px-2.5 py-1 font-display text-[0.8rem] sm:inline-block uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
+          {!verdictLook && pct >= 1 && <span className="hidden rounded-full bg-[#FDE7E9] px-2.5 py-1 font-display text-[0.8rem] sm:inline-block uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
         </div>
         <h2 className="mt-1 font-display text-[1rem] sm:mt-1.5 sm:text-[clamp(1.15rem,1.5vw,1.35rem)] uppercase leading-[0.98] tracking-[0.01em] text-[#0A0A0A]">
           <Link href={href} className="line-clamp-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]">
