@@ -12,9 +12,9 @@ const SPLIT_MS = 1000; // then it opens along a horizontal seam
 const EASE = [0.76, 0, 0.24, 1] as const;
 const GATE_H = 'calc(100svh - 4rem)'; // the whole window under the 4rem header
 
-const LOOK: Record<Kind, { bg: string; fg: string; title: string; sub: string; hover: string }> = {
-  drops: { bg: '#14213D', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1B2C52' },
-  news: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'News', sub: 'Stories, reports and what just went live', hover: '#1A1A1A' },
+const LOOK: Record<Kind, { bg: string; fg: string; title: string; sub: string; hover: string; img: string }> = {
+  drops: { bg: '#14213D', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1B2C52', img: '/images/hero-dunk-low.png' },
+  news: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'News', sub: 'Stories, reports and what just went live', hover: '#1A1A1A', img: '/images/hero-skatepark.png' },
 };
 
 const fromUrl = (): View => {
@@ -28,6 +28,26 @@ function Title({ kind }: { kind: Kind }) {
     <span className="pointer-events-none flex flex-col items-center px-4 text-center" style={{ color: l.fg }}>
       <span className="font-display text-[clamp(4.5rem,15vw,14rem)] uppercase leading-[0.85] tracking-[0.01em]">{l.title}</span>
       <span className="mt-4 max-w-[22rem] font-mono text-[0.72rem] font-bold uppercase tracking-[0.2em] opacity-70">{l.sub}</span>
+    </span>
+  );
+}
+
+/** One half's face: its flat colour, a picture behind the word (stand-in for the video to come), and the word. */
+function Face({ kind }: { kind: Kind }) {
+  const l = LOOK[kind];
+  return (
+    <span className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ background: l.bg }}>
+      {kind === 'news' ? (
+        <>
+          <img src={l.img} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <span className="absolute inset-0 bg-[#0A0A0A]/70" />
+        </>
+      ) : (
+        <img src={l.img} alt="" draggable={false} className="absolute -bottom-[6%] left-1/2 w-[135%] max-w-none -translate-x-1/2 opacity-30 transition-opacity duration-500 group-hover:opacity-45" />
+      )}
+      <span className="relative flex w-full items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">
+        <Title kind={kind} />
+      </span>
     </span>
   );
 }
@@ -178,9 +198,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   onMouseEnter={(e) => (e.currentTarget.style.background = LOOK[k].hover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = LOOK[k].bg)}
                 >
-                  <span className="flex w-full min-w-[14rem] items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">
-                    <Title kind={k} />
-                  </span>
+                  <Face kind={k} />
                   <ArrowUpRight className="absolute right-6 top-6 h-8 w-8 text-white opacity-60 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:opacity-100" aria-hidden />
                 </button>
               ))}
@@ -199,7 +217,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                     animate={{ y: closing ? 0 : away }}
                     transition={{ duration: SPLIT_MS / 1000, ease: EASE }}
                   >
-                    <Title kind={anim.kind} />
+                    <Face kind={anim.kind} />
                   </motion.div>
                 );
               })}

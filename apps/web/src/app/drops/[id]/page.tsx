@@ -16,9 +16,8 @@ import { Reveal } from '@/components/fx/Reveal';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { formatInr } from '@/lib/catalog';
 import { listPosts } from '@/lib/community';
-import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo } from '@/lib/drops';
+import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo, formatMoney } from '@/lib/drops';
 import { getChatRoomByDrop } from '@/lib/chat';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -97,8 +96,8 @@ export default async function DropDetailPage({ params }: PageProps) {
     { icon: CalendarDays, label: 'Release date', value: releaseDateLabel },
     { icon: Clock, label: 'Time', value: drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA' },
     { icon: MapPin, label: 'Regions', value: regionText || '—' },
-    ...(drop.retailPrice ? [{ icon: Tag, label: 'Retail price', value: formatInr(Number(drop.retailPrice)) }] : []),
-    ...(drop.sourceName ? [{ icon: Tag, label: 'Confirmed by', value: drop.sourceName }] : []),
+    ...(drop.retailPrice ? [{ icon: Tag, label: 'Retail price', value: formatMoney(Number(drop.retailPrice), drop.currency) }] : []),
+    ...(drop.sourceName ? [{ icon: Tag, label: drop.confirmation === 'confirmed' || !drop.confirmation ? 'Confirmed by' : drop.confirmation === 'reported' ? 'Reported by' : 'Source (unconfirmed)', value: drop.sourceName }] : []),
   ];
 
   return (

@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { BellRing, Clock } from 'lucide-react';
-import { formatInr } from '@/lib/catalog';
-import { formatReleaseTime, type DropListItem } from '@/lib/drops';
+import { formatReleaseTime, type DropListItem, formatMoney } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 import { Reveal } from '@/components/fx/Reveal';
 import { releaseInstant } from './drop-instant';
 import { Countdown } from './drop-time';
+import { ConfirmationBadge } from './ConfirmationBadge';
 import { DropStatusBadge } from './DropStatusBadge';
 import { NotifyToggle } from './NotifyToggle';
 import { SneakerPlaceholderArt } from './SneakerPlaceholderArt';
@@ -62,13 +62,14 @@ export function DropCard({ drop, index = 0 }: { drop: DropListItem; index?: numb
               {drop.releaseTime ? formatReleaseTime(drop.releaseTime) : 'Time TBA'}
             </span>
             <span className="flex items-center gap-1.5 text-text">
-              {drop.retailPrice ? formatInr(Number(drop.retailPrice)) : 'TBA'}
+              {drop.retailPrice ? formatMoney(Number(drop.retailPrice), drop.currency) : 'TBA'}
             </span>
           </div>
 
+          <ConfirmationBadge level={drop.confirmation} />
           {drop.sourceName && (
             <p className="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-text-faint">
-              Confirmed by{' '}
+              {drop.confirmation === 'confirmed' || !drop.confirmation ? 'Confirmed by' : drop.confirmation === 'reported' ? 'Reported by' : 'Source:'}{' '}
               {drop.sourceUrl ? (
                 <a href={drop.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-text underline underline-offset-2">
                   {drop.sourceName}

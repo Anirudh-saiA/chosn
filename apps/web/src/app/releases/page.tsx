@@ -5,6 +5,7 @@ import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
 import { NewsCard } from '@/components/news/NewsCard';
 import { NewsFeatureCard } from '@/components/news/NewsFeatureCard';
+import { IndiaWatch } from '@/components/releases/IndiaWatch';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { EmptyPanel } from '@/components/ui/EmptyPanel';
@@ -18,6 +19,7 @@ import { fetchNewsList } from '@/lib/news';
 export const revalidate = 300;
 
 const LANDED_DAYS = 14;
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 async function loadLanded(): Promise<SearchResponse | null> {
   try {
@@ -37,7 +39,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
   const initial = tab === 'drops' || tab === 'landed' ? 'drops' : tab === 'news' ? 'news' : 'gate';
   const [drops, news, landed] = await Promise.all([
     fetchDropsList({}, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 30 }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 40 }, { next: { revalidate: 300 } }),
     loadLanded(),
   ]);
   const items = news.items;
@@ -51,7 +53,13 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
       <section aria-labelledby="drops-h">
         <h2 id="drops-h" className="font-display text-[clamp(2.5rem,6vw,4.5rem)] uppercase leading-[0.95] text-[#0A0A0A]">Drop calendar</h2>
         <p className="mb-6 mt-2 max-w-2xl text-sm text-text-soft">
-          Only drops a brand or retailer has confirmed, each with who confirmed it. {drops.length === 0 ? 'None are confirmed right now; check back soon.' : ''}
+          Release dates from brands, retailers and release trackers. Every drop says how firm its date is (Confirmed, Reported or Unconfirmed) and where it came from. Dates and prices are the release region&apos;s: US drops are in US dollars.
+        </p>
+        <p className="mb-6 flex flex-wrap items-center gap-3 text-sm">
+          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex items-center gap-2 rounded-full bg-[#14213D] px-5 py-2.5 font-display text-base uppercase tracking-[0.06em] text-white">
+            Add every drop to your calendar
+          </a>
+          <span className="text-text-soft">Downloads a calendar file (.ics) that opens in Google, Apple or Outlook calendar.</span>
         </p>
         <DropLiveProvider>
           <SubscriptionsProvider>
@@ -59,6 +67,8 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
           </SubscriptionsProvider>
         </DropLiveProvider>
       </section>
+
+      <IndiaWatch />
 
       <section aria-labelledby="landed-h">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">

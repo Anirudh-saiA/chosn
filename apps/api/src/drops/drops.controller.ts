@@ -1,8 +1,9 @@
-import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Param, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { isUUID } from 'class-validator';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
-import { DropsService, type DropDetail, type DropListItem, type DropStatus } from './drops.service';
+import { DropsService, showDemo, type DropDetail, type DropListItem, type DropStatus } from './drops.service';
 import { ListDropsQueryDto } from './dto/list-drops-query.dto';
 import { parsePgTextArray } from './pg-array';
 
@@ -57,6 +58,42 @@ export class DropsController {
    * collide today (different segment counts), but this is the
    * convention that stays unambiguous if either route's shape changes.
    */
+  /**
+   * Every drop as an iCalendar file, so the whole calendar can be added to Google / Apple / Outlook calendar (and re-read as it changes).
+   * Date-only drops are all-day events; a drop with a time is a timed event. The summary says how firm the date is.
+   */
+  @Get('calendar.ics')
+  async calendar(@Res() res: Response): Promise<void> {
+    const drops = await this.drops.list({});
+    const esc = (t: string) => t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    const fold = (l: string) => (l.length <= 74 ? l : l.match(/.{1,73}/g)!.join('\r\n '));
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CHOSN//Drops//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:CHOSN drops', 'X-WR-TIMEZONE:Asia/Kolkata'];
+    for (const d of drops) {
+      const day = d.releaseDate.replace(/-/g, '');
+      const level = d.confirmation === 'confirmed' ? 'Confirmed' : d.confirmation === 'reported' ? 'Reported' : 'Unconfirmed';
+      const price = d.retailPrice ? `${d.currency} ${Number(d.retailPrice).toLocaleString('en-US')}` : 'price TBA';
+      lines.push('BEGIN:VEVENT', `UID:${d.id}@chosn`, `DTSTAMP:${stamp}`);
+      if (d.releaseTime && d.releaseTimezone === 'Asia/Kolkata') {
+        const [h, m] = d.releaseTime.split(':').map(Number);
+        const utc = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)), (h ?? 0) - 5, (m ?? 0) - 30));
+        lines.push(`DTSTART:${utc.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')}`, 'DURATION:PT1H');
+      } else {
+        const next = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)) + 1));
+        lines.push(`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replace(/-/g, '')}`);
+      }
+      lines.push(
+        `SUMMARY:${esc(`${d.sneaker.brand} ${d.sneaker.model} ${d.sneaker.colorway === 'Default' ? '' : d.sneaker.colorway}`.trim())} (${level.toLowerCase()})`,
+        `DESCRIPTION:${esc(`${level} date. ${price}. Regions: ${d.regions.join(', ') || 'n/a'}.${d.sourceName ? ` Source: ${d.sourceName}${d.sourceUrl ? ` ${d.sourceUrl}` : ''}.` : ''}`)}`,
+        'END:VEVENT',
+      );
+    }
+    lines.push('END:VCALENDAR');
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="chosn-drops.ics"');
+    res.send(lines.map(fold).join('\r\n') + '\r\n');
+  }
+
   @Get('by-style-code/:styleCode')
   async byStyleCode(@Param('styleCode') styleCode: string): Promise<DropEventSummary | null> {
     const { rows } = await this.db.execute(sql`
@@ -64,7 +101,7 @@ export class DropsController {
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
-      WHERE s.style_code = ${styleCode}
+      WHERE s.style_code = ${styleCode} ${showDemo() ? sql`` : sql`AND NOT de.is_demo`}
       ORDER BY
         CASE de.status WHEN 'live' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
         de.release_date DESC

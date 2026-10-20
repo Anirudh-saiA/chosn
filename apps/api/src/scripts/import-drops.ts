@@ -1,20 +1,33 @@
 /**
- * Enter confirmed upcoming drops:  node --env-file=.env dist/scripts/import-drops.js [path]   (default data/releases/upcoming.json)
+ * Enter drops:  node --env-file=.env dist/scripts/import-drops.js [path]   (default data/releases/upcoming.json)
  *
- * Every drop needs a source it was confirmed by (a brand or retailer page, or a named publication): CHOSN lists confirmed dates only,
- * never rumours. See data/releases/README.md for the file format. A drop is matched to a shoe we track by style code; one we do not
- * track is reported and skipped. Re-running updates the same drop (same shoe + date) instead of duplicating it.
+ * Every drop needs the source it came from (a brand or retailer page, a release tracker, or a named publication) and says how firm its
+ * date is: confirmed (an official page states it), reported (trackers agree) or unconfirmed (one source, or sources disagree). The site
+ * shows that level on every drop. See docs/releases-how-to-add-drops.md for the file format.
+ *
+ * A drop is matched to a shoe we track by style code. A shoe we do not track yet (most upcoming releases) is added as a bare entry
+ * (brand, model, colourway; no prices, so it never appears in Compare) once `brand` and `model` are given. Past releases use
+ * "status": "released". Re-running updates the same drop (same shoe + date) instead of duplicating it. A drop with no time is
+ * date-only, so the scheduler never flips it live or posts news for it on its own.
  */
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 
 interface DropIn {
   styleCode?: string;
+  brand?: string;
+  model?: string;
+  colorway?: string;
+  collab?: string;
   releaseDate?: string;
   releaseTime?: string;
   retailPrice?: number;
+  currency?: string;
   regions?: string[];
+  status?: 'upcoming' | 'released';
+  confirmation?: 'confirmed' | 'reported' | 'unconfirmed';
   sourceName?: string;
   sourceUrl?: string;
   links?: Array<{ label?: string; url?: string }>;
@@ -22,7 +35,9 @@ interface DropIn {
 }
 
 const REGIONS = new Set(['india', 'us', 'global']);
+const LEVELS = new Set(['confirmed', 'reported', 'unconfirmed']);
 const https = (u: unknown): u is string => typeof u === 'string' && /^https:\/\/[^\s]+$/.test(u);
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
@@ -31,32 +46,51 @@ async function main() {
   if (!Array.isArray(list)) throw new Error('the file must be a JSON array of drops');
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   let saved = 0;
+  let addedShoes = 0;
   const problems: string[] = [];
   try {
     for (const [i, d] of list.entries()) {
-      const tag = `#${i + 1} ${d.styleCode ?? '?'}`;
-      if (!d.styleCode || !/^[A-Za-z0-9._-]{3,40}$/.test(d.styleCode)) { problems.push(`${tag}: styleCode missing or invalid`); continue; }
+      const tag = `#${i + 1} ${d.styleCode ?? `${d.brand ?? '?'} ${d.model ?? '?'}`}`;
       if (!d.releaseDate || !/^\d{4}-\d{2}-\d{2}$/.test(d.releaseDate)) { problems.push(`${tag}: releaseDate must be YYYY-MM-DD`); continue; }
       if (d.releaseTime && !/^\d{2}:\d{2}$/.test(d.releaseTime)) { problems.push(`${tag}: releaseTime must be HH:MM (India time)`); continue; }
-      if (!d.sourceName || !https(d.sourceUrl)) { problems.push(`${tag}: sourceName and an https sourceUrl are required (confirmed drops only)`); continue; }
+      if (!d.sourceName || !https(d.sourceUrl)) { problems.push(`${tag}: sourceName and an https sourceUrl are required`); continue; }
+      const level = d.confirmation ?? 'confirmed';
+      if (!LEVELS.has(level)) { problems.push(`${tag}: confirmation must be confirmed, reported or unconfirmed`); continue; }
       const regions = (d.regions && d.regions.length ? d.regions : ['india']).filter((r) => REGIONS.has(r));
       const links = (d.links ?? []).filter((l) => l.label && https(l.url)).map((l) => ({ label: l.label, url: l.url }));
-      const shoe = await pool.query('SELECT id FROM sneakers WHERE style_code = $1', [d.styleCode]);
-      if (shoe.rowCount === 0) { problems.push(`${tag}: we do not track this style code yet`); continue; }
+      const currency = (d.currency ?? 'INR').toUpperCase();
+
+      // The shoe: one we track (by style code), or a bare entry for a shoe that is not in stores yet.
+      let styleCode = d.styleCode && /^[A-Za-z0-9._-]{3,40}$/.test(d.styleCode) ? d.styleCode : null;
+      let shoe = styleCode ? await pool.query('SELECT id FROM sneakers WHERE style_code = $1', [styleCode]) : null;
+      if (!shoe || shoe.rowCount === 0) {
+        if (!d.brand || !d.model) { problems.push(`${tag}: we do not track this style code; give brand and model to add it as a bare entry`); continue; }
+        styleCode ??= `DROP-${slug(`${d.brand}-${d.model}-${d.colorway ?? ''}`).slice(0, 28)}-${createHash('sha1').update(`${d.brand}|${d.model}|${d.colorway ?? ''}|${d.collab ?? ''}|${d.releaseDate}`).digest('hex').slice(0, 6)}`;
+        const ins = await pool.query(
+          `INSERT INTO sneakers (brand, model, colorway, style_code, currency, retail_price, release_date)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::date)
+           ON CONFLICT (style_code) DO UPDATE SET updated_at = now() RETURNING id, (xmax = 0) AS inserted`,
+          [d.brand, d.collab ? `${d.model} x ${d.collab}` : d.model, d.colorway ?? 'Default', styleCode, currency, d.retailPrice ?? null, d.releaseDate],
+        );
+        shoe = ins;
+        if (ins.rows[0].inserted) addedShoes++;
+      }
       const sneakerId = shoe.rows[0].id as string;
+      const status = d.status === 'released' ? 'sold_out' : 'upcoming';
       const existing = await pool.query('SELECT id FROM drop_events WHERE sneaker_id = $1 AND release_date = $2::date', [sneakerId, d.releaseDate]);
       const raffle = d.raffle ? JSON.stringify(d.raffle) : null;
+      const args = [d.releaseTime ?? null, d.retailPrice ?? null, currency, regions, JSON.stringify(links), raffle, d.sourceName, d.sourceUrl, level, status];
       if (existing.rowCount) {
         await pool.query(
-          `UPDATE drop_events SET release_time = $2::time, retail_price = $3, regions = $4::region[], purchase_links = $5::jsonb, raffle_info = $6::jsonb,
-                  source_name = $7, source_url = $8, is_demo = false, updated_at = now() WHERE id = $1`,
-          [existing.rows[0].id, d.releaseTime ?? null, d.retailPrice ?? null, regions, JSON.stringify(links), raffle, d.sourceName, d.sourceUrl],
+          `UPDATE drop_events SET release_time = $2::time, retail_price = $3, currency = $4, regions = $5::region[], purchase_links = $6::jsonb, raffle_info = $7::jsonb,
+                  source_name = $8, source_url = $9, confirmation = $10, status = $11::drop_status, is_demo = false, updated_at = now() WHERE id = $1`,
+          [existing.rows[0].id, ...args],
         );
       } else {
         await pool.query(
-          `INSERT INTO drop_events (sneaker_id, release_date, release_time, regions, retail_price, purchase_links, raffle_info, source_name, source_url, is_demo)
-           VALUES ($1, $2::date, $3::time, $4::region[], $5, $6::jsonb, $7::jsonb, $8, $9, false)`,
-          [sneakerId, d.releaseDate, d.releaseTime ?? null, regions, d.retailPrice ?? null, JSON.stringify(links), raffle, d.sourceName, d.sourceUrl],
+          `INSERT INTO drop_events (sneaker_id, release_date, release_time, retail_price, currency, regions, purchase_links, raffle_info, source_name, source_url, confirmation, status, is_demo)
+           VALUES ($1, $2::date, $3::time, $4, $5, $6::region[], $7::jsonb, $8::jsonb, $9, $10, $11, $12::drop_status, false)`,
+          [sneakerId, d.releaseDate, ...args],
         );
       }
       saved++;
@@ -64,7 +98,7 @@ async function main() {
   } finally {
     await pool.end();
   }
-  console.log(`[drops] ${saved} saved, ${problems.length} skipped`);
+  console.log(`[drops] ${saved} saved (${addedShoes} new bare shoe entries), ${problems.length} skipped`);
   for (const p of problems) console.log('  -', p);
   if (problems.length) process.exitCode = 1;
 }

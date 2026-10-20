@@ -8,6 +8,13 @@ import { DropCalendar } from './DropCalendar';
 import { DropFeatured, pickFeaturedDrop } from './DropFeatured';
 import { DropListView } from './DropListView';
 
+const REGION_CHIPS: Array<[string | null, string]> = [
+  [null, 'All regions'],
+  ['india', 'India'],
+  ['us', 'US'],
+  ['global', 'Global'],
+];
+
 type ViewMode = 'list' | 'calendar';
 type StatusFilter = 'all' | DropStatus;
 
@@ -15,7 +22,7 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'live', label: 'Live now' },
   { value: 'upcoming', label: 'Upcoming' },
-  { value: 'sold_out', label: 'Sold out' },
+  { value: 'sold_out', label: 'Released' },
 ];
 
 /**
@@ -28,6 +35,7 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>(null);
 
   const featured = useMemo(() => pickFeaturedDrop(drops), [drops]);
   const brands = useMemo(() => Array.from(new Set(drops.map((d) => d.sneaker.brand))).sort(), [drops]);
@@ -38,8 +46,8 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
   }, [drops]);
 
   const filtered = useMemo(
-    () => drops.filter((d) => (status === 'all' || d.status === status) && (!brand || d.sneaker.brand === brand)),
-    [drops, status, brand],
+    () => drops.filter((d) => (status === 'all' || d.status === status) && (!brand || d.sneaker.brand === brand) && (!region || d.regions.includes(region))),
+    [drops, status, brand, region],
   );
   const visibleDrops = useMemo(
     () => (selectedDate ? filtered.filter((d) => d.releaseDate === selectedDate) : filtered),
@@ -71,6 +79,13 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
             {STATUS_CHIPS.map((c) => (
               <Chip key={c.value} active={status === c.value} onClick={() => setStatus(c.value)}>
                 {c.label} <span className="ml-1 opacity-70">{counts[c.value]}</span>
+              </Chip>
+            ))}
+          </div>
+          <div role="group" aria-label="Filter by region" className="flex flex-wrap gap-2">
+            {REGION_CHIPS.map(([v, l]) => (
+              <Chip key={String(v)} active={region === v} onClick={() => setRegion(v)}>
+                {l}
               </Chip>
             ))}
           </div>

@@ -205,7 +205,7 @@ export function DropCalendar({
             <span className="h-1.5 w-1.5 rounded-full bg-brass-bright" aria-hidden /> Upcoming
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-text-faint" aria-hidden /> Sold out
+            <span className="h-1.5 w-1.5 rounded-full bg-text-faint" aria-hidden /> Released
           </li>
         </ul>
         <p>

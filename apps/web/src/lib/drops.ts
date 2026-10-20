@@ -35,8 +35,18 @@ export interface DropSneakerSummary {
 }
 
 /** Mirrors DropsService.DropListItem. */
+export type DropConfirmation = 'confirmed' | 'reported' | 'unconfirmed';
+
+/** A price in its own currency: rupees for India drops, dollars for the US trackers' dates. */
+export function formatMoney(amount: number, currency: string): string {
+  if (currency === 'INR') return `\u20B9${Math.round(amount).toLocaleString('en-IN')}`;
+  if (currency === 'USD') return `$${Math.round(amount).toLocaleString('en-US')}`;
+  return `${currency} ${Math.round(amount).toLocaleString('en-US')}`;
+}
+
 export interface DropListItem {
   id: string;
+  confirmation?: DropConfirmation;
   /** Who confirmed this drop and where to read it. */
   sourceName?: string | null;
   sourceUrl?: string | null;
@@ -128,7 +138,7 @@ export function parseRaffleInfo(raw: unknown): RaffleInfo | null {
   return raw as RaffleInfo;
 }
 
-const REGION_LABELS: Record<string, string> = { india: 'India', us: 'the US', global: 'Global' };
+const REGION_LABELS: Record<string, string> = { india: 'India', us: 'US', global: 'Global' };
 
 export function formatRegions(regions: string[]): string {
   if (regions.length === 0) return '';

@@ -15,6 +15,8 @@ export interface DropSneakerSummary {
 
 export interface DropListItem {
   id: string;
+  /** How firm the date is: confirmed (an official page), reported (trackers agree) or unconfirmed. */
+  confirmation: 'confirmed' | 'reported' | 'unconfirmed';
   /** Who confirmed this drop (a brand, retailer or publication) and where to read it. */
   sourceName: string | null;
   sourceUrl: string | null;
@@ -75,7 +77,7 @@ export class DropsService {
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
     const { rows } = await this.db.execute(sql`
-      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url,
+      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.confirmation,
              de.regions, de.retail_price, de.currency,
              s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
       FROM drop_events de
@@ -89,7 +91,7 @@ export class DropsService {
 
   async getById(id: string): Promise<DropDetail | null> {
     const { rows } = await this.db.execute(sql`
-      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.is_demo,
+      SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.confirmation, de.is_demo,
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info,
              s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
       FROM drop_events de
@@ -138,11 +140,12 @@ export class DropsService {
   }
 }
 
-const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
+export const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
 
 function rowToListItem(row: Record<string, unknown>): DropListItem {
   return {
     id: String(row.id),
+    confirmation: (['confirmed', 'reported', 'unconfirmed'].includes(String(row.confirmation)) ? row.confirmation : 'confirmed') as DropListItem['confirmation'],
     sourceName: (row.source_name as string) ?? null,
     sourceUrl: (row.source_url as string) ?? null,
     status: row.status as DropStatus,
