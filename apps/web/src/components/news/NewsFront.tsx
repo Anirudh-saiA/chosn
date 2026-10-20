@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { cx } from '@chosn/ui';
+import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { relativeTime } from '@/lib/catalog';
 import { CATEGORY_LABEL, excerpt, type NewsCategory, type NewsListItem } from '@/lib/news';
 
@@ -24,6 +25,20 @@ function Open({ item, className, children }: { item: NewsListItem; className?: s
       {children}
     </Link>
   );
+}
+
+/** A story's picture (kept on our server). Renders nothing when there is none or it cannot load, so a story is never left with an empty frame. */
+function Pic({ item, className }: { item: NewsListItem; className: string }) {
+  if (!item.imageUrl) return null;
+  return (
+    <div className={cx('relative overflow-hidden bg-[#E9EDF2]', className)}>
+      <ShoePhoto src={item.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={null} />
+    </div>
+  );
+}
+
+function Credit({ item }: { item: NewsListItem }) {
+  return item.imageUrl && item.imageCredit ? <p className="mt-1 font-mono text-[0.56rem] uppercase tracking-[0.12em] text-[#0A0A0A]/40">{item.imageCredit}</p> : null;
 }
 
 function Kicker({ item }: { item: NewsListItem }) {
@@ -148,6 +163,9 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
           {/* Front page: lead story and the "also today" column. */}
           <section className="grid gap-8 border-b border-[#0A0A0A]/25 pb-8 lg:grid-cols-[1.7fr_1fr] lg:gap-0">
             <article className="relative lg:border-r lg:border-[#0A0A0A]/25 lg:pr-8">
+              <Pic item={lead} className="mb-4 aspect-[16/9] w-full" />
+              <Credit item={lead} />
+              <div className={lead.imageUrl ? 'mt-3' : ''}>
               <Kicker item={lead} />
               <h3 style={SERIF} className="mt-2 text-[clamp(1.9rem,4vw,3.1rem)] leading-[1.04]">
                 <Open item={lead} className="after:absolute after:inset-0 hover:underline decoration-2 underline-offset-4">
@@ -157,19 +175,23 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
               {lead.body && lead.body !== lead.title ? <p className="mt-4 max-w-[60ch] text-[1.05rem] leading-relaxed text-[#0A0A0A]/75">{excerpt(lead.body, 260)}</p> : null}
               <ReadAt item={lead} />
               <Extras item={lead} />
+              </div>
             </article>
             <aside aria-label="Also today" className="lg:pl-8">
               <p className="mb-3 border-b-2 border-[#0A0A0A] pb-1.5 font-mono text-[0.68rem] font-bold uppercase tracking-[0.2em]">Also today</p>
               <ol className="flex flex-col divide-y divide-[#0A0A0A]/15">
                 {side.map((s) => (
-                  <li key={s.id} className="relative py-3 first:pt-0">
-                    <Kicker item={s} />
-                    <h4 style={SERIF} className="mt-1 text-[1.2rem] leading-[1.15]">
-                      <Open item={s} className="after:absolute after:inset-0 hover:underline underline-offset-4">
-                        {s.title}
-                      </Open>
-                    </h4>
-                    <Extras item={s} />
+                  <li key={s.id} className="relative flex gap-3 py-3 first:pt-0">
+                    <div className="min-w-0 flex-1">
+                      <Kicker item={s} />
+                      <h4 style={SERIF} className="mt-1 text-[1.2rem] leading-[1.15]">
+                        <Open item={s} className="after:absolute after:inset-0 hover:underline underline-offset-4">
+                          {s.title}
+                        </Open>
+                      </h4>
+                      <Extras item={s} />
+                    </div>
+                    <Pic item={s} className="h-20 w-24 shrink-0 self-start rounded-sm" />
                   </li>
                 ))}
               </ol>
@@ -181,6 +203,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
             <section aria-label="More stories" className="mt-8 grid gap-x-0 gap-y-0 sm:grid-cols-2 lg:grid-cols-3">
               {columns.map((s, i) => (
                 <article key={s.id} className={cx('relative border-b border-[#0A0A0A]/15 py-5 sm:px-5', i % 3 !== 0 && 'lg:border-l lg:border-[#0A0A0A]/15', i % 2 !== 0 && 'sm:max-lg:border-l sm:max-lg:border-[#0A0A0A]/15', 'lg:[&:nth-child(3n+1)]:pl-0')}>
+                  <Pic item={s} className="mb-3 aspect-[16/10] w-full" />
                   <Kicker item={s} />
                   <h4 style={SERIF} className="mt-1.5 text-[1.3rem] leading-[1.12]">
                     <Open item={s} className="after:absolute after:inset-0 hover:underline underline-offset-4">

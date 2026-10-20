@@ -19,6 +19,9 @@ export interface NewsListItem {
   india: boolean;
   /** The shoe the story is about, as a Compare search ("Nike Air Max 90 SP"). */
   shoeQuery: string | null;
+  /** A picture for the story, kept on our server, and its credit line. Our own stories fall back to the shoe's picture. */
+  imageUrl: string | null;
+  imageCredit: string | null;
   /** Other sites that ran the same story (near-duplicates folded into this one). */
   alsoCoveredBy: string[];
   /** Denormalized for cross-linking (task 5) without a second round trip per card. */
@@ -63,7 +66,7 @@ export class NewsService {
 
     const { rows } = await this.db.execute(sql`
       SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.external, n.published_at,
-             n.drop_event_id, n.brands, n.category, n.india, n.shoe_query, s.style_code, s.brand, s.model,
+             n.drop_event_id, n.brands, n.category, n.india, n.shoe_query, n.image_url, n.image_credit, s.primary_image_url AS shoe_image, s.image_credit AS shoe_credit, s.style_code, s.brand, s.model,
              ${ALSO} AS also, count(*) OVER() AS total
       FROM news_items n
       LEFT JOIN drop_events de ON de.id = n.drop_event_id
@@ -81,7 +84,7 @@ export class NewsService {
   async getById(id: string): Promise<NewsListItem | null> {
     const { rows } = await this.db.execute(sql`
       SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.external, n.published_at,
-             n.drop_event_id, n.brands, n.category, n.india, n.shoe_query, s.style_code, s.brand, s.model, ${ALSO} AS also
+             n.drop_event_id, n.brands, n.category, n.india, n.shoe_query, n.image_url, n.image_credit, s.primary_image_url AS shoe_image, s.image_credit AS shoe_credit, s.style_code, s.brand, s.model, ${ALSO} AS also
       FROM news_items n
       LEFT JOIN drop_events de ON de.id = n.drop_event_id
       LEFT JOIN sneakers s ON s.id = de.sneaker_id
@@ -112,6 +115,9 @@ const RELEVANCE = sql`(
 /** text[] columns come back from node-postgres as real arrays. */
 const asList = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 
+/** A picture we host ourselves (a relative /media path) becomes a full address on the API. */
+const mediaUrl = (u: string | null): string | null => (u && u.startsWith('/media/') ? `${(process.env.API_PUBLIC_URL ?? 'http://localhost:4000').replace(/\/$/, '')}${u}` : u);
+
 const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
 
 function rowToItem(row: Record<string, unknown>): NewsListItem {
@@ -129,6 +135,8 @@ function rowToItem(row: Record<string, unknown>): NewsListItem {
     category: (row.category as NewsListItem['category']) ?? null,
     india: Boolean(row.india),
     shoeQuery: (row.shoe_query as string) ?? null,
+    imageUrl: mediaUrl((row.image_url as string) ?? (row.shoe_image as string) ?? null),
+    imageCredit: (row.image_url ? (row.image_credit as string) : (row.shoe_credit as string)) ?? null,
     alsoCoveredBy: asList(row.also),
     dropSneaker: row.style_code
       ? { styleCode: String(row.style_code), brand: String(row.brand), model: String(row.model) }

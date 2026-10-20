@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { BreakingPill } from '@/components/news/BreakingPill';
 import { PageShell } from '@/components/ui/PageShell';
+import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { relativeTime } from '@/lib/catalog';
 import { CATEGORY_LABEL, excerpt, fetchNewsArticle, fetchNewsList } from '@/lib/news';
 
@@ -76,6 +77,15 @@ export default async function NewsArticlePage({ params }: PageProps) {
             <span>{relativeTime(article.publishedAt)}</span>
           </p>
         </header>
+
+        {article.imageUrl ? (
+          <figure className="mx-auto mt-8 max-w-[68ch]">
+            <div className="relative aspect-[16/9] overflow-hidden bg-[#E9EDF2]">
+              <ShoePhoto src={article.imageUrl} alt={article.title} className="absolute inset-0 h-full w-full object-cover" fallback={null} />
+            </div>
+            {article.imageCredit ? <figcaption className="mt-1.5 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-[#0A0A0A]/45">{article.imageCredit}</figcaption> : null}
+          </figure>
+        ) : null}
 
         <div className="mx-auto mt-9 max-w-[68ch]">
           {lede && (

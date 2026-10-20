@@ -303,6 +303,12 @@ def main():
             log("   " + line)
     except RuntimeError as e:
         log(f"Drop pictures skipped: {e}")
+    # Pictures for the news stories (kept on our server, credited, linked to the story). Best effort.
+    try:
+        for line in run("News pictures", [sys.executable, "scripts/fetch_news_images.py"])[-3:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"News pictures skipped: {e}")
 
     # "Just landed": note the first day each store lists each shoe (Releases page). Best effort.
     try:

@@ -19,6 +19,9 @@ export interface NewsListItem {
   category?: NewsCategory | null;
   india?: boolean;
   shoeQuery?: string | null;
+  /** A picture kept on our server and its credit line. */
+  imageUrl?: string | null;
+  imageCredit?: string | null;
   alsoCoveredBy?: string[];
   dropSneaker: { styleCode: string; brand: string; model: string } | null;
 }

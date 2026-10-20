@@ -38,7 +38,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
   const initial = tab === 'drops' || tab === 'landed' ? 'drops' : tab === 'news' ? 'news' : 'gate';
   const [drops, top, web, landed] = await Promise.all([
     fetchDropsList({}, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 48, sort: 'relevance' }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 47, sort: 'relevance' }, { next: { revalidate: 300 } }),
     fetchNewsList({ limit: 1, external: '1' }, { next: { revalidate: 300 } }),
     loadLanded(),
   ]);
