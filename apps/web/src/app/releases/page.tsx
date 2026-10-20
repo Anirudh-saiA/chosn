@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Newspaper, Sparkles } from 'lucide-react';
 import { DropLiveProvider } from '@/components/drops/drop-live-context';
+import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
 import { NewsCard } from '@/components/news/NewsCard';
@@ -54,9 +55,17 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-16">
       <section aria-labelledby="drops-h">
         <h2 id="drops-h" className="font-display text-[clamp(2.5rem,6vw,4.5rem)] uppercase leading-[0.95] text-[#0A0A0A]">Drop calendar</h2>
-        <p className="mb-6 mt-2 max-w-2xl text-sm text-text-soft">
-          Release dates from brands, retailers and release trackers. Every drop says how firm its date is (Confirmed, Reported or Unconfirmed) and where it came from. Dates and prices are the release region&apos;s: US drops are in US dollars.
-        </p>
+        <div className="mb-6 mt-3">
+          <ScrollHighlight
+            before="Release dates from brands, retailers and trackers. Every drop says"
+            first="how firm its date is"
+            between=" and "
+            second="where it came from"
+            after="— US drops are priced in US dollars."
+            textClass="max-w-3xl text-[clamp(1.2rem,2.3vw,1.75rem)] leading-[1.4]"
+            triggerAt={0.9}
+          />
+        </div>
         <p className="mb-6 flex flex-wrap items-center gap-3 text-sm">
           <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex items-center gap-2 rounded-full bg-[#14213D] px-5 py-2.5 font-display text-base uppercase tracking-[0.06em] text-white">
             Add every drop to your calendar
