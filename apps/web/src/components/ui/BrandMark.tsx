@@ -34,7 +34,6 @@ export function BrandMark({ brand, className = '' }: { brand: string; className?
   const file = FILES[brand.trim().toLowerCase()];
   if (file) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img src={`/brands/${file}`} alt={brand} className={`h-5 w-auto max-w-[4.5rem] select-none object-contain ${className}`} draggable={false} loading="lazy" />
     );
   }

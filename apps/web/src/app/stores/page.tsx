@@ -72,7 +72,6 @@ export default async function StoresPage() {
               <li key={s.slug} className="grid grid-cols-[3.5rem_1fr] items-center gap-4 rounded-2xl border border-text/10 bg-white p-4 sm:grid-cols-[5rem_1fr_auto]">
                 <div className="flex h-12 w-14 items-center justify-center overflow-hidden rounded-lg bg-[#F4F7FB] sm:h-14 sm:w-20">
                   {s.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.logoUrl} alt="" className="max-h-full max-w-full object-contain" />
                   ) : null}
                 </div>

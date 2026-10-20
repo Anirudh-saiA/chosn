@@ -42,7 +42,6 @@ function Group({ label, items }: { label: string; items: Item[] }) {
         <span key={n.name} className="flex shrink-0 items-center">
           <span className="flex items-center gap-3 px-6">
             {n.logo && (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={n.logo} alt="" className="h-8 w-auto max-w-[5.5rem] object-contain" loading="lazy" draggable={false} />
             )}
             <span className="font-display text-[1.7rem] font-bold leading-none tracking-tight text-text">{n.name}</span>

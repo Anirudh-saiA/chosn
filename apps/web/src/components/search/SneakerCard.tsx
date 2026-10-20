@@ -318,7 +318,6 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   >
                     <span className="flex h-4 items-center justify-center">
                       {st?.logoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={st.logoUrl} alt={st.name} className="max-h-4 max-w-[3.2rem] object-contain" loading="lazy" />
                       ) : (
                         <span className="max-w-[3.4rem] truncate text-[0.6rem] font-bold text-[#0A0A0A]/70">{st?.name ?? o.slug}</span>

@@ -12,9 +12,11 @@ name: Railway keep-alive
 # never stops. It does not replace /health/fetch monitoring — it just
 # keeps the process it depends on running.
 
+# The Railway app (chosnapi-production.up.railway.app) no longer exists - every ping returned 404 and e-mailed a failure every 10 minutes.
+# The schedule is switched off; run this by hand (or restore the cron below) once the API is deployed again.
 on:
-  schedule:
-    - cron: '*/10 * * * *'
+  # schedule:
+  #   - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 concurrency:

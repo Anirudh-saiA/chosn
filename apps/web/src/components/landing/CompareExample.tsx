@@ -74,7 +74,6 @@ function Header({ offer }: { offer: CatalogOffer }) {
     <div className="hidden items-center justify-center gap-3 rounded-2xl bg-[#14213D] px-6 py-4 text-center font-display text-[1.7rem] uppercase tracking-[0.02em] text-white md:flex">
       {offer.retailerLogoUrl && (
         <span className="flex h-9 w-14 items-center justify-center rounded-lg bg-white px-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={offer.retailerLogoUrl} alt="" className="max-h-7 max-w-full object-contain" />
         </span>
       )}

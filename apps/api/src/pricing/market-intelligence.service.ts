@@ -69,12 +69,6 @@ export interface MarketIntelligenceSummary {
   computedAt: string;
 }
 
-interface BestOffer {
-  priceInr: string;
-  retailerId: string;
-  retailerSlug: string;
-}
-
 const REFRESH_QUEUE = 'market-intelligence-refresh';
 /** Variants per set-based refresh statement. */
 const REFRESH_BATCH = 5000;

@@ -31,7 +31,8 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   const query = await searchParams;
   const { q } = query;
   const page = Math.max(1, Math.floor(Number(query.page)) || 1);
-  const { page: _page, ...filters } = query;
+  const filters: SearchQuery = { ...query };
+  delete filters.page;
   const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(
     { ...filters, limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) },
     { next: { revalidate: 300 } },
