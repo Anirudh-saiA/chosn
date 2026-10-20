@@ -6,7 +6,6 @@ import { cx } from '@chosn/ui';
 import type { DropListItem, DropStatus } from '@/lib/drops';
 import { API_URL } from '@/lib/watch';
 import { DropCalendar } from './DropCalendar';
-import { DropFeatured, pickFeaturedDrop } from './DropFeatured';
 
 const REGION_CHIPS: Array<[string | null, string]> = [
   [null, 'All regions'],
@@ -35,7 +34,6 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
   const [brand, setBrand] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
 
-  const featured = useMemo(() => pickFeaturedDrop(drops), [drops]);
   const brands = useMemo(() => Array.from(new Set(drops.map((d) => d.sneaker.brand))).sort(), [drops]);
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: drops.length, live: 0, upcoming: 0, sold_out: 0 };
@@ -54,8 +52,6 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
 
   return (
     <div className="flex flex-col gap-10">
-      {featured && <DropFeatured drop={featured} />}
-
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div />
