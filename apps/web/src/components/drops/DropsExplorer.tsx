@@ -2,14 +2,11 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { CalendarDays, CalendarRange, List, ListOrdered, X } from 'lucide-react';
 import { cx } from '@chosn/ui';
 import type { DropListItem, DropStatus } from '@/lib/drops';
 import { API_URL } from '@/lib/watch';
-import { DropAgenda } from './DropAgenda';
 import { DropCalendar } from './DropCalendar';
 import { DropFeatured, pickFeaturedDrop } from './DropFeatured';
-import { DropListView } from './DropListView';
 
 const REGION_CHIPS: Array<[string | null, string]> = [
   [null, 'All regions'],
@@ -18,7 +15,6 @@ const REGION_CHIPS: Array<[string | null, string]> = [
   ['global', 'Global'],
 ];
 
-type ViewMode = 'list' | 'calendar' | 'week' | 'agenda';
 type StatusFilter = 'all' | DropStatus;
 
 const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
@@ -34,7 +30,6 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
  * needs a moment to orient. Flip the initial `useState` to change it.
  */
 export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
-  const [view, setView] = useState<ViewMode>('calendar');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);
@@ -63,17 +58,7 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
 
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div role="group" aria-label="View" className="inline-flex border border-text/[0.12] bg-vault-raised/70">
-            <ViewButton icon={<List className="h-4 w-4" aria-hidden />} label="List" active={view === 'list'} onClick={() => setView('list')} />
-            <ViewButton
-              icon={<CalendarDays className="h-4 w-4" aria-hidden />}
-              label="Calendar"
-              active={view === 'calendar'}
-              onClick={() => setView('calendar')}
-            />
-            <ViewButton icon={<CalendarRange className="h-4 w-4" aria-hidden />} label="Week" active={view === 'week'} onClick={() => setView('week')} />
-            <ViewButton icon={<ListOrdered className="h-4 w-4" aria-hidden />} label="Agenda" active={view === 'agenda'} onClick={() => setView('agenda')} />
-          </div>
+          <div />
           <div className="flex flex-wrap items-center gap-4 font-mono text-meta text-text-faint">
             <Link href="/drops/mine" className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">My drops</Link>
             <a href={`${API_URL}/drops/calendar.ics`} className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">Add all to my calendar</a>
@@ -113,41 +98,10 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
         </div>
       </div>
 
-      {view === 'calendar' && <DropCalendar drops={filtered} selectedDate={selectedDate} onSelectDay={setSelectedDate} />}
+      <DropCalendar drops={filtered} selectedDate={selectedDate} onSelectDay={setSelectedDate} />
 
-      {selectedDate && (
-        <p className="flex items-center gap-3 font-mono text-meta text-text-soft">
-          Showing drops on {selectedDate}
-          <button
-            type="button"
-            onClick={() => setSelectedDate(null)}
-            className="inline-flex min-h-[44px] items-center gap-1 border border-text/[0.12] px-3 text-text-soft transition-colors hover:border-brass/60 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden /> Clear
-          </button>
-        </p>
-      )}
 
-      {(view === 'week' || view === 'agenda') && <DropAgenda drops={filtered} mode={view} />}
-      {(view === 'list' || view === 'calendar') && <DropListView drops={visibleDrops} />}
     </div>
-  );
-}
-
-function ViewButton({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx(
-        'inline-flex min-h-[44px] items-center gap-2 px-4 font-sans text-ui-label font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice',
-        active ? 'bg-brass-gradient text-vault-deep' : 'text-text-soft hover:text-text',
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
