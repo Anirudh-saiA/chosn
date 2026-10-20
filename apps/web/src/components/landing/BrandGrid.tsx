@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { brandLogoFile } from '@/components/ui/BrandMark';
+import { BrandWall } from './BrandWall';
 
 /**
  * Every brand in the catalogue, in the same fixed-size tile so they read as one set. A brand with a logo file (/public/brands) shows it;
  * one without shows its name as a wordmark, so no brand is left out. Fed by the same brand list as the Brands page.
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-const MIN_SHOES = 5; // brands with fewer shoes than this are on the Brands page, not on this tile wall
+const MIN_SHOES = 1;
 const FIRST = ['Nike', 'adidas', 'Puma', 'New Balance', 'ASICS', 'Onitsuka Tiger', 'Converse', 'Vans', 'Reebok', 'Fila', 'Hoka', 'On', 'Salomon', 'Saucony', 'Skechers', 'Under Armour'];
 // Spellings of one brand are folded together so it gets a single tile.
 const ALIAS: Record<string, string> = {
@@ -58,36 +59,9 @@ export async function BrandGrid({ className = '' }: { className?: string }) {
   if (tiles.length === 0) return null;
   return (
     <div className={className}>
-      <ul aria-label="Brands we track" className="grid w-fit grid-cols-4 gap-2">
-        {tiles.map((t) => {
-          const file = brandLogoFile(t.name);
-          return (
-            <li key={t.name} title={`${t.name} (${t.count.toLocaleString('en-IN')} shoes)`}>
-              <Link
-                href={`/sneakers?brand=${encodeURIComponent(t.name)}`}
-                className="flex h-12 w-20 items-center justify-center rounded-lg border border-[#0A0A0A]/10 bg-white/70 px-1 backdrop-blur transition-colors hover:bg-white"
-              >
-                {file ? (
-                  <img
-                    src={`/brands/${file}`}
-                    alt={t.name}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                    width={56}
-                    height={28}
-                    className="h-7 w-14 select-none object-contain opacity-80 transition-opacity duration-300 hover:opacity-100"
-                  />
-                ) : (
-                  <span className="line-clamp-2 text-center font-display text-[0.62rem] uppercase leading-[1.05] tracking-[0.04em] text-[#0A0A0A]/80">{t.name}</span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <BrandWall tiles={tiles.map((t) => ({ ...t, file: brandLogoFile(t.name) }))} />
       <Link href="/brands" className="mt-3 inline-block font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
-        See every brand
+        Browse brands A to Z
       </Link>
     </div>
   );
