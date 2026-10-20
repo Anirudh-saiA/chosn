@@ -24,7 +24,7 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
  * needs a moment to orient. Flip the initial `useState` to change it.
  */
 export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
-  const [view, setView] = useState<ViewMode>('list');
+  const [view, setView] = useState<ViewMode>('calendar');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);
