@@ -11,6 +11,8 @@ export interface DropSneakerSummary {
   model: string;
   colorway: string;
   primaryImageUrl: string | null;
+  /** Where a stored picture came from, e.g. "Photo: nicekicks.com, via SoleDispatch". */
+  imageCredit?: string | null;
 }
 
 export interface DropListItem {
@@ -85,7 +87,7 @@ export class DropsService {
              de.regions, de.retail_price, de.currency,
              CASE WHEN de.currency = 'INR' THEN de.retail_price ELSE de.retail_price * (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS retail_price_inr,
              CASE WHEN de.currency = 'INR' THEN NULL ELSE (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS fx_rate,
-             s.style_code, s.brand, s.model, s.colorway, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
+             s.style_code, s.brand, s.model, s.colorway, s.image_credit, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
       ${where}
@@ -101,7 +103,7 @@ export class DropsService {
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info,
              CASE WHEN de.currency = 'INR' THEN de.retail_price ELSE de.retail_price * (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS retail_price_inr,
              CASE WHEN de.currency = 'INR' THEN NULL ELSE (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS fx_rate,
-             s.style_code, s.brand, s.model, s.colorway, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
+             s.style_code, s.brand, s.model, s.colorway, s.image_credit, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
       WHERE de.id = ${id}
@@ -150,6 +152,9 @@ export class DropsService {
 
 export const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
 
+/** A picture we host ourselves (a relative /media path) becomes a full address on the API. */
+const mediaUrl = (u: string | null): string | null => (u && u.startsWith('/media/') ? `${(process.env.API_PUBLIC_URL ?? 'http://localhost:4000').replace(/\/$/, '')}${u}` : u);
+
 function rowToListItem(row: Record<string, unknown>): DropListItem {
   return {
     id: String(row.id),
@@ -170,7 +175,8 @@ function rowToListItem(row: Record<string, unknown>): DropListItem {
       brand: String(row.brand),
       model: String(row.model),
       colorway: String(row.colorway),
-      primaryImageUrl: (row.primary_image_url as string) ?? null,
+      primaryImageUrl: mediaUrl((row.primary_image_url as string) ?? null),
+      imageCredit: (row.image_credit as string) ?? null,
     },
   };
 }

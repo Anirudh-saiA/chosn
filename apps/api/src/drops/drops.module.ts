@@ -7,6 +7,7 @@ import { DropLiveGateway } from './drop-live.gateway';
 import { DropNewsAutoPostService } from './drop-news-auto-post.service';
 import { DropPushConsumer } from './drop-push.consumer';
 import { DropSchedulerService } from './drop-scheduler.service';
+import { MediaController } from './media.controller';
 import { DropsController } from './drops.controller';
 import { DropsService } from './drops.service';
 import { NewsController } from './news.controller';
@@ -37,7 +38,7 @@ import { WebPushService } from './web-push.service';
  */
 @Module({
   imports: [PricingModule],
-  controllers: [DropHealthController, DropsController, NewsController, NotificationsController],
+  controllers: [DropHealthController, DropsController, MediaController, NewsController, NotificationsController],
   providers: [
     RateLimitGuard,
     DropSchedulerService,

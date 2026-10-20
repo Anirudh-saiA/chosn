@@ -32,6 +32,8 @@ export interface DropSneakerSummary {
   model: string;
   colorway: string;
   primaryImageUrl: string | null;
+  /** Where a stored picture came from. */
+  imageCredit?: string | null;
 }
 
 /** Mirrors DropsService.DropListItem. */

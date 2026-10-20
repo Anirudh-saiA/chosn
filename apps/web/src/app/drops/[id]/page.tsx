@@ -134,6 +134,9 @@ export default async function DropDetailPage({ params }: PageProps) {
               <p className="pointer-events-none absolute left-4 top-4 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass sm:left-6 sm:top-6">
                 {sneaker.styleCode}
               </p>
+              {sneaker.imageCredit ? (
+                <p className="pointer-events-none absolute bottom-3 right-4 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-text-faint">{sneaker.imageCredit}</p>
+              ) : null}
             </div>
           </Reveal>
 

@@ -61,12 +61,14 @@ def parse_page(page):
     date = re.search(r"release date:?\s*([A-Z][a-z]+) (\d{1,2}), (\d{4})", d)
     if not date or date.group(1) not in MONTHS:
         return None
+    img = re.search(r'property="og:image" content="([^"]+)"', page)
     price = re.search(r"retail \$([\d,]+(?:\.\d+)?)", d)
     sku = re.search(r"style code ([A-Z0-9][A-Z0-9._-]{3,})", d)
     return {
         "date": f"{date.group(3)}-{MONTHS[date.group(1)]:02d}-{int(date.group(2)):02d}",
         "price": int(float(price.group(1).replace(",", ""))) if price else None,
         "sku": sku.group(1).rstrip(".,;:_-") if sku else None,
+        "image": htmllib.unescape(img.group(1)) if img else None,
     }
 
 
@@ -102,7 +104,7 @@ def main():
         if c and c.get("data"):
             age = (today - datetime.date.fromisoformat(c["fetched"])).days
             soon = (datetime.date.fromisoformat(c["data"]["date"]) - today).days <= 10
-            stale = age >= (1 if soon else 3)
+            stale = age >= (1 if soon else 3) or "image" not in c["data"]
         elif c and not c.get("data"):
             stale = (today - datetime.date.fromisoformat(c["fetched"])).days >= 3
         if stale:

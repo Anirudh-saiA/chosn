@@ -286,6 +286,12 @@ def main():
             log("   " + line)
     except RuntimeError as e:
         log(f"Release dates skipped: {e}")
+    # Pictures for upcoming drops no store lists yet (kept on our server, credited). Best effort.
+    try:
+        for line in run("Drop pictures", [sys.executable, "scripts/fetch_drop_images.py"])[-3:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"Drop pictures skipped: {e}")
 
     # "Just landed": note the first day each store lists each shoe (Releases page). Best effort.
     try:
