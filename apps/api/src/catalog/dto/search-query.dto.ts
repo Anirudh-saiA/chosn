@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 /**
  * Day 16 task 5 (input validation audit) — real bug this DTO closes:
@@ -72,6 +72,14 @@ export class SearchQueryDto {
   @IsOptional()
   @IsIn(['good_time_to_buy', 'neutral', 'consider_waiting', 'insufficient_data'])
   signal?: string;
+
+  /** UK size: only shoes in stock in this size, with that size's own price and stores. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(20)
+  size?: number;
 
   @IsOptional()
   @Type(() => Number)

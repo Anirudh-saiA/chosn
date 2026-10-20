@@ -215,6 +215,8 @@ export interface SearchQuery {
   soldOut?: string;
   sort?: string;
   signal?: string;
+  /** UK size: only shoes in stock in this size, priced for it. */
+  size?: string;
   /** Page number (1-based); the browse page turns it into limit + offset for the API. */
   page?: string;
   limit?: string;

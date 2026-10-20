@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { formatInr, type SearchFacets } from '@/lib/catalog';
 import { COLOR_SWATCH, SORT_OPTIONS, splitList } from '@/lib/search-filters';
 import { FilterBar } from './FilterBar';
+import { SizePicker } from './SizePicker';
 import { FilterDrawer, useFilterParams } from './FilterPanel';
 
 /** Result count, sort menu, the mobile Filters button and a removable chip for every active filter. */
@@ -33,6 +34,7 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
   return (
     <div className="mb-5 flex flex-col gap-3">
       {/* Desktop: the filters as dropdowns across the top. Phones and tablets get the Filters button below. */}
+      <SizePicker />
       <FilterBar facets={facets} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4">

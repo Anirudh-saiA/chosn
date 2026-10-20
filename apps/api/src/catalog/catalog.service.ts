@@ -182,6 +182,8 @@ export interface SearchParams {
   maxPrice?: number;
   /** Only shoes in stock at this many stores or more (compare across sites). */
   minStores?: number;
+  /** UK size: only shoes in stock in this size; price, stores and the card's size are for this size. */
+  size?: number;
   includeSoldOut?: boolean;
   sort?: SearchSort;
   signal?: string;
@@ -812,6 +814,24 @@ export class CatalogService {
     const phrase = (params.q ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
     const phraseLike = phrase.replace(/[\\%_]/g, '\\$&');
 
+    const hasSize = params.size !== undefined;
+    // With a size picked, price, store count and store list come from that size's own in-stock listings.
+    const priceCol = hasSize ? sql`sz.price` : sql`st.min_price`;
+    const storeCountCol = hasSize ? sql`COALESCE(sz.stores, 0)` : sql`COALESCE(st.store_count, 0)`;
+    const storeSlugsCol = hasSize ? sql`sz.slugs` : sql`st.store_slugs`;
+    const sizeCol = hasSize ? sql`${params.size}::numeric` : sql`COALESCE(st.min_size, dv.size)`;
+    const szCte = hasSize
+      ? sql`, sz AS (
+          SELECT v.sneaker_id, min(effective_price_inr(ps.price, ps.shipping_cost, ps.currency)) AS price,
+                 count(DISTINCT ps.retailer_id)::int AS stores, array_agg(DISTINCT r.slug) AS slugs
+          FROM price_snapshots ps
+          JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+          JOIN retailers r ON r.id = ps.retailer_id
+          WHERE v.size = ${params.size}::numeric AND ps.is_latest AND ps.in_stock AND ps.listing_url NOT LIKE '%FIXTURE%'
+          GROUP BY v.sneaker_id)`
+      : sql``;
+    const szJoin = hasSize ? sql`JOIN sz ON sz.sneaker_id = s.id` : sql``;
+
     const baseConditions = [];
     if (tsQuery) {
       // Words match as prefixes ("nik dun" finds Nike Dunk); a style code (has a digit) also matches by its start.
@@ -827,11 +847,11 @@ export class CatalogService {
 
     const conditions = [...baseConditions];
     if (brands.length > 0) conditions.push(sql`s.brand IN (${sql.join(brands.map((b) => sql`${b}`), sql`, `)})`);
-    if (stores.length > 0) conditions.push(sql`st.store_slugs && ARRAY[${sql.join(stores.map((x) => sql`${x}`), sql`, `)}]::text[]`);
+    if (stores.length > 0) conditions.push(sql`${storeSlugsCol} && ARRAY[${sql.join(stores.map((x) => sql`${x}`), sql`, `)}]::text[]`);
     if (colors.length > 0) conditions.push(sql`(${sql.join(colors.map((r) => sql`lower(s.colorway) ~ ${r}`), sql` OR `)})`);
-    if (params.minPrice !== undefined) conditions.push(sql`st.min_price >= ${params.minPrice}`);
-    if (params.maxPrice !== undefined) conditions.push(sql`st.min_price <= ${params.maxPrice}`);
-    if (params.minStores !== undefined && params.minStores > 1) conditions.push(sql`COALESCE(st.store_count, 0) >= ${params.minStores}`);
+    if (params.minPrice !== undefined) conditions.push(sql`${priceCol} >= ${params.minPrice}`);
+    if (params.maxPrice !== undefined) conditions.push(sql`${priceCol} <= ${params.maxPrice}`);
+    if (params.minStores !== undefined && params.minStores > 1) conditions.push(sql`${storeCountCol} >= ${params.minStores}`);
     if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
@@ -873,6 +893,7 @@ export class CatalogService {
       default_variant AS (SELECT sneaker_id, variant_id, size, size_system FROM catalog_default_variant_mv),
       st AS (SELECT sneaker_id, store_count, store_slugs, min_price, min_size, min_size_system FROM catalog_stats_mv)`;
 
+
     const colorCounts = sql.join(
       Object.keys(COLOR_FAMILIES).map((family) => sql`'${sql.raw(family)}', COALESCE((SELECT n FROM color_counts WHERE family = '${sql.raw(family)}'), 0)`),
       sql`, `,
@@ -880,17 +901,18 @@ export class CatalogService {
 
     const [{ rows }, facetResult, { rows: brandRows }, communityPosts] = await Promise.all([
       this.db.execute(sql`
-        WITH ${ctes},
+        WITH ${ctes}${szCte},
         matched AS (
           SELECT s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.primary_image_url,
-                 COALESCE(st.min_size, dv.size) AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
-                 st.min_price AS current_price, st.min_price AS best_available_price,
-                 ms.signal, ms.currency, COALESCE(st.store_count, 0) AS store_count, st.store_slugs,
+                 ${sizeCol} AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
+                 ${priceCol} AS current_price, ${priceCol} AS best_available_price,
+                 ms.signal, ms.currency, ${storeCountCol} AS store_count, ${storeSlugsCol} AS store_slugs,
                  lower(s.brand) || '|' || regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
           LEFT JOIN st ON st.sneaker_id = s.id
+          ${szJoin}
           LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
           ${where}
         ),
