@@ -28,7 +28,13 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
  * from the original brief): it's scannable immediately, while a calendar
  * needs a moment to orient. Flip the initial `useState` to change it.
  */
-export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
+export function DropsExplorer({ drops: all }: { drops: DropListItem[] }) {
+  // Earlier months are left out entirely: the calendar starts at the current month.
+  const drops = useMemo(() => {
+    const t = new Date();
+    const from = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-01`;
+    return all.filter((d) => d.releaseDate >= from);
+  }, [all]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);

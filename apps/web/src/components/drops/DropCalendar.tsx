@@ -102,6 +102,8 @@ export function DropCalendar({
   const monthLabel = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const monthCount = cells.reduce<number>((n, day) => n + (day ? (byDate.get(key(viewYear, viewMonth, day))?.length ?? 0) : 0), 0);
 
+  const atStart = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+
   function go(delta: number) {
     setDir(delta);
     const d = new Date(viewYear, viewMonth + delta, 1);
@@ -127,7 +129,7 @@ export function DropCalendar({
             className="rounded-[2rem] border border-text/10 bg-white p-5 shadow-[0_24px_60px_-30px_rgba(10,10,10,0.35)] sm:p-8"
           >
             <div className="mb-6 flex items-center justify-between">
-              <button type="button" onClick={() => go(-1)} aria-label="Previous month" className={nav}>
+              <button type="button" onClick={() => go(-1)} disabled={atStart} aria-label="Previous month" className={cx(nav, atStart && 'pointer-events-none opacity-30')}>
                 <ChevronLeft className="h-5 w-5" aria-hidden />
               </button>
               <div className="text-center">
