@@ -1,7 +1,4 @@
-'use client';
-
 import Link from 'next/link';
-import { useState } from 'react';
 
 export interface BrandTile {
   name: string;
@@ -11,11 +8,10 @@ export interface BrandTile {
 
 const SHOWN = 15; // tiles visible at first; the next tile is the "+N" button that opens the rest
 
-/** The brand tiles: the first few, then a "+N" tile that opens every other brand. */
+/** The brand tiles: the first few, then a "+N" tile that opens Compare, where every brand is a filter. */
 export function BrandWall({ tiles }: { tiles: BrandTile[] }) {
-  const [all, setAll] = useState(false);
   const hidden = tiles.length - SHOWN;
-  const list = all || hidden <= 1 ? tiles : tiles.slice(0, SHOWN);
+  const list = hidden <= 1 ? tiles : tiles.slice(0, SHOWN);
   const shoes = tiles.reduce((n, t) => n + t.count, 0);
   return (
     <div>
@@ -46,24 +42,18 @@ export function BrandWall({ tiles }: { tiles: BrandTile[] }) {
             </Link>
           </li>
         ))}
-        {!all && hidden > 1 ? (
+        {hidden > 1 ? (
           <li>
-            <button
-              type="button"
-              onClick={() => setAll(true)}
-              aria-label={`Show ${hidden} more brands`}
+            <Link
+              href="/sneakers"
+              aria-label={`${hidden} more brands: open Compare`}
               className="flex h-12 w-20 items-center justify-center rounded-lg border border-[#0A0A0A] bg-[#0A0A0A] font-display text-lg text-white transition-transform hover:scale-[1.03]"
             >
               +{hidden}
-            </button>
+            </Link>
           </li>
         ) : null}
       </ul>
-      {all ? (
-        <button type="button" onClick={() => setAll(false)} className="mt-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
-          Show fewer
-        </button>
-      ) : null}
     </div>
   );
 }
