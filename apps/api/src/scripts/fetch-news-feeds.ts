@@ -12,12 +12,14 @@ const UA = 'CHOSN-price-compare/1.0 (+contact: join.sneakercommunity@gmail.com)'
 const PAUSE_MS = 1500;
 const MAX_PER_FEED = 20;
 const SNEAKER = /sneaker|shoe|footwear|kicks|trainer|nike|jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|vans|onitsuka|hoka|salomon|crocs|birkenstock|drop|release|collab/i;
+// General fashion and news feeds: only items that are clearly about sneakers or footwear (no loose words like "drop" or "release").
+const STRICT = /sneaker|footwear|kicks|trainers?|nike|air jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|onitsuka|hoka|salomon|birkenstock|shoes?/i;
 
 interface Feed {
   name: string;
   url: string;
-  /** Only keep items that look sneaker-related (for general fashion feeds). */
-  filter?: boolean;
+  /** Only keep items that look sneaker-related: true = loose match, 'strict' = clearly about sneakers or footwear (general news and fashion feeds). */
+  filter?: boolean | 'strict';
   region: 'global' | 'india';
 }
 
@@ -30,6 +32,26 @@ export const FEEDS: Feed[] = [
   { name: 'Sneaker Files', url: 'https://www.sneakerfiles.com/feed/', region: 'global' },
   { name: 'Esquire India', url: 'https://www.esquireindia.co.in/feed', filter: true, region: 'india' },
   { name: 'GQ India', url: 'https://www.gqindia.com/feed/rss', filter: true, region: 'india' },
+  // Added after a wider check of 85 candidate sources (scripts/probe_sources.py): each one's robots.txt allows us and it publishes a public feed.
+  { name: 'Kicks On Fire', url: 'https://www.kicksonfire.com/feed/', region: 'global' },
+  { name: 'SoleSavy', url: 'https://solesavy.com/feed/', region: 'global' },
+  { name: 'Footwear News', url: 'https://footwearnews.com/feed/', filter: 'strict', region: 'global' },
+  { name: 'Gear Patrol', url: 'https://gearpatrol.com/feed/', filter: 'strict', region: 'global' },
+  { name: 'Fashionista', url: 'https://fashionista.com/.rss/full/', filter: 'strict', region: 'global' },
+  { name: 'Business of Fashion', url: 'https://www.businessoffashion.com/arc/outboundfeeds/rss/', filter: 'strict', region: 'global' },
+  { name: 'Vogue', url: 'https://www.vogue.com/feed/rss', filter: 'strict', region: 'global' },
+  { name: 'GQ', url: 'https://www.gq.com/feed/rss', filter: 'strict', region: 'global' },
+  { name: 'Esquire', url: 'https://www.esquire.com/rss/all.xml/', filter: 'strict', region: 'global' },
+  { name: 'Dazed', url: 'https://www.dazeddigital.com/rss', filter: 'strict', region: 'global' },
+  { name: 'Vogue India', url: 'https://www.vogue.in/feed/rss', filter: 'strict', region: 'india' },
+  { name: 'Rolling Stone India', url: 'https://rollingstoneindia.com/feed/', filter: 'strict', region: 'india' },
+  { name: 'Hindustan Times Lifestyle', url: 'https://www.hindustantimes.com/feeds/rss/lifestyle/rssfeed.xml', filter: 'strict', region: 'india' },
+  { name: 'Times of India Fashion', url: 'https://timesofindia.indiatimes.com/rssfeeds/2886704.cms', filter: 'strict', region: 'india' },
+  { name: 'Indian Express Lifestyle', url: 'https://indianexpress.com/section/lifestyle/feed/', filter: 'strict', region: 'india' },
+  { name: 'Economic Times Retail', url: 'https://retail.economictimes.indiatimes.com/rss/topstories', filter: 'strict', region: 'india' },
+  { name: 'Inc42', url: 'https://inc42.com/feed/', filter: 'strict', region: 'india' },
+  { name: 'YourStory', url: 'https://yourstory.com/feed', filter: 'strict', region: 'india' },
+  { name: 'India Fashion Icon', url: 'https://indiafashionicon.com/feed/', filter: 'strict', region: 'india' },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -124,7 +146,7 @@ async function main() {
         continue;
       }
       const fresh = items
-        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || SNEAKER.test(`${it.title} ${it.excerpt}`)))
+        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || (f.filter === 'strict' ? STRICT : SNEAKER).test(`${it.title} ${it.excerpt}`)))
         .sort((a, b) => b.date.getTime() - a.date.getTime())
         .slice(0, MAX_PER_FEED);
       let n = 0;
