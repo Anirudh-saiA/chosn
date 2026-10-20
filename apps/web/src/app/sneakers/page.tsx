@@ -6,6 +6,7 @@ import { ResultsToolbar } from '@/components/search/ResultsToolbar';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { Reveal } from '@/components/fx/Reveal';
 import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
+import { Pagination } from '@/components/search/Pagination';
 import { PageShell } from '@/components/ui/PageShell';
 import { fetchSearch, type SearchQuery } from '@/lib/catalog';
 
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
 // minutes behind the live page it links to is unremarkable.
 export const revalidate = 300;
 
+const PAGE_SIZE = 24; // divides evenly into the 2, 3 and 4 card rows
+
 interface PageProps {
   searchParams: Promise<SearchQuery>;
 }
@@ -27,7 +30,13 @@ interface PageProps {
 export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   const query = await searchParams;
   const { q } = query;
-  const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(query, { next: { revalidate: 300 } });
+  const page = Math.max(1, Math.floor(Number(query.page)) || 1);
+  const { page: _page, ...filters } = query;
+  const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(
+    { ...filters, limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) },
+    { next: { revalidate: 300 } },
+  );
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const stores = Object.fromEntries((storeDirectory ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl }]));
 
   return (
@@ -65,6 +74,8 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
           )}
         </div>
       </div>
+
+      <Pagination page={Math.min(page, pages)} pages={pages} params={{ ...filters }} />
 
       <BrowseShortcuts />
 

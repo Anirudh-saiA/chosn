@@ -215,6 +215,10 @@ export interface SearchQuery {
   soldOut?: string;
   sort?: string;
   signal?: string;
+  /** Page number (1-based); the browse page turns it into limit + offset for the API. */
+  page?: string;
+  limit?: string;
+  offset?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
