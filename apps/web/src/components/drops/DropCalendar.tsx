@@ -224,9 +224,10 @@ export function DropCalendar({
               <button
                 type="button"
                 onClick={() => onSelectDay(null)}
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                aria-label="Back to the calendar"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden /> Calendar
+                <ArrowLeft className="h-5 w-5" aria-hidden />
               </button>
               <div className="text-right">
                 <p className="font-display text-xl font-bold text-text">{longDate(selectedDate)}</p>
