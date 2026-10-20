@@ -27,9 +27,9 @@ interface Mine {
 }
 
 const BTN =
-  'inline-flex min-h-[40px] items-center gap-1.5 border px-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60';
-const ACTIVE = 'border-brass bg-brass/10 text-brass-bright';
-const IDLE = 'border-text/[0.15] text-text hover:border-brass';
+  'inline-flex min-h-[38px] items-center gap-1.5 rounded-full border px-3.5 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60';
+const ACTIVE = 'border-[#0A0A0A] bg-[#0A0A0A] text-white';
+const IDLE = 'border-[#0A0A0A]/15 bg-white text-[#0A0A0A] hover:border-[#0A0A0A]';
 
 /**
  * "Notify me" for one drop: follow it, pick reminders (1 day / 1 hour / 15 minutes) and add it to a calendar. Everything hangs off the
@@ -125,7 +125,7 @@ export function DropFollow({ dropId, brand, dateOnly, compact = false }: { dropI
       </div>
 
       {open && (
-        <div className="panel flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#0A0A0A]/10 bg-white p-4">
           <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">Remind me</p>
           <div className="flex flex-wrap gap-2">
             {leads.map((l) => (
