@@ -41,3 +41,16 @@ Indian homegrown brands usually announce on their own site and Instagram a few d
 
 Public vs local: demo rows are hidden unless `SHOW_DEMO_RELEASES=1` (set in your local `apps/api/.env`; do not set it in production).
 The whole calendar is also available as `GET /drops/calendar.ics`.
+
+## What runs by itself every night (daily_update.py)
+
+| Step | Does |
+|---|---|
+| Exchange rates (`update-fx.js`) | USD and GBP to rupees (ECB reference rate via Frankfurter), so every price shows in rupees |
+| News feeds (`fetch-news-feeds.js`) | Headlines and links from 8 public sneaker / fashion feeds, each checked against robots.txt first |
+| Release dates (`scrape_release_dates.py` then `import-drops.js`) | Upcoming dates, prices and style codes from SoleDispatch; new ones are "Unconfirmed", a moved date is updated and flagged |
+| New arrivals, outlook log, wishlist alerts | as before |
+
+Pictures: a drop shows its picture automatically as soon as any store we read lists that shoe (matched by style code). For shoes no store
+has yet, add `"imageUrl": "https://..."` (a picture you have the right to use, for example from a brand press kit) to the drop in
+`upcoming.json`; otherwise a placeholder is shown.

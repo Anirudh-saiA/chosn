@@ -4,6 +4,7 @@ import { DropLiveProvider } from '@/components/drops/drop-live-context';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
 import { NewsCard } from '@/components/news/NewsCard';
+import { ExternalNews } from '@/components/news/ExternalNews';
 import { NewsFeatureCard } from '@/components/news/NewsFeatureCard';
 import { IndiaWatch } from '@/components/releases/IndiaWatch';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
@@ -37,15 +38,17 @@ async function loadLanded(): Promise<SearchResponse | null> {
 export default async function ReleasesPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
   const initial = tab === 'drops' || tab === 'landed' ? 'drops' : tab === 'news' ? 'news' : 'gate';
-  const [drops, news, landed] = await Promise.all([
+  const [drops, news, web, landed] = await Promise.all([
     fetchDropsList({}, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 40 }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 30, external: '0' }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 50, external: '1' }, { next: { revalidate: 300 } }),
     loadLanded(),
   ]);
   const items = news.items;
   const featureIndex = items.findIndex((i) => i.isBreaking);
   const feature = items.length ? items[featureIndex >= 0 ? featureIndex : 0]! : null;
   const rest = feature ? items.filter((i) => i.id !== feature.id) : [];
+  const webSources = web.sources ?? [...new Set(web.items.map((i) => i.source))];
   const stores = Object.fromEntries((landed?.storeDirectory ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl }]));
 
   const dropsView = (
@@ -122,6 +125,22 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
       ) : (
         <EmptyPanel icon={<Newspaper className="h-5 w-5" aria-hidden />} title="Nothing posted yet">
           Once a tracked drop goes live, coverage shows up here automatically.
+        </EmptyPanel>
+      )}
+
+      <div className="mb-6 mt-16 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="font-display text-2xl font-bold text-text">From around the web</h3>
+          <p className="mt-1 text-sm text-text-soft">
+            Headlines gathered automatically from {webSources.length} sneaker and fashion sites&apos; public feeds ({webSources.join(', ')}). Each links to the original.
+          </p>
+        </div>
+      </div>
+      {web.items.length > 0 ? (
+        <ExternalNews items={web.items} />
+      ) : (
+        <EmptyPanel icon={<Newspaper className="h-5 w-5" aria-hidden />} title="No headlines gathered yet">
+          The nightly update collects them from sneaker and fashion news feeds.
         </EmptyPanel>
       )}
     </section>

@@ -15,6 +15,10 @@ export interface DropSneakerSummary {
 
 export interface DropListItem {
   id: string;
+  /** The retail price in rupees: as listed for India drops, converted at the latest exchange rate otherwise (null when there is no price or no rate yet). */
+  retailPriceInr: number | null;
+  /** Rupees per unit of the listed currency when a conversion was made, else null. */
+  fxRate: number | null;
   /** How firm the date is: confirmed (an official page), reported (trackers agree) or unconfirmed. */
   confirmation: 'confirmed' | 'reported' | 'unconfirmed';
   /** Who confirmed this drop (a brand, retailer or publication) and where to read it. */
@@ -79,7 +83,9 @@ export class DropsService {
     const { rows } = await this.db.execute(sql`
       SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.confirmation,
              de.regions, de.retail_price, de.currency,
-             s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
+             CASE WHEN de.currency = 'INR' THEN de.retail_price ELSE de.retail_price * (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS retail_price_inr,
+             CASE WHEN de.currency = 'INR' THEN NULL ELSE (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS fx_rate,
+             s.style_code, s.brand, s.model, s.colorway, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
       ${where}
@@ -93,7 +99,9 @@ export class DropsService {
     const { rows } = await this.db.execute(sql`
       SELECT de.id, de.status, de.release_date, de.release_time, de.release_timezone, de.source_name, de.source_url, de.confirmation, de.is_demo,
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info,
-             s.style_code, s.brand, s.model, s.colorway, s.primary_image_url
+             CASE WHEN de.currency = 'INR' THEN de.retail_price ELSE de.retail_price * (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS retail_price_inr,
+             CASE WHEN de.currency = 'INR' THEN NULL ELSE (SELECT f.rate_to_inr FROM fx_rates f WHERE f.currency = de.currency) END AS fx_rate,
+             s.style_code, s.brand, s.model, s.colorway, COALESCE(s.primary_image_url, (SELECT ps.image_url FROM price_snapshots ps JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id WHERE v.sneaker_id = s.id AND ps.is_latest AND ps.image_url IS NOT NULL LIMIT 1)) AS primary_image_url
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
       WHERE de.id = ${id}
@@ -145,6 +153,8 @@ export const showDemo = () => process.env.SHOW_DEMO_RELEASES === '1';
 function rowToListItem(row: Record<string, unknown>): DropListItem {
   return {
     id: String(row.id),
+    retailPriceInr: row.retail_price_inr != null ? Math.round(Number(row.retail_price_inr)) : null,
+    fxRate: row.fx_rate != null ? Number(row.fx_rate) : null,
     confirmation: (['confirmed', 'reported', 'unconfirmed'].includes(String(row.confirmation)) ? row.confirmation : 'confirmed') as DropListItem['confirmation'],
     sourceName: (row.source_name as string) ?? null,
     sourceUrl: (row.source_url as string) ?? null,

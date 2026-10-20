@@ -37,6 +37,14 @@ export interface DropSneakerSummary {
 /** Mirrors DropsService.DropListItem. */
 export type DropConfirmation = 'confirmed' | 'reported' | 'unconfirmed';
 
+/** A drop's price, always in rupees; a converted price also says what it was listed at, e.g. "\u20B913,290 (listed $140)". */
+export function formatDropPrice(d: { retailPrice: string | null; currency: string; retailPriceInr?: number | null; fxRate?: number | null }, withOriginal = false): string {
+  if (d.retailPriceInr == null) return d.retailPrice ? formatMoney(Number(d.retailPrice), d.currency) : 'TBA';
+  const inr = `\u20B9${d.retailPriceInr.toLocaleString('en-IN')}`;
+  if (!d.fxRate) return inr;
+  return withOriginal ? `${inr} (listed ${formatMoney(Number(d.retailPrice), d.currency)})` : `\u2248 ${inr}`;
+}
+
 /** A price in its own currency: rupees for India drops, dollars for the US trackers' dates. */
 export function formatMoney(amount: number, currency: string): string {
   if (currency === 'INR') return `\u20B9${Math.round(amount).toLocaleString('en-IN')}`;
@@ -46,6 +54,10 @@ export function formatMoney(amount: number, currency: string): string {
 
 export interface DropListItem {
   id: string;
+  /** The price in rupees (converted for drops listed in another currency). */
+  retailPriceInr?: number | null;
+  /** Rupees per unit of the listed currency when converted. */
+  fxRate?: number | null;
   confirmation?: DropConfirmation;
   /** Who confirmed this drop and where to read it. */
   sourceName?: string | null;

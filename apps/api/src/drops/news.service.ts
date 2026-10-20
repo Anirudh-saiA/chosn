@@ -9,6 +9,8 @@ export interface NewsListItem {
   source: string;
   sourceUrl: string | null;
   isBreaking: boolean;
+  /** true = gathered from another site's public feed (headline, excerpt and a link out); false = our own writing. */
+  external: boolean;
   publishedAt: string;
   dropEventId: string | null;
   /** Denormalized for cross-linking (task 5) without a second round trip per card. */
@@ -18,6 +20,8 @@ export interface NewsListItem {
 export interface NewsListResponse {
   items: NewsListItem[];
   total: number;
+  /** For the gathered feed (external=1): every site stories have been gathered from. */
+  sources?: string[];
 }
 
 const DEFAULT_LIMIT = 20;
@@ -35,17 +39,19 @@ const MAX_LIMIT = 50;
 export class NewsService {
   constructor(@Inject(DRIZZLE) private readonly db: Db) {}
 
-  async list(params: { limit?: number; offset?: number; dropEventId?: string } = {}): Promise<NewsListResponse> {
+  async list(params: { limit?: number; offset?: number; dropEventId?: string; external?: string } = {}): Promise<NewsListResponse> {
     const limit = Math.min(params.limit && params.limit > 0 ? params.limit : DEFAULT_LIMIT, MAX_LIMIT);
     const offset = params.offset && params.offset > 0 ? params.offset : 0;
 
     const conds = [];
     if (params.dropEventId) conds.push(sql`n.drop_event_id = ${params.dropEventId}`);
+    if (params.external === '1') conds.push(sql`n.external`);
+    if (params.external === '0') conds.push(sql`NOT n.external`);
     if (!showDemo()) conds.push(sql`NOT n.is_demo AND (n.drop_event_id IS NULL OR NOT de.is_demo)`);
     const where = conds.length ? sql`WHERE ${sql.join(conds, sql` AND `)}` : sql``;
 
     const { rows } = await this.db.execute(sql`
-      SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.published_at,
+      SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.external, n.published_at,
              n.drop_event_id, s.style_code, s.brand, s.model,
              count(*) OVER() AS total
       FROM news_items n
@@ -57,12 +63,13 @@ export class NewsService {
     `);
 
     const total = rows.length > 0 ? Number((rows[0] as Record<string, unknown>).total) : 0;
-    return { items: (rows as Record<string, unknown>[]).map(rowToItem), total };
+    const sources = params.external === '1' ? ((await this.db.execute(sql`SELECT DISTINCT source FROM news_items WHERE external ORDER BY 1`)).rows as Array<{ source: string }>).map((r) => r.source) : undefined;
+    return { items: (rows as Record<string, unknown>[]).map(rowToItem), total, sources };
   }
 
   async getById(id: string): Promise<NewsListItem | null> {
     const { rows } = await this.db.execute(sql`
-      SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.published_at,
+      SELECT n.id, n.title, n.body, n.source, n.source_url, n.is_breaking, n.external, n.published_at,
              n.drop_event_id, s.style_code, s.brand, s.model
       FROM news_items n
       LEFT JOIN drop_events de ON de.id = n.drop_event_id
@@ -86,6 +93,7 @@ function rowToItem(row: Record<string, unknown>): NewsListItem {
     source: String(row.source),
     sourceUrl: (row.source_url as string) ?? null,
     isBreaking: Boolean(row.is_breaking),
+    external: Boolean(row.external),
     publishedAt: new Date(row.published_at as string).toISOString(),
     dropEventId: (row.drop_event_id as string) ?? null,
     dropSneaker: row.style_code

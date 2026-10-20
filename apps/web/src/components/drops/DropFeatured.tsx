@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Clock, MapPin } from 'lucide-react';
 import { buttonVariantClass } from '@chosn/ui';
 import { Reveal } from '@/components/fx/Reveal';
-import { formatRegions, formatReleaseTime, type DropListItem, formatMoney } from '@/lib/drops';
+import { formatRegions, formatReleaseTime, type DropListItem, formatDropPrice } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 import { releaseInstant } from './drop-instant';
 import { Countdown } from './drop-time';
@@ -85,7 +85,7 @@ export function DropFeatured({ drop }: { drop: DropListItem }) {
             </div>
             <div>
               <dt className="text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">Retail</dt>
-              <dd className="mt-1 text-data-inline text-text">{drop.retailPrice ? formatMoney(Number(drop.retailPrice), drop.currency) : 'TBA'}</dd>
+              <dd className="mt-1 text-data-inline text-text">{formatDropPrice(drop)}</dd>
             </div>
             <div className="col-span-2 sm:col-span-1">
               <dt className="flex items-center gap-1.5 text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">

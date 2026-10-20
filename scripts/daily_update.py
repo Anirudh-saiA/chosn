@@ -270,6 +270,23 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
+    # Exchange rates (rupees everywhere), news from other sites' public feeds, and release dates from the SoleDispatch calendar. Best effort each.
+    for name, cmd, cwd in (
+        ("Exchange rates", [NODE, "--env-file=.env", "dist/scripts/update-fx.js"], api),
+        ("News feeds", [NODE, "--env-file=.env", "dist/scripts/fetch-news-feeds.js"], api),
+    ):
+        try:
+            for line in run(name, cmd, cwd=cwd)[-9:]:
+                log("   " + line)
+        except RuntimeError as e:
+            log(f"{name} skipped: {e}")
+    try:
+        run("Release dates (scrape)", [sys.executable, "scripts/scrape_release_dates.py"])
+        for line in run("Release dates (import)", [NODE, "--env-file=.env", "dist/scripts/import-drops.js", str(ROOT / "data" / "releases" / "auto_soledispatch.json")], cwd=api)[-4:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"Release dates skipped: {e}")
+
     # "Just landed": note the first day each store lists each shoe (Releases page). Best effort.
     try:
         tail = run("New arrivals", [NODE, "--env-file=.env", "dist/scripts/track-new-arrivals.js"], cwd=api)

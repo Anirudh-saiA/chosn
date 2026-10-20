@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BellRing, Clock } from 'lucide-react';
-import { formatReleaseTime, type DropListItem, formatMoney } from '@/lib/drops';
+import { formatReleaseTime, type DropListItem, formatDropPrice } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 import { Reveal } from '@/components/fx/Reveal';
 import { releaseInstant } from './drop-instant';
@@ -62,7 +62,7 @@ export function DropCard({ drop, index = 0 }: { drop: DropListItem; index?: numb
               {drop.releaseTime ? formatReleaseTime(drop.releaseTime) : 'Time TBA'}
             </span>
             <span className="flex items-center gap-1.5 text-text">
-              {drop.retailPrice ? formatMoney(Number(drop.retailPrice), drop.currency) : 'TBA'}
+              {formatDropPrice(drop)}
             </span>
           </div>
 

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
 /** Same class of fix as catalog/search and drops list — see those DTOs' own comments. `dropEventId` reaches a raw `WHERE n.drop_event_id = $1` UUID-column comparison; unvalidated, a garbage value 500s instead of 400ing. */
 export class ListNewsQueryDto {
@@ -19,4 +19,9 @@ export class ListNewsQueryDto {
   @IsOptional()
   @IsUUID()
   dropEventId?: string;
+
+  /** '1' = only stories gathered from other sites' feeds, '0' = only our own. */
+  @IsOptional()
+  @IsIn(['0', '1'])
+  external?: string;
 }

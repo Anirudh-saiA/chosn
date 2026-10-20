@@ -6,6 +6,8 @@ export interface NewsListItem {
   source: string;
   sourceUrl: string | null;
   isBreaking: boolean;
+  /** Gathered from another site's public feed: headline, excerpt and a link out. */
+  external?: boolean;
   publishedAt: string;
   dropEventId: string | null;
   dropSneaker: { styleCode: string; brand: string; model: string } | null;
@@ -14,13 +16,14 @@ export interface NewsListItem {
 export interface NewsListResponse {
   items: NewsListItem[];
   total: number;
+  sources?: string[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 /** Never throws — an empty feed is a legitimate state (task 6), not a failed page. */
 export async function fetchNewsList(
-  params: { limit?: number; offset?: number; dropEventId?: string } = {},
+  params: { limit?: number; offset?: number; dropEventId?: string; external?: '0' | '1' } = {},
   init?: RequestInit,
 ): Promise<NewsListResponse> {
   try {
@@ -28,6 +31,7 @@ export async function fetchNewsList(
     if (params.limit) query.set('limit', String(params.limit));
     if (params.offset) query.set('offset', String(params.offset));
     if (params.dropEventId) query.set('dropEventId', params.dropEventId);
+    if (params.external) query.set('external', params.external);
     const qs = query.toString();
     const res = await fetch(`${API_URL}/news${qs ? `?${qs}` : ''}`, init);
     if (!res.ok) return { items: [], total: 0 };

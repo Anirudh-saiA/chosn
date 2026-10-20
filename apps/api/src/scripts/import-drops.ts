@@ -28,6 +28,9 @@ interface DropIn {
   regions?: string[];
   status?: 'upcoming' | 'released';
   confirmation?: 'confirmed' | 'reported' | 'unconfirmed';
+  /** From an automatic collector: never lowers a confirmation that is already higher, and a moved date is updated and flagged unconfirmed. */
+  auto?: boolean;
+  imageUrl?: string;
   sourceName?: string;
   sourceUrl?: string;
   links?: Array<{ label?: string; url?: string }>;
@@ -72,19 +75,31 @@ async function main() {
            ON CONFLICT (style_code) DO UPDATE SET updated_at = now() RETURNING id, (xmax = 0) AS inserted`,
           [d.brand, d.collab ? `${d.model} x ${d.collab}` : d.model, d.colorway ?? 'Default', styleCode, currency, d.retailPrice ?? null, d.releaseDate],
         );
+        if (d.imageUrl && https(d.imageUrl)) await pool.query('UPDATE sneakers SET primary_image_url = $2 WHERE id = $1 AND primary_image_url IS NULL', [ins.rows[0].id, d.imageUrl]);
         shoe = ins;
         if (ins.rows[0].inserted) addedShoes++;
       }
       const sneakerId = shoe.rows[0].id as string;
       const status = d.status === 'released' ? 'sold_out' : 'upcoming';
-      const existing = await pool.query('SELECT id FROM drop_events WHERE sneaker_id = $1 AND release_date = $2::date', [sneakerId, d.releaseDate]);
+      let existing = await pool.query('SELECT id FROM drop_events WHERE sneaker_id = $1 AND release_date = $2::date', [sneakerId, d.releaseDate]);
+      let moved = false;
+      if (d.auto && !existing.rowCount && status === 'upcoming') {
+        // The same shoe already has an upcoming drop on another date: the date moved. Update that drop and flag it for re-checking.
+        const other = await pool.query(`SELECT id FROM drop_events WHERE sneaker_id = $1 AND status = 'upcoming' AND NOT is_demo ORDER BY abs(release_date - $2::date) LIMIT 1`, [sneakerId, d.releaseDate]);
+        if (other.rowCount) {
+          await pool.query('UPDATE drop_events SET release_date = $2::date WHERE id = $1', [other.rows[0].id, d.releaseDate]);
+          existing = other;
+          moved = true;
+        }
+      }
       const raffle = d.raffle ? JSON.stringify(d.raffle) : null;
-      const args = [d.releaseTime ?? null, d.retailPrice ?? null, currency, regions, JSON.stringify(links), raffle, d.sourceName, d.sourceUrl, level, status];
+      const args = [d.releaseTime ?? null, d.retailPrice ?? null, currency, regions, JSON.stringify(links), raffle, d.sourceName, d.sourceUrl, moved ? 'unconfirmed' : level, status];
       if (existing.rowCount) {
         await pool.query(
           `UPDATE drop_events SET release_time = $2::time, retail_price = $3, currency = $4, regions = $5::region[], purchase_links = $6::jsonb, raffle_info = $7::jsonb,
-                  source_name = $8, source_url = $9, confirmation = $10, status = $11::drop_status, is_demo = false, updated_at = now() WHERE id = $1`,
-          [existing.rows[0].id, ...args],
+                  source_name = CASE WHEN $12::boolean THEN source_name ELSE $8 END, source_url = CASE WHEN $12::boolean THEN source_url ELSE $9 END,
+                  confirmation = CASE WHEN $12::boolean AND NOT $13::boolean THEN confirmation ELSE $10 END, status = CASE WHEN $12::boolean THEN status ELSE $11::drop_status END, is_demo = false, updated_at = now() WHERE id = $1`,
+          [existing.rows[0].id, ...args, d.auto === true, moved],
         );
       } else {
         await pool.query(

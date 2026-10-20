@@ -72,7 +72,7 @@ export class DropsController {
     for (const d of drops) {
       const day = d.releaseDate.replace(/-/g, '');
       const level = d.confirmation === 'confirmed' ? 'Confirmed' : d.confirmation === 'reported' ? 'Reported' : 'Unconfirmed';
-      const price = d.retailPrice ? `${d.currency} ${Number(d.retailPrice).toLocaleString('en-US')}` : 'price TBA';
+      const price = d.retailPriceInr ? `\u20B9${d.retailPriceInr.toLocaleString('en-IN')}${d.fxRate ? ` (about, converted from ${d.currency} ${Number(d.retailPrice).toLocaleString('en-US')})` : ''}` : 'price TBA';
       lines.push('BEGIN:VEVENT', `UID:${d.id}@chosn`, `DTSTAMP:${stamp}`);
       if (d.releaseTime && d.releaseTimezone === 'Asia/Kolkata') {
         const [h, m] = d.releaseTime.split(':').map(Number);
