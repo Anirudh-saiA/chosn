@@ -29,7 +29,7 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
   }
   if (get('minStores')) chips.push({ key: 'ms', label: `${get('minStores')}+ stores`, remove: () => set({ minStores: null }) });
   if (get('soldOut')) chips.push({ key: 'so', label: 'Incl. sold out', remove: () => set({ soldOut: null }) });
-  if (get('signal')) chips.push({ key: 'sg', label: 'Good time to buy', remove: () => set({ signal: null }) });
+  if (get('outlook')) chips.push({ key: 'ol', label: get('outlook') === 'wait' ? 'Worth waiting' : 'Buy now', remove: () => set({ outlook: null }) });
 
   return (
     <div className="mb-5 flex flex-col gap-3">

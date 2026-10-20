@@ -60,7 +60,7 @@ export function FilterBar({ facets }: { facets: SearchFacets }) {
   const sortedStores = [...facets.stores].sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
   const minStores = get('minStores') ?? '';
   const priceOn = get('minPrice') || get('maxPrice') ? 1 : 0;
-  const moreOn = (get('soldOut') ? 1 : 0) + (get('signal') ? 1 : 0);
+  const moreOn = (get('soldOut') ? 1 : 0) + (get('outlook') ? 1 : 0);
 
   return (
     <div className={`hidden flex-wrap items-center gap-2 lg:flex ${pending ? 'opacity-60' : ''}`} aria-busy={pending} role="group" aria-label="Filters">
@@ -137,7 +137,8 @@ export function FilterBar({ facets }: { facets: SearchFacets }) {
 
       <Dropdown label="More" count={moreOn}>
         <CheckRow label="Include sold out" checked={get('soldOut') === '1'} onChange={() => set({ soldOut: get('soldOut') === '1' ? null : '1' })} />
-        <CheckRow label="Good time to buy" checked={get('signal') === 'good_time_to_buy'} onChange={() => set({ signal: get('signal') === 'good_time_to_buy' ? null : 'good_time_to_buy' })} />
+        <CheckRow label="Buy now" checked={get('outlook') === 'buy_now'} onChange={() => set({ outlook: get('outlook') === 'buy_now' ? null : 'buy_now' })} />
+        <CheckRow label="Worth waiting" checked={get('outlook') === 'wait'} onChange={() => set({ outlook: get('outlook') === 'wait' ? null : 'wait' })} />
       </Dropdown>
 
       {activeCount > 0 && (

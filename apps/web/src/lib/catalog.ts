@@ -172,6 +172,8 @@ export interface SearchResultItem {
   defaultSizeSystem: string;
   currentPrice: number | null;
   bestAvailablePrice: number | null;
+  /** Buy now / Wait / Fair price for the size the card shows; null when there is too little evidence to call it. */
+  outlook?: 'buy_now' | 'wait' | 'fair' | null;
   signal: Signal | null;
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
@@ -230,6 +232,8 @@ export interface SearchQuery {
   soldOut?: string;
   sort?: string;
   signal?: string;
+  /** Buy now / Wait verdict filter. */
+  outlook?: string;
   /** UK size: only shoes in stock in this size, priced for it. */
   size?: string;
   /** Page number (1-based); the browse page turns it into limit + offset for the API. */

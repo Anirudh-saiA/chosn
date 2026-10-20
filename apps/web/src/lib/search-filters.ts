@@ -1,7 +1,7 @@
 /** Shared by the filter panel, the sort control and the sneakers page. All filter state lives in the URL. */
 
 /** Query-string keys the browse page understands (page 1 is always what you get when one changes). */
-export const FILTER_KEYS = ['brand', 'store', 'color', 'minPrice', 'maxPrice', 'minStores', 'soldOut', 'signal'] as const;
+export const FILTER_KEYS = ['brand', 'store', 'color', 'minPrice', 'maxPrice', 'minStores', 'soldOut', 'outlook'] as const;
 
 export const SORT_OPTIONS = [
   { value: '', label: 'Most compared first' },
@@ -10,6 +10,7 @@ export const SORT_OPTIONS = [
   { value: 'name_asc', label: 'Name: A to Z' },
   { value: 'name_desc', label: 'Name: Z to A' },
   { value: 'stores', label: 'Most stores, then cheapest' },
+  { value: 'outlook', label: 'Best time to buy' },
 ] as const;
 
 /** Swatch colours for each colour family the API knows about (see apps/api catalog-filters.ts). */

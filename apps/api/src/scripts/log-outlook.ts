@@ -26,7 +26,7 @@ async function main() {
     const { rows: today } = await pool.query(`SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date::text AS d`);
     const loggedOn: string = today[0].d;
 
-    // Which shoe-sizes to log.
+    // Which shoe-sizes to keep in the log (history). Every in-stock shoe-size is scored for outlook_latest.
     const { rows: picked } = await pool.query(
       `WITH hist AS (SELECT sneaker_variant_id v FROM daily_best_prices WHERE day >= current_date - 90 GROUP BY 1 HAVING count(*) >= 7),
             live AS (SELECT DISTINCT sneaker_variant_id v FROM price_snapshots WHERE is_latest AND in_stock AND listing_url NOT LIKE '%FIXTURE%')
@@ -34,8 +34,11 @@ async function main() {
         WHERE l.v IN (SELECT v FROM hist) OR mod(abs(hashtext(l.v::text)), 50) = 0
         LIMIT ${MAX_LOGGED}`,
     );
-    const ids: string[] = picked.map((r) => r.id);
+    const logSet = new Set<string>(picked.map((r) => r.id));
+    const { rows: allLive } = await pool.query(`SELECT DISTINCT sneaker_variant_id AS id FROM price_snapshots WHERE is_latest AND in_stock AND listing_url NOT LIKE '%FIXTURE%'`);
+    const ids: string[] = allLive.map((r) => r.id);
     let logged = 0;
+    let latestWritten = 0;
 
     for (let k = 0; k < ids.length; k += CHUNK) {
       const chunk = ids.slice(k, k + CHUNK);
@@ -68,6 +71,7 @@ async function main() {
       const sizeBy = new Map(sizes.rows.map((r) => [r.sneaker_id, r]));
 
       const values: unknown[][] = [];
+      const latest: unknown[][] = [];
       for (const id of chunk) {
         const m = metaBy.get(id);
         const live = snapBy.get(id) ?? [];
@@ -86,7 +90,22 @@ async function main() {
           today: new Date(),
         };
         const o = scoreOutlook(input);
-        values.push([loggedOn, id, o.verdict, o.score, o.confidence, Math.round(best.price), o.historyDays, o.peerDropShare, JSON.stringify({ factors: o.factors.map((f) => [f.label, f.points]), stores: input.storePrices.length, was: input.wasPrice, sizes: [input.sizesInStock, input.sizesKnown], model: o.model })]);
+        latest.push([id, loggedOn, o.verdict, o.score, o.confidence]);
+        if (logSet.has(id)) values.push([loggedOn, id, o.verdict, o.score, o.confidence, Math.round(best.price), o.historyDays, o.peerDropShare, JSON.stringify({ factors: o.factors.map((f) => [f.label, f.points]), stores: input.storePrices.length, was: input.wasPrice, sizes: [input.sizesInStock, input.sizesKnown], model: o.model })]);
+      }
+      if (latest.length) {
+        const lp: unknown[] = [];
+        const lt = latest.map((row, i) => {
+          lp.push(...row);
+          const b = i * 5;
+          return `($${b + 1}::uuid,$${b + 2}::date,$${b + 3},$${b + 4},$${b + 5})`;
+        });
+        await pool.query(
+          `INSERT INTO outlook_latest (sneaker_variant_id, computed_on, verdict, score, confidence) VALUES ${lt.join(',')}
+           ON CONFLICT (sneaker_variant_id) DO UPDATE SET computed_on = EXCLUDED.computed_on, verdict = EXCLUDED.verdict, score = EXCLUDED.score, confidence = EXCLUDED.confidence`,
+          lp,
+        );
+        latestWritten += latest.length;
       }
       if (values.length) {
         const params: unknown[] = [];
@@ -102,7 +121,8 @@ async function main() {
         logged += res.rowCount ?? 0;
       }
     }
-    console.log(`[outlook] logged ${logged} new rows for ${loggedOn} (${ids.length} shoe-sizes scored)`);
+    await pool.query(`DELETE FROM outlook_latest WHERE computed_on < $1::date`, [loggedOn]); // no longer in stock
+    console.log(`[outlook] logged ${logged} new rows for ${loggedOn}; ${latestWritten} shoe-sizes scored into outlook_latest`);
 
     // Resolve outcomes
     for (const [h, col] of [[14, '14'], [30, '30']] as const) {

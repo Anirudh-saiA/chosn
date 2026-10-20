@@ -66,12 +66,17 @@ export class SearchQueryDto {
   soldOut?: string;
 
   @IsOptional()
-  @IsIn(['relevance', 'price_asc', 'price_desc', 'name_asc', 'name_desc', 'stores'])
+  @IsIn(['relevance', 'price_asc', 'price_desc', 'name_asc', 'name_desc', 'stores', 'outlook'])
   sort?: string;
 
   @IsOptional()
   @IsIn(['good_time_to_buy', 'neutral', 'consider_waiting', 'insufficient_data'])
   signal?: string;
+
+  /** The Buy now / Wait verdict (outlook_latest) the card shows for the chosen size. */
+  @IsOptional()
+  @IsIn(['buy_now', 'wait', 'fair'])
+  outlook?: string;
 
   /** UK size: only shoes in stock in this size, with that size's own price and stores. */
   @IsOptional()

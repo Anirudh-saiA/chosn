@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SneakerArt } from '@/components/ui/SneakerArt';
@@ -141,6 +141,18 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
   const tiles = [...(offers ?? [])].sort((a, b) => Number(b.inStock) - Number(a.inStock) || a.price - b.price);
   const storeCount = live.length || (offers === null ? (cur.storeSlugs ?? []).length : 0);
 
+  // Keep the chosen size in view in the card's size row (it opens on UK 3 otherwise, which matters once a size is picked above).
+  const sizesRef = useRef<HTMLUListElement>(null);
+  const sizeCount = data?.sizeList.length ?? 0;
+  useEffect(() => {
+    const ul = sizesRef.current;
+    const el = ul?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!ul || !el) return;
+    const e = el.getBoundingClientRect();
+    const b = ul.getBoundingClientRect();
+    ul.scrollLeft += e.left - b.left - b.width / 2 + e.width / 2;
+  }, [size, cur.styleCode, sizeCount]);
+
   const href = `/sneakers/${encodeURIComponent(cur.styleCode)}/${formatSize(size)}`;
   const imageUrl = resolveSneakerImage(photos[photoIdx] ?? cur.primaryImageUrl);
   const palette = paletteFor(cur.colorway, item.brand);
@@ -148,6 +160,8 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
   const extra = colours.length - shown.length;
   const sizeList = data?.sizeList ?? [];
   const anyStock = offers === null ? bestPrice !== null : live.length > 0;
+  // The verdict was worked out for the colour and size the card opened on; once another is picked it no longer applies.
+  const verdict = selected === 0 && size === Number(item.defaultSize) && (item.outlook === 'buy_now' || item.outlook === 'wait') ? item.outlook : null;
 
   return (
     <div
@@ -159,12 +173,20 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
       <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[1.4rem]" />
 
       {/* Header: brand logo, discount badge, name, colour, price. */}
-      <div className="relative z-10 px-3.5 pt-3.5">
+      <div className="relative z-10 px-2.5 pt-2.5 sm:px-3.5 sm:pt-3.5">
         <div className="flex items-start justify-between gap-3">
-          <BrandMark brand={item.brand} className="!h-5 !max-w-[4rem]" />
-          {pct >= 1 && <span className="rounded-full bg-[#FDE7E9] px-2.5 py-1 font-display text-[0.8rem] uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
+          <BrandMark brand={item.brand} className="!h-4 !max-w-[3.2rem] sm:!h-5 sm:!max-w-[4rem]" />
+          {verdict && (
+            <span
+              title={verdict === 'buy_now' ? 'Good price to buy now for this size' : 'Worth waiting: the price is above its usual level'}
+              className={`rounded-full px-2 py-0.5 font-display text-[0.7rem] uppercase leading-none tracking-[0.03em] text-white sm:px-2.5 sm:py-1 sm:text-[0.8rem] ${verdict === 'buy_now' ? 'bg-[#1F8A4C]' : 'bg-[#D97706]'}`}
+            >
+              {verdict === 'buy_now' ? 'Buy now' : 'Wait'}
+            </span>
+          )}
+          {!verdict && pct >= 1 && <span className="hidden rounded-full bg-[#FDE7E9] px-2.5 py-1 font-display text-[0.8rem] sm:inline-block uppercase leading-none tracking-[0.02em] text-[#D81E2D]">{pct}% off</span>}
         </div>
-        <h2 className="mt-1.5 font-display text-[clamp(1.15rem,1.5vw,1.35rem)] uppercase leading-[0.98] tracking-[0.01em] text-[#0A0A0A]">
+        <h2 className="mt-1 font-display text-[1rem] sm:mt-1.5 sm:text-[clamp(1.15rem,1.5vw,1.35rem)] uppercase leading-[0.98] tracking-[0.01em] text-[#0A0A0A]">
           <Link href={href} className="line-clamp-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]">
             {item.model}
           </Link>
@@ -172,9 +194,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         <p className="truncate text-[0.72rem] font-medium text-[#0A0A0A]/55">{cur.colorway}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           {bestPrice !== null ? (
-            <span className="font-sans text-[clamp(1.1rem,1.5vw,1.3rem)] font-extrabold leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
+            <span className="font-sans text-[1rem] font-extrabold sm:text-[clamp(1.1rem,1.5vw,1.3rem)] leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
           ) : (
-            <span className="text-[0.95rem] font-bold text-[#0A0A0A]/50">Sold out in UK {formatSize(size)}</span>
+            <span className="text-[0.8rem] font-bold text-[#0A0A0A]/50 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
           )}
           {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/45 line-through">{formatInr(was)}</span>}
           {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
@@ -226,7 +248,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 px-3.5 pb-3 pt-1">
+      <div className="flex flex-1 flex-col gap-1.5 px-2.5 pb-2.5 pt-1 sm:gap-2 sm:px-3.5 sm:pb-3">
         {/* Colours. */}
         {colours.length > 1 && (
           <div className="relative z-10 flex items-center gap-2" role="group" aria-label={`${colours.length} colours`}>
@@ -253,21 +275,21 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
               ))}
               {extra > 0 && <li className="font-mono text-[0.72rem] font-bold text-[#0A0A0A]/50">+{extra}</li>}
             </ul>
-            <span className="ml-auto font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/40">{colours.length} colours</span>
+            <span className="ml-auto hidden font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/40 sm:inline">{colours.length} colours</span>
           </div>
         )}
 
         {/* Available sizes: sold-out ones are crossed out. */}
         <div>
           <div className="flex items-center justify-between">
-            <h3 className="text-[0.78rem] font-bold text-[#0A0A0A]">Available Sizes</h3>
+            <h3 className="text-[0.7rem] font-bold text-[#0A0A0A] sm:text-[0.78rem]">Sizes</h3>
             <span className={`flex items-center gap-1.5 text-[0.68rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/40'}`}>
               <span className={`h-2 w-2 rounded-full ${anyStock ? 'bg-[#1FA34A]' : 'bg-[#0A0A0A]/25'}`} aria-hidden />
               {anyStock ? 'In Stock' : 'Sold out'}
             </span>
           </div>
           {sizeList.length > 0 ? (
-            <ul className="relative z-10 mt-1 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
+            <ul ref={sizesRef} className="relative z-10 mt-1 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
               {sizeList.map((s, idx) => {
                 const active = s.size === size;
                 return (
@@ -297,8 +319,13 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
           )}
         </div>
 
+        {/* Phones: just the store count; the price tiles take too much room there. */}
+        <p className="mt-auto text-[0.7rem] font-semibold text-[#0A0A0A]/55 sm:hidden">
+          {storeCount} {storeCount === 1 ? 'store' : 'stores'} compared
+        </p>
+
         {/* Compare prices: one tile per store for the chosen size. */}
-        <div className="mt-auto">
+        <div className="mt-auto hidden sm:block">
           <div className="flex items-center justify-between">
             <h3 className="text-[0.78rem] font-bold text-[#0A0A0A]">Compare Prices</h3>
             <span className="text-[0.68rem] text-[#0A0A0A]/45">

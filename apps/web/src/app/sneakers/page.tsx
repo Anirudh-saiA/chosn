@@ -33,8 +33,10 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
   const page = Math.max(1, Math.floor(Number(query.page)) || 1);
   const filters: SearchQuery = { ...query };
   delete filters.page;
+  const apiFilters: SearchQuery = { ...filters };
+  if (apiFilters.size === 'any') delete apiFilters.size; // "any size": nothing to filter by
   const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(
-    { ...filters, limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) },
+    { ...apiFilters, limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) },
     { next: { revalidate: 300 } },
   );
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -63,9 +65,9 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
         <div className="min-w-0">
           <ResultsToolbar total={total} facets={facets} />
           {results.length === 0 ? (
-            <EmptyState query={q} />
+            <EmptyState query={q} size={query.size} params={{ ...filters }} />
           ) : (
-            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {results.map((item, i) => (
                 <Reveal as="li" key={item.styleCode} delay={(i % 3) * 0.06} y={18}>
                   <SneakerCard item={item} stores={stores} />

@@ -36,7 +36,7 @@ export function useFilterParams() {
     (searchParams.get('minPrice') || searchParams.get('maxPrice') ? 1 : 0) +
     (searchParams.get('minStores') ? 1 : 0) +
     (searchParams.get('soldOut') ? 1 : 0) +
-    (searchParams.get('signal') ? 1 : 0);
+    (searchParams.get('outlook') ? 1 : 0);
 
   return { get: (k: string) => searchParams.get(k), set, clearAll, activeCount, pending };
 }
@@ -220,7 +220,8 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
 
       <Section title="Availability">
         <CheckRow label="Include sold out" checked={get('soldOut') === '1'} onChange={() => set({ soldOut: get('soldOut') === '1' ? null : '1' })} />
-        <CheckRow label="Good time to buy" checked={get('signal') === 'good_time_to_buy'} onChange={() => set({ signal: get('signal') === 'good_time_to_buy' ? null : 'good_time_to_buy' })} />
+        <CheckRow label="Buy now" checked={get('outlook') === 'buy_now'} onChange={() => set({ outlook: get('outlook') === 'buy_now' ? null : 'buy_now' })} />
+        <CheckRow label="Worth waiting" checked={get('outlook') === 'wait'} onChange={() => set({ outlook: get('outlook') === 'wait' ? null : 'wait' })} />
       </Section>
 
       <p className="mt-2 font-mono text-[0.68rem] text-text-faint" aria-live="polite">

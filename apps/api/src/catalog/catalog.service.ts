@@ -171,7 +171,7 @@ export interface CompareItem {
   }>;
 }
 
-export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stores';
+export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'stores' | 'outlook';
 
 export interface SearchParams {
   q?: string;
@@ -190,6 +190,8 @@ export interface SearchParams {
   includeSoldOut?: boolean;
   sort?: SearchSort;
   signal?: string;
+  /** Only shoes whose Buy now / Wait verdict (for the shown size) is this. */
+  outlook?: string;
   limit?: number;
   offset?: number;
   /** Internal: match ANY typed word instead of all of them (second attempt when nothing matched). */
@@ -246,6 +248,8 @@ export interface SearchResultItem {
   currentPrice: number | null;
   bestAvailablePrice: number | null;
   signal: Signal | null;
+  /** Buy now / Wait / Fair price for the size the card shows; null when there is not enough evidence to call it (search results only). */
+  outlook?: 'buy_now' | 'wait' | 'fair' | null;
   currency: string;
   /** How many real stores have this shoe in stock (search results only). */
   storeCount?: number;
@@ -892,6 +896,7 @@ export class CatalogService {
     if (params.maxPrice !== undefined) conditions.push(sql`${priceCol} <= ${params.maxPrice}`);
     if (params.minStores !== undefined && params.minStores > 1) conditions.push(sql`${storeCountCol} >= ${params.minStores}`);
     if (params.signal) conditions.push(sql`ms.signal = ${params.signal}`);
+    if (params.outlook) conditions.push(sql`ol.verdict = ${params.outlook}`);
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
 
     // Rank: an exact full name or style code first, then names that contain the whole phrase, then word-by-word relevance.
@@ -924,6 +929,7 @@ export class CatalogService {
     else if (params.sort === 'price_desc') orderBy = sql`${inStockFirst}, best_available_price DESC, ${alpha}`;
     else if (params.sort === 'name_asc') orderBy = sql`lower(model) ASC, lower(brand) ASC, colorway ASC`;
     else if (params.sort === 'name_desc') orderBy = sql`lower(model) DESC, lower(brand) DESC, colorway DESC`;
+    else if (params.sort === 'outlook') orderBy = sql`(outlook = 'buy_now') DESC, (outlook = 'fair') DESC, outlook_score DESC NULLS LAST, store_count DESC, md5(style_code)`;
     else if (params.sort === 'stores') orderBy = sql`store_count DESC, ${inStockFirst}, best_available_price ASC, ${alpha}`;
 
     // Shared CTEs. Both read materialized views (drizzle/0026) that are refreshed after every price import: the cheapest
@@ -946,12 +952,14 @@ export class CatalogService {
                  ${sizeCol} AS size, COALESCE(st.min_size_system, dv.size_system) AS size_system,
                  ${priceCol} AS current_price, ${priceCol} AS best_available_price,
                  ms.signal, ms.currency, ${storeCountCol} AS store_count, ${storeSlugsCol} AS store_slugs,
+                 ol.verdict AS outlook, ol.score AS outlook_score,
                  lower(s.brand) || '|' || regexp_replace(lower(s.model), '[^a-z0-9]+', '', 'g') AS grp,
                  ${rankExpr} AS rank
           FROM sneakers s
           JOIN default_variant dv ON dv.sneaker_id = s.id
           LEFT JOIN st ON st.sneaker_id = s.id
           ${szJoin}
+          LEFT JOIN LATERAL (SELECT o.verdict, o.score FROM sneaker_variants v2 JOIN outlook_latest o ON o.sneaker_variant_id = v2.id WHERE v2.sneaker_id = s.id AND v2.size = ${sizeCol} LIMIT 1) ol ON true
           LEFT JOIN market_summaries ms ON ms.sneaker_variant_id = dv.variant_id
           ${where}
         ),
@@ -975,10 +983,11 @@ export class CatalogService {
       `),
       // One statement for every facet, over one shared `base` scan.
       this.db.execute(sql`
-        WITH ${ctes},
+        WITH ${ctes}${szCte},
         base AS MATERIALIZED (
-          SELECT s.brand, s.colorway, st.store_slugs, st.min_price, cm.families
+          SELECT s.brand, s.colorway, ${storeSlugsCol} AS store_slugs, ${priceCol} AS min_price, cm.families
           FROM sneakers s LEFT JOIN st ON st.sneaker_id = s.id
+          ${szJoin}
           LEFT JOIN catalog_colors_mv cm ON cm.sneaker_id = s.id ${baseWhere}
         ),
         color_counts AS (
@@ -1019,6 +1028,7 @@ export class CatalogService {
       currentPrice: r.current_price !== null ? Number(r.current_price) : null,
       bestAvailablePrice: r.best_available_price !== null ? Number(r.best_available_price) : null,
       signal: (r.signal as Signal | null) ?? null,
+      outlook: r.outlook === 'buy_now' || r.outlook === 'wait' || r.outlook === 'fair' ? (r.outlook as 'buy_now' | 'wait' | 'fair') : null,
       currency: r.currency ?? 'INR',
       storeCount: Number(r.store_count ?? 0),
       storeNames: (r.store_slugs ?? []).map((slug) => storeName.get(slug) ?? slug).sort((a, b) => a.localeCompare(b)),
@@ -1383,6 +1393,7 @@ export interface StoreSummary {
 }
 
 interface SearchRow {
+  outlook?: string | null;
   colours?: Array<{ styleCode: string; colorway: string; primaryImageUrl: string | null; defaultSize: string; bestAvailablePrice: string | null}> | null;
   store_count?: string | number;
   store_slugs?: string[] | null;
