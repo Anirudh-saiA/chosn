@@ -40,56 +40,96 @@ function Title({ kind }: { kind: Kind }) {
 export function ReleasesExperience({ initial, drops, news, footer }: { initial: View; drops: ReactNode; news: ReactNode; footer?: ReactNode }) {
   const reduce = useReducedMotion();
   const [view, setView] = useState<View>(initial);
-  const [opening, setOpening] = useState<{ kind: Kind; phase: 'merge' | 'split' } | null>(null);
+  // One animation at a time. Opening: merge (the chosen half grows to the middle), then split (it opens along a horizontal seam).
+  // Closing (Back) is the same thing in reverse: join (the seam closes over the section), then unmerge (it divides back into two halves).
+  const [anim, setAnim] = useState<{ dir: 'open' | 'close'; kind: Kind; phase: 'merge' | 'split' | 'join' | 'unmerge' } | null>(null);
   const [mobile, setMobile] = useState(false);
   const timers = useRef<number[]>([]);
+  const viewRef = useRef<View>(initial);
+  const busy = useRef(false);
+  viewRef.current = view;
+
+  const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
+
+  const close = useCallback(
+    (push: boolean) => {
+      const kind = viewRef.current;
+      if (kind === 'gate' || busy.current) return;
+      if (push) window.history.pushState(null, '', '/releases');
+      window.scrollTo({ top: 0 });
+      if (reduce) return setView('gate');
+      busy.current = true;
+      setAnim({ dir: 'close', kind, phase: 'join' });
+      later(() => setAnim({ dir: 'close', kind, phase: 'unmerge' }), SPLIT_MS);
+      later(() => {
+        setView('gate');
+        setAnim(null);
+        busy.current = false;
+      }, SPLIT_MS + MERGE_MS);
+    },
+    [reduce],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
     const on = () => setMobile(mq.matches);
     on();
     mq.addEventListener('change', on);
-    const pop = () => setView(fromUrl());
+    // The browser's Back button plays the same closing animation.
+    const pop = () => {
+      const target = fromUrl();
+      if (target === 'gate') close(false);
+      else setView(target);
+    };
     window.addEventListener('popstate', pop);
     return () => {
       mq.removeEventListener('change', on);
       window.removeEventListener('popstate', pop);
       timers.current.forEach((t) => window.clearTimeout(t));
     };
-  }, []);
+  }, [close]);
 
-  const go = useCallback((v: View) => {
-    window.history.pushState(null, '', v === 'gate' ? '/releases' : `/releases?tab=${v}`);
+  const swap = (v: Kind) => {
+    window.history.pushState(null, '', `/releases?tab=${v}`);
     setView(v);
-    window.scrollTo({ top: 0 });
-  }, []);
-
-  const open = (kind: Kind) => {
-    if (reduce) return go(kind);
-    window.scrollTo({ top: 0 });
-    setOpening({ kind, phase: 'merge' });
-    timers.current.push(
-      window.setTimeout(() => setOpening({ kind, phase: 'split' }), MERGE_MS),
-      window.setTimeout(() => {
-        window.history.pushState(null, '', `/releases?tab=${kind}`);
-        setView(kind);
-        setOpening(null);
-      }, MERGE_MS + SPLIT_MS),
-    );
   };
 
-  const underneath: View = opening ? opening.kind : view; // what is (or will be) shown behind the gate
-  const showGate = view === 'gate' || opening !== null;
+  const open = (kind: Kind) => {
+    if (busy.current) return;
+    window.scrollTo({ top: 0 });
+    window.history.pushState(null, '', `/releases?tab=${kind}`);
+    if (reduce) return setView(kind);
+    busy.current = true;
+    setAnim({ dir: 'open', kind, phase: 'merge' });
+    later(() => setAnim({ dir: 'open', kind, phase: 'split' }), MERGE_MS);
+    later(() => {
+      setView(kind);
+      setAnim(null);
+      busy.current = false;
+    }, MERGE_MS + SPLIT_MS);
+  };
+
+  const underneath: View = anim ? anim.kind : view; // what is (or was) shown behind the gate
+  const showGate = view === 'gate' || anim !== null;
+  const gridPhase = anim !== null && (anim.phase === 'merge' || anim.phase === 'unmerge');
+  const halvesPhase = anim !== null && (anim.phase === 'split' || anim.phase === 'join');
+  const side = (k: Kind) => (k === 'drops' ? '1fr 0fr' : '0fr 1fr');
+  const merged = anim ? side(anim.kind) : '1fr 1fr';
+  const split = '1fr 1fr';
+  // grid start / end for the current phase (merge goes 2 halves -> 1; unmerge goes 1 -> 2 halves)
+  const from = anim?.phase === 'unmerge' ? merged : split;
+  const to = anim?.phase === 'unmerge' ? split : anim ? merged : split;
+  const axis = mobile ? 'gridTemplateRows' : 'gridTemplateColumns';
 
   return (
-    <div className="relative" style={opening ? { height: GATE_H, overflow: 'hidden' } : undefined}>
+    <div className="relative" style={anim ? { height: GATE_H, overflow: 'hidden' } : undefined}>
       <h1 className="sr-only">Releases and news</h1>
 
       {/* The opened section */}
       {underneath !== 'gate' ? (
-        <div className={`mx-auto w-full max-w-[80rem] px-5 py-10 sm:px-8 lg:py-14 ${opening ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
+        <div className={`mx-auto w-full max-w-[80rem] px-5 py-10 sm:px-8 lg:py-14 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
-            <button type="button" onClick={() => go('gate')} className="inline-flex items-center gap-2 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
+            <button type="button" onClick={() => close(true)} className="inline-flex items-center gap-2 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
               <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
             </button>
             <div role="tablist" aria-label="Section" className="inline-flex overflow-hidden rounded-full border border-[#14213D]">
@@ -99,7 +139,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   type="button"
                   role="tab"
                   aria-selected={view === k}
-                  onClick={() => go(k)}
+                  onClick={() => view !== k && swap(k)}
                   className={`px-6 py-2 font-display text-lg uppercase tracking-[0.06em] ${view === k ? 'bg-[#14213D] text-white' : 'bg-white text-[#14213D] hover:bg-[#EAF3FA]'}`}
                 >
                   {LOOK[k].title}
@@ -108,36 +148,29 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
             </div>
           </div>
           <AnimatePresence mode="wait">
-            <motion.div key={underneath} initial={{ opacity: 0, y: reduce ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}>
+            <motion.div key={underneath} initial={{ opacity: anim ? 1 : 0, y: reduce || anim ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}>
               {underneath === 'drops' ? drops : news}
             </motion.div>
           </AnimatePresence>
         </div>
       ) : null}
 
-      {/* The gate: two huge halves, then the chosen one merges to the middle and splits open */}
+      {/* The gate: two huge halves. Opening: one merges to the middle and splits open. Closing: the reverse. */}
       {showGate ? (
-        <div className={opening ? 'absolute inset-0 z-10' : ''} style={{ height: opening ? undefined : GATE_H }}>
-          {!opening || opening.phase === 'merge' ? (
+        <div className={anim ? 'absolute inset-0 z-10' : ''} style={{ height: anim ? undefined : GATE_H }}>
+          {!anim || gridPhase ? (
             <motion.div
+              key={anim ? anim.phase : 'idle'}
               className="grid h-full min-h-[28rem] overflow-hidden"
-              initial={false}
-              animate={
-                opening
-                  ? mobile
-                    ? { gridTemplateRows: opening.kind === 'drops' ? '1fr 0fr' : '0fr 1fr' }
-                    : { gridTemplateColumns: opening.kind === 'drops' ? '1fr 0fr' : '0fr 1fr' }
-                  : mobile
-                    ? { gridTemplateRows: '1fr 1fr' }
-                    : { gridTemplateColumns: '1fr 1fr' }
-              }
+              initial={anim ? { [axis]: from } : false}
+              animate={{ [axis]: anim ? to : split }}
               transition={{ duration: MERGE_MS / 1000, ease: EASE }}
             >
               {(['drops', 'news'] as const).map((k) => (
                 <button
                   key={k}
                   type="button"
-                  disabled={opening !== null}
+                  disabled={anim !== null}
                   onClick={() => open(k)}
                   aria-label={`Open ${LOOK[k].title}`}
                   className="group relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-colors duration-300"
@@ -152,22 +185,26 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                 </button>
               ))}
             </motion.div>
-          ) : (
+          ) : halvesPhase && anim ? (
             <div className="relative h-full min-h-[28rem] overflow-hidden" aria-hidden>
-              {(['top', 'bottom'] as const).map((half) => (
-                <motion.div
-                  key={half}
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: LOOK[opening.kind].bg, clipPath: half === 'top' ? 'inset(0 0 50% 0)' : 'inset(50% 0 0 0)' }}
-                  initial={{ y: 0 }}
-                  animate={{ y: half === 'top' ? '-101%' : '101%' }}
-                  transition={{ duration: SPLIT_MS / 1000, ease: EASE }}
-                >
-                  <Title kind={opening.kind} />
-                </motion.div>
-              ))}
+              {(['top', 'bottom'] as const).map((half) => {
+                const away = half === 'top' ? '-101%' : '101%';
+                const closing = anim.phase === 'join';
+                return (
+                  <motion.div
+                    key={half}
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: LOOK[anim.kind].bg, clipPath: half === 'top' ? 'inset(0 0 50% 0)' : 'inset(50% 0 0 0)' }}
+                    initial={{ y: closing ? away : 0 }}
+                    animate={{ y: closing ? 0 : away }}
+                    transition={{ duration: SPLIT_MS / 1000, ease: EASE }}
+                  >
+                    <Title kind={anim.kind} />
+                  </motion.div>
+                );
+              })}
             </div>
-          )}
+          ) : null}
         </div>
       ) : null}
 
