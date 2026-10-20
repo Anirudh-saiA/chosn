@@ -286,6 +286,16 @@ def main():
             log("   " + line)
     except RuntimeError as e:
         log(f"Release dates skipped: {e}")
+    # Homegrown watch: newest public products of Indian brands, then tidy the drop list. Best effort.
+    for name, cmd, cwd in (
+        ("Homegrown brands", [sys.executable, "scripts/scan_brand_sites.py"], None),
+        ("Drops maintenance", [NODE, "--env-file=.env", "dist/scripts/maintain-drops.js"], api),
+    ):
+        try:
+            for line in (run(name, cmd, cwd=cwd) if cwd else run(name, cmd))[-3:]:
+                log("   " + line)
+        except RuntimeError as e:
+            log(f"{name} skipped: {e}")
     # Pictures for upcoming drops no store lists yet (kept on our server, credited). Best effort.
     try:
         for line in run("Drop pictures", [sys.executable, "scripts/fetch_drop_images.py"])[-3:]:

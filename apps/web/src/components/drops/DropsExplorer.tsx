@@ -1,9 +1,12 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, List, X } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarDays, CalendarRange, List, ListOrdered, X } from 'lucide-react';
 import { cx } from '@chosn/ui';
 import type { DropListItem, DropStatus } from '@/lib/drops';
+import { API_URL } from '@/lib/watch';
+import { DropAgenda } from './DropAgenda';
 import { DropCalendar } from './DropCalendar';
 import { DropFeatured, pickFeaturedDrop } from './DropFeatured';
 import { DropListView } from './DropListView';
@@ -15,7 +18,7 @@ const REGION_CHIPS: Array<[string | null, string]> = [
   ['global', 'Global'],
 ];
 
-type ViewMode = 'list' | 'calendar';
+type ViewMode = 'list' | 'calendar' | 'week' | 'agenda';
 type StatusFilter = 'all' | DropStatus;
 
 const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
@@ -68,10 +71,16 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
               active={view === 'calendar'}
               onClick={() => setView('calendar')}
             />
+            <ViewButton icon={<CalendarRange className="h-4 w-4" aria-hidden />} label="Week" active={view === 'week'} onClick={() => setView('week')} />
+            <ViewButton icon={<ListOrdered className="h-4 w-4" aria-hidden />} label="Agenda" active={view === 'agenda'} onClick={() => setView('agenda')} />
           </div>
-          <p className="font-mono text-meta text-text-faint" aria-live="polite">
-            {visibleDrops.length} of {drops.length} drops
-          </p>
+          <div className="flex flex-wrap items-center gap-4 font-mono text-meta text-text-faint">
+            <Link href="/drops/mine" className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">My drops</Link>
+            <a href={`${API_URL}/drops/calendar.ics`} className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">Add all to my calendar</a>
+            <p aria-live="polite">
+              {visibleDrops.length} of {drops.length} drops
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -119,7 +128,8 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
         </p>
       )}
 
-      <DropListView drops={visibleDrops} />
+      {(view === 'week' || view === 'agenda') && <DropAgenda drops={filtered} mode={view} />}
+      {(view === 'list' || view === 'calendar') && <DropListView drops={visibleDrops} />}
     </div>
   );
 }

@@ -54,8 +54,15 @@ export function formatMoney(amount: number, currency: string): string {
   return `${currency} ${Math.round(amount).toLocaleString('en-US')}`;
 }
 
+export type IndiaStatus = 'unknown' | 'confirmed_india' | 'global_only' | 'in_indian_stores';
+
 export interface DropListItem {
   id: string;
+  /** The exact release moment (ISO, UTC) when a time is known, and the same moment written in Indian time. */
+  releaseAt?: string | null;
+  indiaTime?: string;
+  indiaStatus?: IndiaStatus;
+  collab?: string | null;
   /** The price in rupees (converted for drops listed in another currency). */
   retailPriceInr?: number | null;
   /** Rupees per unit of the listed currency when converted. */
@@ -87,7 +94,18 @@ export interface DropDetail extends DropListItem {
   raffleInfo: RaffleInfo | null;
   defaultVariant: { id: string; size: number; sizeSystem: string } | null;
   relatedNews: RelatedNewsItem[];
+  story?: string | null;
+  inIndianStores?: Array<{ slug: string; name: string; price: number; size: number | null; url: string }>;
+  storesThatCarryBrand?: Array<{ name: string; pairs: number }>;
+  priceEstimate?: { low: number; median: number; high: number; pairs: number; basis: string } | null;
 }
+
+export const INDIA_STATUS_LABEL: Record<IndiaStatus, string> = {
+  unknown: 'Coming to India? Not announced',
+  confirmed_india: 'Confirmed for India',
+  global_only: 'Global release only so far',
+  in_indian_stores: 'Already in Indian stores',
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 

@@ -54,3 +54,12 @@ The whole calendar is also available as `GET /drops/calendar.ics`.
 Pictures: a drop shows its picture automatically as soon as any store we read lists that shoe (matched by style code). For shoes no store
 has yet, add `"imageUrl": "https://..."` (a picture you have the right to use, for example from a brand press kit) to the drop in
 `upcoming.json`; otherwise a placeholder is shown.
+
+## Admin screen, reminders and follows
+
+- **Admin screen:** sign in with an admin account and open `/admin/drops` to add, edit, hide or delete a drop. Every drop needs a source name and an https source link. To make an account an admin: `update users set role = 'admin' where email = '<email>';` (sign out and in again afterwards).
+- **Notify me / Follow:** each drop has Notify me (1 day, 1 hour, 15 minutes before) and Follow (the drop, or its brand). They use the anonymous watch id, so no account is needed. Reminders arrive in the bell, and by e-mail when one is confirmed. A date-only drop is reminded at 9:00 AM IST the day before. If the shopper's size is saved, they also get "your size just landed" when an Indian store lists the pair in that size.
+- **My drops:** `/drops/mine` lists what a shopper follows and gives a personal calendar link (`/drops/my.ics?watch=...`) that keeps itself up to date.
+- **Calendar views:** List, Calendar, Week and Agenda; per drop "Add to Google Calendar" and .ics; `/drops/calendar.ics` has every drop.
+- **Nightly clean-up:** `maintain-drops.js` merges the same release entered twice, uses one brand name (Air Jordan becomes Jordan) and moves past drops to Released. `scan_brand_sites.py` reads the public product list of nine Indian brands for the Homegrown watch (Campus blocks the request and is skipped).
+- Set `DROP_REMINDERS=off` to stop the one-minute reminder loop locally.

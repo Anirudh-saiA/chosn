@@ -60,12 +60,52 @@ const ENTRIES: Entry[] = [
 
 const ALSO = ['Thaely', 'Neeman’s', 'CHNKS', 'Bacca Bucci', 'Campus', 'Go CKH'];
 
-export function IndiaWatch() {
+interface Scanned {
+  checked: string | null;
+  brands: Array<{ brand: string; products: Array<{ title: string; url: string; priceInr: number | null; available: boolean; kind: string }> }>;
+}
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+async function loadScanned(): Promise<Scanned | null> {
+  try {
+    const res = await fetch(`${API}/drops/india-watch`, { next: { revalidate: 3600 } });
+    return res.ok ? ((await res.json()) as Scanned) : null;
+  } catch {
+    return null;
+  }
+}
+
+const KIND_LABEL: Record<string, string> = { preorder: 'Pre-order', coming_soon: 'Coming soon' };
+
+/** The newest public products each brand lists on its own site, scanned nightly. A pre-order or coming-soon item is the closest thing to an announced drop. */
+function Scan({ products }: { products: Scanned['brands'][number]['products'] }) {
+  return (
+    <ul className="flex flex-col gap-1 border-t border-text/10 pt-2 text-sm text-text">
+      {products.map((p) => (
+        <li key={p.url} className="flex items-baseline justify-between gap-3">
+          <a href={p.url} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate underline-offset-2 hover:underline">
+            {KIND_LABEL[p.kind] ? <span className="mr-1.5 font-bold">{KIND_LABEL[p.kind]}:</span> : null}
+            {p.title}
+          </a>
+          <span className="shrink-0 font-mono text-xs text-text-soft">{p.priceInr ? `₹${p.priceInr.toLocaleString('en-IN')}` : ''}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export async function IndiaWatch() {
+  const scanned = await loadScanned();
+  const byName = new Map((scanned?.brands ?? []).map((b) => [b.brand.toLowerCase(), b.products]));
+  const covered = new Set(ENTRIES.map((e) => e.name.toLowerCase()));
+  const extra = (scanned?.brands ?? []).filter((b) => !covered.has(b.brand.toLowerCase()));
+  const checked = scanned?.checked ? new Date(scanned.checked).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : INDIA_WATCH_CHECKED;
   return (
     <section aria-labelledby="india-h">
       <h2 id="india-h" className="font-display text-2xl font-bold text-text">Homegrown watch</h2>
       <p className="mb-6 mt-1 max-w-2xl text-sm text-text-soft">
-        Indian brands announce most drops on their own website and Instagram a few days ahead, so a date is rarely public early. Here is what each last released and whether a next drop is out. Last checked {INDIA_WATCH_CHECKED}.
+        Indian brands announce most drops on their own website and Instagram a few days ahead, so a date is rarely public early. Here is what each last released and whether a next drop is out. Last checked {checked}.
       </p>
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {ENTRIES.map((e) => (
@@ -76,6 +116,7 @@ export function IndiaWatch() {
             </div>
             <p className="text-sm text-text"><span className="font-bold">Latest:</span> {e.latest}</p>
             <p className="text-sm text-text-soft"><span className="font-bold text-text">Next:</span> {e.next}</p>
+            {byName.get(e.name.toLowerCase()) ? <Scan products={byName.get(e.name.toLowerCase())!} /> : null}
             <p className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-1 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-text-faint">
               Sources:
               {e.sources.map((s) => (
@@ -84,6 +125,13 @@ export function IndiaWatch() {
                 </a>
               ))}
             </p>
+          </li>
+        ))}
+        {extra.map((b) => (
+          <li key={b.brand} className="flex flex-col gap-2 rounded-2xl border border-text/12 bg-white p-5">
+            <h3 className="font-display text-xl font-bold uppercase leading-tight text-text">{b.brand}</h3>
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-text-faint">Newest on their own site</p>
+            <Scan products={b.products} />
           </li>
         ))}
       </ul>

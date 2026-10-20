@@ -6,6 +6,7 @@ import { Reveal } from '@/components/fx/Reveal';
 import { releaseInstant } from './drop-instant';
 import { Countdown } from './drop-time';
 import { ConfirmationBadge } from './ConfirmationBadge';
+import { DropFollow } from './DropFollow';
 import { DropStatusBadge } from './DropStatusBadge';
 import { NotifyToggle } from './NotifyToggle';
 import { SneakerPlaceholderArt } from './SneakerPlaceholderArt';
@@ -59,7 +60,7 @@ export function DropCard({ drop, index = 0 }: { drop: DropListItem; index?: numb
           <div className="flex items-center justify-between gap-3 font-mono text-meta text-text-soft">
             <span className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-brass" aria-hidden />
-              {drop.releaseTime ? formatReleaseTime(drop.releaseTime) : 'Time TBA'}
+              {drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'Time TBA'}
             </span>
             <span className="flex items-center gap-1.5 text-text">
               {formatDropPrice(drop)}
@@ -89,6 +90,7 @@ export function DropCard({ drop, index = 0 }: { drop: DropListItem; index?: numb
             <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
               <BellRing className="h-3 w-3 text-brass" aria-hidden /> Alerts
             </p>
+            <DropFollow dropId={drop.id} brand={sneaker.brand} dateOnly={!drop.releaseTime} compact />
             <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
           </div>
         </div>

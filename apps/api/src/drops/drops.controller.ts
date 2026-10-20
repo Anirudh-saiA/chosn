@@ -1,8 +1,9 @@
-import { Controller, Get, Inject, NotFoundException, Param, Query, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Inject, NotFoundException, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { isUUID } from 'class-validator';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
+import { buildIcs, googleCalendarUrl, type CalendarDrop } from './drop-calendar';
 import { DropsService, showDemo, type DropDetail, type DropListItem, type DropStatus } from './drops.service';
 import { ListDropsQueryDto } from './dto/list-drops-query.dto';
 import { parsePgTextArray } from './pg-array';
@@ -20,6 +21,28 @@ export interface DropEventSummary {
   raffleInfo: unknown;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A drop shaped for the calendar files and the Google Calendar link. */
+export function toCalendarDrop(d: DropListItem): CalendarDrop {
+  const name = `${d.sneaker.brand} ${d.sneaker.model}${d.sneaker.colorway && d.sneaker.colorway !== 'Default' ? ` ${d.sneaker.colorway}` : ''}`.trim();
+  const price = d.retailPriceInr
+    ? `${d.fxRate ? 'about ' : ''}₹${d.retailPriceInr.toLocaleString('en-IN')}${d.fxRate ? ` (listed ${d.currency} ${Number(d.retailPrice).toLocaleString('en-US')})` : ''}`
+    : 'price TBA';
+  return {
+    id: d.id,
+    title: name,
+    date: d.releaseDate,
+    time: d.releaseTime,
+    timezone: d.releaseTimezone,
+    level: d.confirmation === 'confirmed' ? 'Confirmed' : d.confirmation === 'reported' ? 'Reported' : 'Unconfirmed',
+    price,
+    regions: d.regions.join(', '),
+    source: d.sourceName,
+    url: d.sourceUrl,
+  };
+}
+
 /** Read-only, public — a drop's own status/detail is not sensitive. */
 @Controller('drops')
 export class DropsController {
@@ -28,70 +51,60 @@ export class DropsController {
     private readonly drops: DropsService,
   ) {}
 
-  /**
-   * Day 15's calendar/list view. `from`/`to` are `YYYY-MM-DD`; `status`
-   * is a comma-separated subset of upcoming/live/sold_out. All optional
-   * — omitting everything returns every drop (fine at this catalog's
-   * scale, see DropsService.list's own comment).
-   *
-   * Day 16 task 5 fix: `from`/`to` used to reach `DropsService.list()`'s
-   * raw SQL unvalidated — a malformed date string became a raw Postgres
-   * "invalid input syntax for type date" 500, the same class of bug as
-   * catalog/search's limit/offset (see that DTO's own comment).
-   * `ListDropsQueryDto` closes it with a clean 400 instead.
-   */
+  /** The calendar/list view. `from`/`to` are `YYYY-MM-DD`; `status` is a comma-separated subset of upcoming/live/sold_out. All optional. */
   @Get()
   async list(@Query() query: ListDropsQueryDto): Promise<DropListItem[]> {
     return this.drops.list({ from: query.from, to: query.to, statuses: query.status });
   }
 
-  /**
-   * The most relevant drop for a sneaker: a 'live' row wins over
-   * 'upcoming' (which wins over 'sold_out'), and among ties the
-   * soonest/most recent release_date. Most sneakers have zero or one
-   * drop_event today: this returns the single row worth showing
-   * whenever more than one exists (e.g. a restock).
-   *
-   * Declared before `:id` below — a static-prefix route ahead of a
-   * dynamic one-segment route, the same defensive convention
-   * CatalogController's own comment describes. The two don't actually
-   * collide today (different segment counts), but this is the
-   * convention that stays unambiguous if either route's shape changes.
-   */
-  /**
-   * Every drop as an iCalendar file, so the whole calendar can be added to Google / Apple / Outlook calendar (and re-read as it changes).
-   * Date-only drops are all-day events; a drop with a time is a timed event. The summary says how firm the date is.
-   */
+  /** Every drop as an iCalendar file (Google / Apple / Outlook). Date-only drops are all-day events; the summary says how firm the date is. */
   @Get('calendar.ics')
   async calendar(@Res() res: Response): Promise<void> {
-    const drops = await this.drops.list({});
-    const esc = (t: string) => t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-    const fold = (l: string) => (l.length <= 74 ? l : l.match(/.{1,73}/g)!.join('\r\n '));
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CHOSN//Drops//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:CHOSN drops', 'X-WR-TIMEZONE:Asia/Kolkata'];
-    for (const d of drops) {
-      const day = d.releaseDate.replace(/-/g, '');
-      const level = d.confirmation === 'confirmed' ? 'Confirmed' : d.confirmation === 'reported' ? 'Reported' : 'Unconfirmed';
-      const price = d.retailPriceInr ? `\u20B9${d.retailPriceInr.toLocaleString('en-IN')}${d.fxRate ? ` (about, converted from ${d.currency} ${Number(d.retailPrice).toLocaleString('en-US')})` : ''}` : 'price TBA';
-      lines.push('BEGIN:VEVENT', `UID:${d.id}@chosn`, `DTSTAMP:${stamp}`);
-      if (d.releaseTime && d.releaseTimezone === 'Asia/Kolkata') {
-        const [h, m] = d.releaseTime.split(':').map(Number);
-        const utc = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)), (h ?? 0) - 5, (m ?? 0) - 30));
-        lines.push(`DTSTART:${utc.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')}`, 'DURATION:PT1H');
-      } else {
-        const next = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)) + 1));
-        lines.push(`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replace(/-/g, '')}`);
-      }
-      lines.push(
-        `SUMMARY:${esc(`${d.sneaker.brand} ${d.sneaker.model} ${d.sneaker.colorway === 'Default' ? '' : d.sneaker.colorway}`.trim())} (${level.toLowerCase()})`,
-        `DESCRIPTION:${esc(`${level} date. ${price}. Regions: ${d.regions.join(', ') || 'n/a'}.${d.sourceName ? ` Source: ${d.sourceName}${d.sourceUrl ? ` ${d.sourceUrl}` : ''}.` : ''}`)}`,
-        'END:VEVENT',
-      );
-    }
-    lines.push('END:VCALENDAR');
+    const list = await this.drops.list({});
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="chosn-drops.ics"');
-    res.send(lines.map(fold).join('\r\n') + '\r\n');
+    res.send(buildIcs(list.map(toCalendarDrop)));
+  }
+
+  /**
+   * A personal calendar that keeps itself up to date: the drops one shopper follows or set a reminder for (their anonymous watch id is the
+   * secret in the link), plus every upcoming drop of the brands and collabs they follow. Subscribe to it from any calendar app.
+   */
+  @Get('my.ics')
+  async mine(@Query('watch') watch: string, @Res() res: Response): Promise<void> {
+    if (!UUID.test(watch ?? '')) throw new BadRequestException('A valid watch id is needed.');
+    const ids = await this.drops.followedDropIds(watch);
+    const list = await this.drops.list({ ids });
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="my-chosn-drops.ics"');
+    res.send(buildIcs(list.map(toCalendarDrop), 'My CHOSN drops'));
+  }
+
+  /** Indian homegrown brands: their newest public products, and any pre-order or coming-soon item (scripts/scan_brand_sites.py). */
+  @Get('india-watch')
+  async indiaWatch() {
+    const { rows } = await this.db.execute(sql`
+      SELECT brand, product_id, title, url, price_inr, image_url, published_at, available, kind, first_seen::text AS first_seen
+        FROM (SELECT *, row_number() OVER (PARTITION BY brand ORDER BY (kind <> 'product') DESC, published_at DESC NULLS LAST) AS rn FROM brand_watch_products) t
+       WHERE rn <= 4 ORDER BY brand, rn`);
+    const byBrand = new Map<string, Array<Record<string, unknown>>>();
+    for (const r of rows as Array<Record<string, unknown>>) {
+      const b = String(r.brand);
+      byBrand.set(b, [
+        ...(byBrand.get(b) ?? []),
+        {
+          title: r.title,
+          url: r.url,
+          priceInr: r.price_inr != null ? Number(r.price_inr) : null,
+          imageUrl: r.image_url ?? null,
+          publishedAt: r.published_at ? new Date(r.published_at as string).toISOString() : null,
+          available: Boolean(r.available),
+          kind: r.kind,
+        },
+      ]);
+    }
+    const { rows: scanned } = await this.db.execute(sql`SELECT max(last_seen)::text AS d FROM brand_watch_products`);
+    return { checked: (scanned[0] as { d: string | null } | undefined)?.d ?? null, brands: [...byBrand.entries()].map(([brand, products]) => ({ brand, products })) };
   }
 
   @Get('by-style-code/:styleCode')
@@ -101,7 +114,7 @@ export class DropsController {
              de.regions, de.retail_price, de.currency, de.purchase_links, de.raffle_info
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
-      WHERE s.style_code = ${styleCode} ${showDemo() ? sql`` : sql`AND NOT de.is_demo`}
+      WHERE s.style_code = ${styleCode} AND NOT de.hidden ${showDemo() ? sql`` : sql`AND NOT de.is_demo`}
       ORDER BY
         CASE de.status WHEN 'live' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
         de.release_date DESC
@@ -125,14 +138,29 @@ export class DropsController {
     };
   }
 
-  /** The drop-detail page (Day 15 task 3) — sneaker info, official links, related news, and the variant to check for a Market Intelligence preview once live. */
+  /** One drop as a calendar file, and the matching "add to Google Calendar" link. */
+  @Get(':id/calendar.ics')
+  async one(@Param('id') id: string, @Res() res: Response): Promise<void> {
+    if (!isUUID(id)) throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    const [d] = await this.drops.list({ ids: [id] });
+    if (!d) throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="chosn-drop-${id.slice(0, 8)}.ics"`);
+    res.send(buildIcs([toCalendarDrop(d)], 'CHOSN drop'));
+  }
+
+  @Get(':id/google-calendar')
+  async google(@Param('id') id: string): Promise<{ url: string }> {
+    if (!isUUID(id)) throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    const [d] = await this.drops.list({ ids: [id] });
+    if (!d) throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
+    return { url: googleCalendarUrl(toCalendarDrop(d)) };
+  }
+
+  /** The drop-detail page: sneaker info, official links, story, whether it is in Indian stores, a price estimate, and related news. */
   @Get(':id')
   async getById(@Param('id') id: string): Promise<DropDetail> {
-    // A non-UUID id would otherwise reach the database and come back as
-    // a raw "invalid input syntax for type uuid" 500 — validated here
-    // instead so a malformed/garbage id 404s cleanly like a real
-    // not-found does, matching how CatalogController 404s a
-    // non-numeric size rather than letting Postgres reject it.
+    // A non-UUID id would otherwise reach the database as a raw "invalid input syntax for type uuid" 500; it 404s cleanly instead.
     if (!isUUID(id)) {
       throw new NotFoundException({ error: 'not_found', message: 'No drop with that id.' });
     }

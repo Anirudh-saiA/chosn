@@ -17,6 +17,8 @@ import { paletteFor } from '@/lib/sneaker/palette';
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { listPosts } from '@/lib/community';
+import { DropFollow } from '@/components/drops/DropFollow';
+import { IndiaPanel } from '@/components/drops/IndiaPanel';
 import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo, formatDropPrice } from '@/lib/drops';
 import { getChatRoomByDrop } from '@/lib/chat';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
@@ -94,7 +96,7 @@ export default async function DropDetailPage({ params }: PageProps) {
 
   const specs = [
     { icon: CalendarDays, label: 'Release date', value: releaseDateLabel },
-    { icon: Clock, label: 'Time', value: drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA' },
+    { icon: Clock, label: 'Indian time', value: drop.indiaTime ?? (drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA') },
     { icon: MapPin, label: 'Regions', value: regionText || '—' },
     ...(drop.retailPrice ? [{ icon: Tag, label: drop.fxRate ? 'Retail price (converted to rupees)' : 'Retail price', value: formatDropPrice(drop, true) }] : []),
     ...(drop.sourceName ? [{ icon: Tag, label: drop.confirmation === 'confirmed' || !drop.confirmation ? 'Confirmed by' : drop.confirmation === 'reported' ? 'Reported by' : 'Source (unconfirmed)', value: drop.sourceName }] : []),
@@ -179,7 +181,20 @@ export default async function DropDetailPage({ params }: PageProps) {
             </Reveal>
 
             <Reveal delay={0.14}>
-              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+              <div className="flex flex-col gap-4">
+                <DropFollow dropId={drop.id} brand={sneaker.brand} dateOnly={!drop.releaseTime} />
+                <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+              </div>
+            </Reveal>
+
+            {drop.story ? (
+              <Reveal delay={0.15}>
+                <p className="text-body leading-relaxed text-text-soft">{drop.story}</p>
+              </Reveal>
+            ) : null}
+
+            <Reveal delay={0.15}>
+              <IndiaPanel drop={drop} />
             </Reveal>
 
             <Reveal delay={0.16}>
