@@ -124,7 +124,8 @@ export function scoreOutlook(i: OutlookInput): PriceOutlook {
     const lo = Math.min(...prices);
     const hi = Math.max(...prices);
     const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    if (price <= lo * 1.02) add('At its lowest price yet', 28, `This is the lowest price in the ${days} days we have tracked (high was ${inr(hi)}).`);
+    if (hi < lo * 1.05) add('Price has not moved', 0, `Its price has stayed within a few percent for the ${days} days we have tracked, so there is no low or high to compare with yet.`);
+    else if (price <= lo * 1.02) add('At its lowest price yet', 28, `This is the lowest price in the ${days} days we have tracked (high was ${inr(hi)}).`);
     else if (price <= avg * 0.92) add('Below its recent average', 20, `${pct((avg - price) / avg)} under its ${days}-day average of ${inr(avg)}.`);
     else if (price >= avg * 1.08) add('Above its recent average', -22, `${pct((price - avg) / avg)} over its ${days}-day average of ${inr(avg)}. It has been cheaper.`);
     else add('Near its usual price', 0, `Within a few percent of its ${days}-day average of ${inr(avg)}.`);

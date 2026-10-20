@@ -59,6 +59,14 @@ describe('scoreOutlook', () => {
   });
 });
 
+describe('flat price history', () => {
+  it('is not a record low when the price never moved', () => {
+    const o = scoreOutlook({ ...base, history: hist([8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000]) });
+    expect(o.factors.some((f) => f.label === 'At its lowest price yet')).toBe(false);
+    expect(o.factors.some((f) => f.label === 'Price has not moved')).toBe(true);
+  });
+});
+
 describe('cheaper store sold out', () => {
   it('does not tell you to wait when the price only jumped because the cheap listing is gone', () => {
     const h = [5400, 5400, 5400, 5400, 5400, 5400, 18200, 18200].map((price, k) => ({ day: `2026-10-${String(k + 1).padStart(2, '0')}`, price, store: k < 6 ? 'Superkicks' : 'Mainstreet' }));

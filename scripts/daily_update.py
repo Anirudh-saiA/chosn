@@ -276,6 +276,14 @@ def main():
     except RuntimeError as e:
         log(f"Price outlook priors skipped: {e}")
 
+    # Log what the Buy now / Wait outlook says today and record what prices did after earlier predictions (training + scorecard data).
+    try:
+        tail = run("Outlook log", [NODE, "--env-file=.env", "dist/scripts/log-outlook.js"], cwd=api)
+        for line in tail[-3:]:
+            log("   " + line)
+    except RuntimeError as e:
+        log(f"Outlook log skipped: {e}")
+
     # Wishlist alerts: compare each hearted shoe + size with last night, fill the bell inbox, send mail. Best effort.
     try:
         tail = run("Wishlist alerts", [NODE, "--env-file=.env", "dist/scripts/send-watch-alerts.js"], cwd=api)
