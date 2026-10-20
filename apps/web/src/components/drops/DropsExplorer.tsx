@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { cx } from '@chosn/ui';
 import type { DropListItem, DropStatus } from '@/lib/drops';
@@ -50,71 +50,52 @@ export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
     [filtered, selectedDate],
   );
 
-  return (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div />
-          <div className="flex flex-wrap items-center gap-4 font-mono text-meta text-text-faint">
-            <Link href="/drops/mine" className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">My drops</Link>
-            <a href={`${API_URL}/drops/calendar.ics`} className="min-h-[44px] content-center text-brass-bright underline-offset-4 hover:underline">Add all to my calendar</a>
-            <p aria-live="polite">
-              {visibleDrops.length} of {drops.length} drops
-            </p>
-          </div>
-        </div>
+  const select =
+    'min-h-[40px] cursor-pointer appearance-none rounded-full border border-text/10 bg-white px-4 pr-8 font-mono text-[0.72rem] text-text transition-colors [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-text/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
 
-        <div className="flex flex-col gap-3">
-          <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
-            {STATUS_CHIPS.map((c) => (
-              <Chip key={c.value} active={status === c.value} onClick={() => setStatus(c.value)}>
-                {c.label} <span className="ml-1 opacity-70">{counts[c.value]}</span>
-              </Chip>
-            ))}
-          </div>
-          <div role="group" aria-label="Filter by region" className="flex flex-wrap gap-2">
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label="Filter by status" className="inline-flex rounded-full border border-text/10 bg-white p-1">
+          {STATUS_CHIPS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              aria-pressed={status === c.value}
+              onClick={() => setStatus(c.value)}
+              className={cx(
+                'min-h-[34px] rounded-full px-3.5 font-mono text-[0.72rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice',
+                status === c.value ? 'bg-[#14213D] text-white' : 'text-text-soft hover:text-text',
+              )}
+            >
+              {c.label} <span className="opacity-60">{counts[c.value]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <select aria-label="Filter by region" value={region ?? ''} onChange={(e) => setRegion(e.target.value || null)} className={select}>
             {REGION_CHIPS.map(([v, l]) => (
-              <Chip key={String(v)} active={region === v} onClick={() => setRegion(v)}>
-                {l}
-              </Chip>
+              <option key={String(v)} value={v ?? ''}>{l}</option>
             ))}
-          </div>
+          </select>
           {brands.length > 1 && (
-            <div role="group" aria-label="Filter by brand" className="flex flex-wrap gap-2">
-              <Chip active={brand === null} onClick={() => setBrand(null)}>
-                All brands
-              </Chip>
+            <select aria-label="Filter by brand" value={brand ?? ''} onChange={(e) => setBrand(e.target.value || null)} className={select}>
+              <option value="">All brands</option>
               {brands.map((b) => (
-                <Chip key={b} active={brand === b} onClick={() => setBrand(brand === b ? null : b)}>
-                  {b}
-                </Chip>
+                <option key={b} value={b}>{b}</option>
               ))}
-            </div>
+            </select>
           )}
         </div>
       </div>
 
       <DropCalendar drops={filtered} selectedDate={selectedDate} onSelectDay={setSelectedDate} />
 
-
+      <p className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 font-mono text-[0.72rem] text-text-faint">
+        <span aria-live="polite">{visibleDrops.length} of {drops.length} drops</span>
+        <Link href="/drops/mine" className="min-h-[36px] content-center text-text underline-offset-4 hover:underline">My drops</Link>
+        <a href={`${API_URL}/drops/calendar.ics`} className="min-h-[36px] content-center text-text underline-offset-4 hover:underline">Add all to my calendar</a>
+      </p>
     </div>
-  );
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx(
-        'inline-flex min-h-[44px] items-center rounded-full border px-4 font-mono text-data-delta font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:min-h-[36px]',
-        active
-          ? 'border-brass-bright/60 bg-brass/15 text-brass-bright'
-          : 'border-text/[0.12] text-text-soft hover:border-text/30 hover:text-text',
-      )}
-    >
-      {children}
-    </button>
   );
 }
