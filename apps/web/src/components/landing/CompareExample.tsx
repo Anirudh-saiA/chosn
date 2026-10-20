@@ -5,6 +5,7 @@ import { ScrollOn } from './ScrollOn';
 import { Marquee } from '@/components/fx/Marquee';
 import { Reveal } from '@/components/fx/Reveal';
 import { fetchCatalogVariant, fetchSearch, formatInr, formatSize, type CatalogOffer, type CatalogResponse } from '@/lib/catalog';
+import { acceptedPayments } from '@/lib/buy-guide';
 import { deliveryDays, formatDelivery, isEligible } from '@/lib/recommend';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -59,6 +60,37 @@ function Cell({ site, label, value, sub, best }: { site: string; label: string; 
     </ScrollOn>
   );
 }
+
+/** The ways to pay at a store, as chips (from the store's own published payment options). */
+function PayCell({ site, methods }: { site: string; methods: string[] }) {
+  return (
+    <ScrollOn className="rounded-2xl border border-[#0A0A0A]/10 bg-white/80 px-6 py-5 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] backdrop-blur cmp-cell">
+      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/50">
+        <span className="md:hidden">{site} · </span>
+        Payment
+      </p>
+      {methods.length > 0 ? (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {methods.slice(0, 7).map((m) => (
+            <li key={m} className="rounded-full border border-[#0A0A0A]/15 bg-white px-3 py-1 text-[0.82rem] font-bold text-[#0A0A0A]">
+              {m}
+            </li>
+          ))}
+          {methods.length > 7 ? <li className="px-1 py-1 text-[0.82rem] font-bold text-text-soft">+{methods.length - 7} more</li> : null}
+        </ul>
+      ) : (
+        <p className="mt-1 font-mono text-[1.4rem] font-extrabold text-[#0A0A0A]">Not stated</p>
+      )}
+    </ScrollOn>
+  );
+}
+
+const VERDICT = {
+  buy_now: { label: 'Buy now', pill: 'bg-[#1F8A4C] text-white' },
+  wait: { label: 'Wait', pill: 'bg-[#D97706] text-white' },
+  fair: { label: 'Fair price', pill: 'bg-[#14213D] text-white' },
+  unclear: { label: 'Too early to say', pill: 'bg-[#0A0A0A]/10 text-[#0A0A0A]' },
+} as const;
 
 function Note({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -190,6 +222,18 @@ export async function CompareExample() {
   const trustDiff = scored(a) && scored(b) ? (b.trustScore as number) - (a.trustScore as number) : 0;
   const trustText = (o: CatalogOffer) => (scored(o) ? `${o.trustScore}/100` : 'Not enough evidence');
   const trustSub = (o: CatalogOffer) => (scored(o) ? `${o.trustConfidence} confidence · ${returnsLabel(o).toLowerCase()}` : 'No reviews or cited standing yet');
+  const payA = acceptedPayments(a);
+  const payB = acceptedPayments(b);
+  const hasCod = (m: string[]) => m.some((x) => /cash on delivery|cod/i.test(x));
+  const payNote =
+    payA.length === 0 && payB.length === 0
+      ? 'Check each store'
+      : hasCod(payA) !== hasCod(payB)
+        ? `Cash on delivery at ${hasCod(payA) ? a.retailerName : b.retailerName}`
+        : payA.length !== payB.length
+          ? `${Math.abs(payA.length - payB.length)} more ways to pay${payA.length > payB.length ? '' : ' →'}`
+          : 'Same ways to pay';
+  const outlook = data.outlook ?? null;
   const readOn = [a.fetchedAt, b.fetchedAt].sort().slice(-1)[0] ?? a.fetchedAt;
   const name = `${data.sneaker.brand} ${data.sneaker.model}`;
   const image = resolveSneakerImage(data.sneaker.primaryImageUrl);
@@ -232,6 +276,10 @@ export async function CompareExample() {
           <Note>{bothDays ? `${dayGap} ${dayGap === 1 ? 'day' : 'days'} faster${fasterIsB ? ' →' : ''}` : 'Check each store'}</Note>
           <Cell site={b.retailerName} label="Delivery" value={formatDelivery(b) ?? 'Not stated'} best={fasterIsB} sub={b.shippingNote ? short(b.shippingNote, 46) : "The store's own estimate"} />
 
+          <PayCell site={a.retailerName} methods={payA} />
+          <Note>{payNote}</Note>
+          <PayCell site={b.retailerName} methods={payB} />
+
           <Cell
             site={a.retailerName}
             label="Store trust score"
@@ -248,6 +296,38 @@ export async function CompareExample() {
             sub={trustSub(b)}
           />
         </div>
+
+        {/* Buy now or wait: one call for the shoe, with the reasons that moved it */}
+        {outlook ? (
+          <ScrollOn className="mt-6 rounded-2xl border border-[#0A0A0A]/10 bg-white/85 px-6 py-5 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] backdrop-blur cmp-cell">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/50">Buy now or wait</p>
+              <span className={`rounded-full px-5 py-1.5 font-display text-[1.4rem] uppercase tracking-[0.04em] ${VERDICT[outlook.verdict].pill}`}>{VERDICT[outlook.verdict].label}</span>
+              <p className="min-w-0 flex-1 text-[1rem] font-bold text-[#0A0A0A]">{outlook.headline}</p>
+              <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
+                See why
+              </Link>
+            </div>
+            {outlook.factors.filter((f) => f.points !== 0).length > 0 ? (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {outlook.factors
+                  .filter((f) => f.points !== 0)
+                  .slice(0, 3)
+                  .map((f) => (
+                    <li key={f.label} className="flex items-center gap-2 rounded-full border border-[#0A0A0A]/12 bg-white px-3.5 py-1.5 text-[0.85rem] font-bold text-[#0A0A0A]">
+                      <span aria-hidden className={`flex h-4 w-4 items-center justify-center rounded-full text-[0.65rem] text-white ${f.effect === 'buy' ? 'bg-[#1F8A4C]' : 'bg-[#D97706]'}`}>
+                        {f.effect === 'buy' ? '+' : '−'}
+                      </span>
+                      {f.label}
+                    </li>
+                  ))}
+              </ul>
+            ) : null}
+            <p className="mt-3 font-mono text-[0.6rem] font-bold uppercase tracking-[0.2em] text-[#0A0A0A]/45">
+              {outlook.confidence} confidence · an estimate from live prices and price history, not a promise
+            </p>
+          </ScrollOn>
+        ) : null}
       </Reveal>
     </section>
   );
