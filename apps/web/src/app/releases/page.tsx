@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import { Newspaper, Sparkles } from 'lucide-react';
 import { DropLiveProvider } from '@/components/drops/drop-live-context';
+import { NewsFront } from '@/components/news/NewsFront';
 import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
-import { NewsCard } from '@/components/news/NewsCard';
-import { ExternalNews } from '@/components/news/ExternalNews';
-import { NewsFeatureCard } from '@/components/news/NewsFeatureCard';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { EmptyPanel } from '@/components/ui/EmptyPanel';
@@ -38,17 +36,13 @@ async function loadLanded(): Promise<SearchResponse | null> {
 export default async function ReleasesPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
   const initial = tab === 'drops' || tab === 'landed' ? 'drops' : tab === 'news' ? 'news' : 'gate';
-  const [drops, news, web, landed] = await Promise.all([
+  const [drops, top, web, landed] = await Promise.all([
     fetchDropsList({}, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 30, external: '0' }, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 50, external: '1' }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 48, sort: 'relevance' }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 1, external: '1' }, { next: { revalidate: 300 } }),
     loadLanded(),
   ]);
-  const items = news.items;
-  const featureIndex = items.findIndex((i) => i.isBreaking);
-  const feature = items.length ? items[featureIndex >= 0 ? featureIndex : 0]! : null;
-  const rest = feature ? items.filter((i) => i.id !== feature.id) : [];
-  const webSources = web.sources ?? [...new Set(web.items.map((i) => i.source))];
+  const webSources = web.sources ?? [];
   const stores = Object.fromEntries((landed?.storeDirectory ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl }]));
 
   const dropsView = (
@@ -110,43 +104,12 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
 
   const newsView = (
     <section aria-labelledby="news-h">
-      <h2 id="news-h" className="mb-6 font-display text-[clamp(2.5rem,6vw,4.5rem)] uppercase leading-[0.95] text-[#0A0A0A]">News</h2>
-      {feature ? (
-        <>
-          <NewsFeatureCard item={feature} />
-          {rest.length > 0 ? (
-            <>
-              <div className="mb-6 mt-16 flex items-center gap-4">
-                <h3 className="font-display text-2xl font-bold text-text">Latest coverage</h3>
-                <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-text/15 to-transparent" />
-              </div>
-              <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {rest.map((item, i) => (
-                  <NewsCard key={item.id} item={item} index={i} />
-                ))}
-              </ul>
-            </>
-          ) : null}
-        </>
+      <h2 id="news-h" className="sr-only">News</h2>
+      {top.items.length > 0 ? (
+        <NewsFront items={top.items} sourceCount={webSources.length + 1} />
       ) : (
-        <EmptyPanel icon={<Newspaper className="h-5 w-5" aria-hidden />} title="Nothing posted yet">
-          Once a tracked drop goes live, coverage shows up here automatically.
-        </EmptyPanel>
-      )}
-
-      <div className="mb-6 mt-16 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="font-display text-2xl font-bold text-text">From around the web</h3>
-          <p className="mt-1 text-sm text-text-soft">
-            Headlines gathered automatically from {webSources.length} sneaker and fashion sites&apos; public feeds ({webSources.join(', ')}). Each links to the original.
-          </p>
-        </div>
-      </div>
-      {web.items.length > 0 ? (
-        <ExternalNews items={web.items} />
-      ) : (
-        <EmptyPanel icon={<Newspaper className="h-5 w-5" aria-hidden />} title="No headlines gathered yet">
-          The nightly update collects them from sneaker and fashion news feeds.
+        <EmptyPanel icon={<Newspaper className="h-5 w-5" aria-hidden />} title="No stories yet">
+          The nightly update gathers sneaker and fashion headlines from public feeds.
         </EmptyPanel>
       )}
     </section>

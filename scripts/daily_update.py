@@ -274,6 +274,7 @@ def main():
     for name, cmd, cwd in (
         ("Exchange rates", [NODE, "--env-file=.env", "dist/scripts/update-fx.js"], api),
         ("News feeds", [NODE, "--env-file=.env", "dist/scripts/fetch-news-feeds.js"], api),
+        ("News tags", [NODE, "--env-file=.env", "dist/scripts/tag-news.js"], api),
     ):
         try:
             for line in run(name, cmd, cwd=cwd)[-9:]:

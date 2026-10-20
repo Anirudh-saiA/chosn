@@ -30,10 +30,9 @@ export const FEEDS: Feed[] = [
   { name: 'Just Fresh Kicks', url: 'https://justfreshkicks.com/feed/', region: 'global' },
   { name: 'WearTesters', url: 'https://weartesters.com/feed/', region: 'global' },
   { name: 'Sneaker Files', url: 'https://www.sneakerfiles.com/feed/', region: 'global' },
-  { name: 'Esquire India', url: 'https://www.esquireindia.co.in/feed', filter: true, region: 'india' },
+  { name: 'Esquire India', url: 'https://www.esquireindia.co.in/stories.rss', filter: true, region: 'india' },
   { name: 'GQ India', url: 'https://www.gqindia.com/feed/rss', filter: true, region: 'india' },
   // Added after a wider check of 85 candidate sources (scripts/probe_sources.py): each one's robots.txt allows us and it publishes a public feed.
-  { name: 'Kicks On Fire', url: 'https://www.kicksonfire.com/feed/', region: 'global' },
   { name: 'SoleSavy', url: 'https://solesavy.com/feed/', region: 'global' },
   { name: 'Footwear News', url: 'https://footwearnews.com/feed/', filter: 'strict', region: 'global' },
   { name: 'Gear Patrol', url: 'https://gearpatrol.com/feed/', filter: 'strict', region: 'global' },
@@ -116,7 +115,9 @@ function parse(xml: string): Item[] {
   const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) ?? xml.match(/<entry[\s>][\s\S]*?<\/entry>/gi) ?? [];
   for (const b of blocks) {
     const title = text(tag(b, 'title') ?? '');
-    const link = (tag(b, 'link')?.trim() && !/^\s*</.test(tag(b, 'link')!) ? text(tag(b, 'link')!) : b.match(/<link[^>]*href="([^"]+)"/i)?.[1]) ?? '';
+    // The link is plain text, wrapped in CDATA (Times of India, Hindustan Times), or an Atom href attribute.
+    const plain = text(tag(b, 'link') ?? '');
+    const link = /^https?:\/\//.test(plain) ? plain : (b.match(/<link[^>]*href="([^"]+)"/i)?.[1] ?? '');
     const when = tag(b, 'pubDate') ?? tag(b, 'dc:date') ?? tag(b, 'published') ?? tag(b, 'updated') ?? '';
     const date = new Date(text(when));
     const desc = text(tag(b, 'description') ?? tag(b, 'summary') ?? tag(b, 'content:encoded') ?? '');
