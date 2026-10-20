@@ -6,7 +6,6 @@ import { SubscriptionsProvider } from '@/components/drops/subscriptions-context'
 import { NewsCard } from '@/components/news/NewsCard';
 import { ExternalNews } from '@/components/news/ExternalNews';
 import { NewsFeatureCard } from '@/components/news/NewsFeatureCard';
-import { IndiaWatch } from '@/components/releases/IndiaWatch';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
 import { SneakerCard } from '@/components/search/SneakerCard';
 import { EmptyPanel } from '@/components/ui/EmptyPanel';
@@ -70,8 +69,6 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
           </SubscriptionsProvider>
         </DropLiveProvider>
       </section>
-
-      <IndiaWatch />
 
       <section aria-labelledby="landed-h">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
