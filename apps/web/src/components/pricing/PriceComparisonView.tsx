@@ -10,6 +10,7 @@ import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse, type 
 import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
+import { PriceOutlookCard } from './PriceOutlookCard';
 import { findBestOffer } from './OfferTable';
 import { CompareToggle } from '@/components/compare/CompareToggle';
 import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
@@ -191,6 +192,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
           </Reveal>
 
           <MarketIntelligenceCard data={data.marketIntelligence} bestRetailerName={bestRetailerName} />
+          <PriceOutlookCard outlook={data.outlook ?? null} />
 
           <div>
             <p className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-text-faint">Size</p>

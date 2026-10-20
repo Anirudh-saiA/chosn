@@ -1,3 +1,4 @@
+import { scoreOutlook, type PriceOutlook } from './price-outlook';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { COLOR_FAMILIES, colorRegex, normalizeQuery, parseList } from './catalog-filters';
 import { sql } from 'drizzle-orm';
@@ -121,6 +122,8 @@ export interface CatalogResponse {
   connectedStores: Array<{ slug: string; name: string }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligenceSummary | null;
+  /** Buy now / Wait outlook for this shoe in this size (price-outlook.ts). */
+  outlook: PriceOutlook | null;
 }
 
 /** node-postgres hands numeric[] back as the text "{3,3.5}" unless a type parser is registered. */
@@ -401,7 +404,43 @@ export class CatalogService {
       connectedStores: stores.stores.map((s) => ({ slug: s.slug, name: s.name })),
       offers,
       marketIntelligence,
+      outlook: await this.outlookFor(variantRow, offers, siblings).catch(() => null),
     };
+  }
+
+  /** Gathers what the outlook model reads for one shoe in one size, then scores it. Never throws into the page (the caller swallows errors). */
+  private async outlookFor(v: VariantRow, offers: CatalogOffer[], siblings: SiblingSize[]): Promise<PriceOutlook> {
+    const live = offers.filter((o) => o.inStock && o.effectivePriceInr !== null && !o.listingUrl.includes('FIXTURE'));
+    const storePrices = live.map((o) => Number(o.effectivePriceInr));
+    const best = storePrices.length ? Math.min(...storePrices) : null;
+    const [{ rows: hist }, { rows: was }] = await Promise.all([
+      this.db.execute(sql`SELECT day::text AS day, best_price_inr::float AS price FROM daily_best_prices WHERE sneaker_variant_id = ${v.variant_id} AND day >= current_date - 90 ORDER BY day`),
+      this.db.execute(sql`
+        SELECT ps.compare_at_price::float AS was FROM price_snapshots ps
+        WHERE ps.sneaker_variant_id = ${v.variant_id} AND ps.is_latest AND ps.in_stock AND ps.compare_at_price IS NOT NULL AND ps.listing_url NOT LIKE '%FIXTURE%'
+        ORDER BY effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC LIMIT 1`),
+    ]);
+    const band = best === null ? null : best < 3000 ? 'under3k' : best < 6000 ? '3-6k' : best < 10000 ? '6-10k' : best < 20000 ? '10-20k' : '20k+';
+    let peer: { n: number; dropShare: number; windowDays: number } | null = null;
+    if (band) {
+      const { rows } = await this.db.execute(sql`
+        SELECT n, drop_share, window_days FROM price_outlook_priors
+        WHERE (brand = ${v.brand} AND band = ${band}) OR (brand = '*' AND band = ${band}) OR (brand = '*' AND band = '*')
+        ORDER BY (brand = ${v.brand}) DESC, (band = ${band}) DESC LIMIT 1`).catch(() => ({ rows: [] }));
+      const r = rows[0] as { n: number; drop_share: number; window_days: number } | undefined;
+      if (r) peer = { n: Number(r.n), dropShare: Number(r.drop_share), windowDays: Number(r.window_days) };
+    }
+    return scoreOutlook({
+      bestPrice: best,
+      storePrices,
+      wasPrice: (was[0] as { was: number } | undefined)?.was ?? null,
+      history: (hist as unknown as Array<{ day: string; price: number }>).map((h) => ({ day: h.day, price: Number(h.price) })),
+      storesInStock: new Set(live.map((o) => o.retailerSlug)).size,
+      sizesInStock: siblings.filter((x) => x.available).length,
+      sizesKnown: siblings.length,
+      peer,
+      today: new Date(),
+    });
   }
 
   private async siblingSizes(sneakerId: string): Promise<SiblingSize[]> {

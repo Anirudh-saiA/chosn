@@ -270,6 +270,12 @@ def main():
     except RuntimeError as e:
         log(f"Store offers skipped: {e}")
 
+    # Base rates for the Buy now / Wait outlook (how often comparable shoes got cheaper). Best effort.
+    try:
+        tail = run("Price outlook priors", [NODE, "--env-file=.env", "dist/scripts/compute-outlook-priors.js"], cwd=api)
+    except RuntimeError as e:
+        log(f"Price outlook priors skipped: {e}")
+
     # Wishlist alerts: compare each hearted shoe + size with last night, fill the bell inbox, send mail. Best effort.
     try:
         tail = run("Wishlist alerts", [NODE, "--env-file=.env", "dist/scripts/send-watch-alerts.js"], cwd=api)

@@ -131,6 +131,21 @@ export interface CatalogResponse {
   connectedStores?: Array<{ slug: string; name: string }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligence | null;
+  /** Buy now / Wait outlook for this shoe in this size (apps/api price-outlook.ts). */
+  outlook?: PriceOutlook | null;
+}
+
+export interface PriceOutlook {
+  verdict: 'buy_now' | 'wait' | 'fair' | 'unclear';
+  headline: string;
+  score: number;
+  confidence: 'low' | 'medium' | 'high';
+  factors: Array<{ label: string; effect: 'buy' | 'wait' | 'info'; detail: string; points: number }>;
+  peerDropShare: number | null;
+  peerCount: number;
+  peerWindowDays: number;
+  historyDays: number;
+  model: string;
 }
 
 /** One colourway of a model (mirrors apps/api catalog.service ColourOption). */
