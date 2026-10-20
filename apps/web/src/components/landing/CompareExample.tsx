@@ -174,7 +174,7 @@ export async function CompareExample() {
       </Reveal>
 
       {/* live-scrolling band of the retailers we compare */}
-      <div className="mb-14 overflow-hidden rounded-full border border-[#0A0A0A]/10 bg-white py-4" aria-label="Retailers we compare">
+      <div className="mb-4 overflow-hidden rounded-full border border-[#0A0A0A]/10 bg-white py-4" aria-label="Retailers we compare">
         <Marquee duration={30} repeat={2}>
           <span className="mx-6 shrink-0 rounded-full bg-text px-3.5 py-1.5 font-mono text-[0.62rem] font-extrabold uppercase tracking-[0.22em] text-[#F4F1EA]">Retailers</span>
           {RETAILERS.map((r) => (
@@ -270,11 +270,11 @@ export async function CompareExample() {
       <section id="compare" className="mx-auto w-full max-w-[90rem] px-5 pb-20 pt-10 sm:px-8">
         {header}
         <Reveal>
-          <div className="mb-8 flex flex-col items-center">
+          <div className="mb-5 flex flex-col items-center">
             {image && (
               // The photo's white square fades into the flat page colour (a soft oval mask), and the shoe is zoomed in so it is the hero.
-              <div className="relative aspect-[16/9] w-[min(44rem,96vw)] overflow-hidden [mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)]">
-                <img src={image} alt={`${name} ${data.sneaker.colorway}`} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full scale-[1.9] select-none object-contain" />
+              <div className="relative aspect-[2.4/1] w-[min(44rem,96vw)] overflow-hidden [mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_closest-side,#000_62%,transparent_100%)]">
+                <img src={image} alt={`${name} ${data.sneaker.colorway}`} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full scale-[2.4] select-none object-contain" />
               </div>
             )}
             <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="mt-2 text-center font-display text-[1.25rem] uppercase tracking-[0.02em] text-[#0A0A0A] hover:underline">
