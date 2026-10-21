@@ -12,6 +12,7 @@ import { DropLiveGateway } from './drop-live.gateway';
 import { DropNewsAutoPostService } from './drop-news-auto-post.service';
 import { DropPushConsumer } from './drop-push.consumer';
 import { DropSchedulerService } from './drop-scheduler.service';
+import { MagazineController } from './magazine.controller';
 import { MediaController } from './media.controller';
 import { DropsController } from './drops.controller';
 import { DropsService } from './drops.service';
@@ -43,7 +44,7 @@ import { WebPushService } from './web-push.service';
  */
 @Module({
   imports: [PricingModule],
-  controllers: [DropHealthController, DropsController, AdminDropsController, DropWatchController, MediaController, NewsController, NotificationsController],
+  controllers: [DropHealthController, DropsController, AdminDropsController, DropWatchController, MediaController, MagazineController, NewsController, NotificationsController],
   providers: [
     RateLimitGuard,
     DropSchedulerService,
