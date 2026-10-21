@@ -3,6 +3,7 @@
 The importer validates every row and saves nothing if one is bad, and it keys sneakers by
 style code. So this script:
   - drops rows with no style code (they cannot be matched to a sneaker; written to <out>-dropped.csv)
+  - drops rows with no usable price (a blank price would make the importer reject the whole night)
   - turns sizes like "6(EU39)" into 6, and drops kids / range sizes ("10-11Y") and impossible ones ("44318")
   - fills an empty colorway with "Default"
   - spells each brand one way (ADIDAS / Adidas / adidas -> adidas)
@@ -36,6 +37,9 @@ def main():
         if not r["style_code"] or not m or not 1 <= float(m.group(1)) <= 20:  # 44318 etc. are spreadsheet date corruption
             dropped.append(r)
             continue
+        if not re.match(r"^\s*\d+(?:\.\d+)?\s*$", r["price"]) or float(r["price"]) <= 0:  # a page that showed no price (seen on VegNonVeg 2026-10-21)
+            dropped.append(r)
+            continue
         r["size"] = m.group(1)
         if not r["model"].strip():  # a title that is only "{ NAME": the name is the model
             r["model"], r["colorway"] = r["colorway"].strip(), ""
@@ -57,7 +61,7 @@ def main():
             w.writeheader()
             w.writerows(data)
     by_store = Counter(r["retailer"] for r in kept)
-    print(f"{len(rows)} rows read; {len(kept)} kept, {len(dropped)} dropped (no style code / unusable size)")
+    print(f"{len(rows)} rows read; {len(kept)} kept, {len(dropped)} dropped (no style code / unusable size / no price)")
     print("kept per store:", dict(by_store))
     print("distinct sneakers:", len({r["style_code"] for r in kept}))
 
