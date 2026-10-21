@@ -147,8 +147,8 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
 
       {/* The opened section */}
       {underneath !== 'gate' ? (
-        <div className={`mx-auto w-full max-w-[80rem] px-5 py-10 sm:px-8 lg:py-14 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#0A0A0A] pb-5">
+        <div className={`mx-auto w-full max-w-[80rem] px-5 pb-10 pt-3 sm:px-8 lg:pb-14 lg:pt-4 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#0A0A0A] pb-3">
             <button type="button" onClick={() => close(true)} className="inline-flex items-center gap-2 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
               <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
             </button>
