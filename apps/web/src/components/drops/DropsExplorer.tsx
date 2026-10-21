@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { cx } from '@chosn/ui';
-import type { DropListItem, DropStatus } from '@/lib/drops';
+import type { DropListItem } from '@/lib/drops';
 import { API_URL } from '@/lib/watch';
 import { DropCalendar } from './DropCalendar';
 
@@ -12,15 +11,6 @@ const REGION_CHIPS: Array<[string | null, string]> = [
   ['india', 'India'],
   ['us', 'US'],
   ['global', 'Global'],
-];
-
-type StatusFilter = 'all' | DropStatus;
-
-const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'live', label: 'Live now' },
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'sold_out', label: 'Released' },
 ];
 
 /**
@@ -36,20 +26,14 @@ export function DropsExplorer({ drops: all }: { drops: DropListItem[] }) {
     return all.filter((d) => d.releaseDate >= from);
   }, [all]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
 
   const brands = useMemo(() => Array.from(new Set(drops.map((d) => d.sneaker.brand))).sort(), [drops]);
-  const counts = useMemo(() => {
-    const c: Record<StatusFilter, number> = { all: drops.length, live: 0, upcoming: 0, sold_out: 0 };
-    for (const d of drops) c[d.status] += 1;
-    return c;
-  }, [drops]);
 
   const filtered = useMemo(
-    () => drops.filter((d) => (status === 'all' || d.status === status) && (!brand || d.sneaker.brand === brand) && (!region || d.regions.includes(region))),
-    [drops, status, brand, region],
+    () => drops.filter((d) => (!brand || d.sneaker.brand === brand) && (!region || d.regions.includes(region))),
+    [drops, brand, region],
   );
   const visibleDrops = useMemo(
     () => (selectedDate ? filtered.filter((d) => d.releaseDate === selectedDate) : filtered),
@@ -61,23 +45,7 @@ export function DropsExplorer({ drops: all }: { drops: DropListItem[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Filter by status" className="inline-flex rounded-full border border-text/10 bg-white p-1">
-          {STATUS_CHIPS.map((c) => (
-            <button
-              key={c.value}
-              type="button"
-              aria-pressed={status === c.value}
-              onClick={() => setStatus(c.value)}
-              className={cx(
-                'min-h-[34px] rounded-full px-3.5 font-mono text-[0.72rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice',
-                status === c.value ? 'bg-[#14213D] text-white' : 'text-text-soft hover:text-text',
-              )}
-            >
-              {c.label} <span className="opacity-60">{counts[c.value]}</span>
-            </button>
-          ))}
-        </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-end gap-3">
         <div className="flex flex-wrap gap-2">
           <select aria-label="Filter by region" value={region ?? ''} onChange={(e) => setRegion(e.target.value || null)} className={select}>
             {REGION_CHIPS.map(([v, l]) => (
