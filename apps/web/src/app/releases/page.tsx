@@ -15,7 +15,7 @@ import { fetchSearch, type SearchResponse } from '@/lib/catalog';
 import { fetchDropsList } from '@/lib/drops';
 import { fetchNewsList } from '@/lib/news';
 
-export const revalidate = 300;
+// The news list is read fresh on every visit (cache: no-store below), so a story that came online a minute ago is already here; drops and the landed list keep short caches.
 
 const LANDED_DAYS = 14;
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -38,7 +38,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
   const initial = tab === 'drops' || tab === 'landed' ? 'drops' : tab === 'news' ? 'news' : 'gate';
   const [drops, top, web, landed] = await Promise.all([
     fetchDropsList({}, { next: { revalidate: 300 } }),
-    fetchNewsList({ limit: 47, sort: 'relevance' }, { next: { revalidate: 300 } }),
+    fetchNewsList({ limit: 47, sort: 'relevance' }, { cache: 'no-store' }),
     fetchNewsList({ limit: 1, external: '1' }, { next: { revalidate: 300 } }),
     loadLanded(),
   ]);

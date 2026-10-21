@@ -44,6 +44,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
   const article = await loadArticle(id);
   if (!article) notFound();
 
+  const videoId = (article.sourceUrl ?? '').match(/(?:youtube\.com\/watch\?(?:[^#]*&)?v=|youtu\.be\/)([\w-]{11})/)?.[1] ?? null;
   const brand = article.brands?.[0];
   const related = brand ? (await fetchNewsList({ limit: 6, brand, sort: 'relevance' }, { next: { revalidate: REVALIDATE_SECONDS } })).items.filter((i) => i.id !== article.id).slice(0, 4) : [];
 
@@ -78,7 +79,21 @@ export default async function NewsArticlePage({ params }: PageProps) {
           </p>
         </header>
 
-        {article.imageUrl ? (
+        {videoId ? (
+          <div className="mx-auto mt-8 max-w-[68ch]">
+            <div className="relative aspect-video overflow-hidden bg-black">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+                title={article.title}
+                allow="encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full border-0"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {article.imageUrl && !videoId ? (
           <figure className="mx-auto mt-8 max-w-[68ch]">
             <div className="relative aspect-[16/9] overflow-hidden bg-[#E9EDF2]">
               <ShoePhoto src={article.imageUrl} alt={article.title} className="absolute inset-0 h-full w-full object-cover" fallback={null} />

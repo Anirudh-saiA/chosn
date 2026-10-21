@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 import { cx } from '@chosn/ui';
 import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { relativeTime } from '@/lib/catalog';
+import { API_URL } from '@/lib/watch';
 import { CATEGORY_LABEL, excerpt, type NewsCategory, type NewsListItem } from '@/lib/news';
 
 const SERIF: CSSProperties = { fontFamily: 'var(--font-display), Georgia, "Times New Roman", serif', letterSpacing: '-0.01em', fontWeight: 700, textTransform: 'none' };
@@ -92,6 +94,29 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
   const [filter, setFilter] = useState<Filter>('all');
   const [brand, setBrand] = useState('');
   const [shown, setShown] = useState(PAGE);
+  const router = useRouter();
+  const [fresh, setFresh] = useState(0);
+
+  // Every minute, ask the API what the newest story is; when something newer than what this page was drawn with exists, say so.
+  const newest = useMemo(() => items.reduce((m, i) => (i.publishedAt > m ? i.publishedAt : m), ''), [items]);
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      try {
+        const res = await fetch(`${API_URL}/news?limit=20&sort=latest`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const body = (await res.json()) as { items: Array<{ publishedAt: string }> };
+        if (alive) setFresh(body.items.filter((i) => i.publishedAt > newest).length);
+      } catch {
+        /* offline: try again next minute */
+      }
+    };
+    const t = window.setInterval(() => void check(), 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+    };
+  }, [newest]);
 
   const brands = useMemo(() => {
     const n = new Map<string, number>();
@@ -123,7 +148,24 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
           <span aria-hidden>·</span>
           <span>{list.length} stories</span>
         </p>
+        <Link href="/magazine" className="mt-3 inline-flex min-h-[40px] items-center gap-2 rounded-full bg-[#FFD84A] px-5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors hover:bg-[#FFC400]">
+          Read it as a magazine: turn the pages, download the PDF <span aria-hidden>→</span>
+        </Link>
       </header>
+
+      {fresh > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setFresh(0);
+            router.refresh();
+          }}
+          className="sticky top-20 z-20 mx-auto mt-4 flex items-center gap-2 rounded-full bg-[#C8102E] px-5 py-2.5 font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg transition-colors hover:bg-[#A60C24]"
+        >
+          <span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-[#FFD84A]" />
+          {fresh} new {fresh === 1 ? 'story' : 'stories'} · Tap to refresh
+        </button>
+      )}
 
       {/* Filters. */}
       <div className="my-5 flex flex-wrap items-center justify-between gap-3">

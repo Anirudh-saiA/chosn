@@ -152,7 +152,11 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
   // The store's own "was" price, only for the size the card opened on.
   const was = best && data && size === data.defaultSize ? best.wasPrice : null;
   const pct = was && best ? Math.round(((was - best.price) / was) * 100) : 0;
-  const tiles = [...(offers ?? [])].sort((a, b) => Number(b.inStock) - Number(a.inStock) || a.price - b.price);
+  // One tile per store: a store can list the same size twice (two product pages), so keep its best one (in stock first, then cheapest).
+  const seenStore = new Set<string>();
+  const tiles = [...(offers ?? [])]
+    .sort((a, b) => Number(b.inStock) - Number(a.inStock) || a.price - b.price)
+    .filter((o) => (seenStore.has(o.slug) ? false : (seenStore.add(o.slug), true)));
   const storeCount = live.length || (offers === null ? (cur.storeSlugs ?? []).length : 0);
 
   // Keep the chosen size in view in the card's size row (it opens on UK 3 otherwise, which matters once a size is picked above).

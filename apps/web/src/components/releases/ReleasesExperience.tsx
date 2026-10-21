@@ -165,6 +165,9 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   {LOOK[k].title}
                 </button>
               ))}
+              <a href="/magazine" className="border-l border-[#14213D] bg-[#C8102E] px-6 py-2 font-display text-lg uppercase tracking-[0.06em] text-white hover:bg-[#A60C24]">
+                Magazine
+              </a>
             </div>
           </div>
           <AnimatePresence mode="wait">
