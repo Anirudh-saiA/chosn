@@ -57,9 +57,15 @@ const COLLAB = /\b(collab(oration)?s?|teams? up|partners? with|partnership)\b|\s
 const RELEASE = /\b(releases?|released|drops?|dropping|launch(es|ed)?|arrives?|available|restock|re-?issue|returns?|unveils?|debuts?|first look|official images|where to buy|release date|colou?rways?|pack)\b/i;
 const CULTURE = /\b(celebrity|celebs?|style|outfit|fashion week|runway|street ?style|wears?|spotted|red carpet|cricketer|rapper|singer|actor|athlete|album|tour|music|film|trend|guide|best|review|how to)\b/i;
 
+// A fashion event (red carpet, gala, awards, a runway show) that is not about shoes or a footwear brand is culture, even when its headline says
+// "debut" or "unveils": a runway debut is not a product release.
+const FASHION_EVENT = /\b(red carpet|gala|met gala|awards?|fashion (week|show)|runway|best[- ]dressed|couture|premiere)\b/i;
+const FOOTWEAR_WORDS = /\b(sneakers?|shoes?|footwear|kicks|trainers?|boots?|loafers?|sandals?|heels?|nike|jordan|adidas|puma|asics|new balance|reebok|converse|vans|hoka|salomon|yeezy|crocs|birkenstock|onitsuka)\b/i;
+
 /** What kind of story a headline (plus excerpt) is. Industry beats collab beats release beats culture; an unclear one counts as culture. */
 export function categorize(text: string): NewsCategory {
   if (INDUSTRY.test(text)) return 'industry';
+  if (FASHION_EVENT.test(text) && !FOOTWEAR_WORDS.test(text)) return 'culture';
   if (COLLAB.test(text)) return 'collab';
   if (RELEASE.test(text)) return 'release';
   if (CULTURE.test(text)) return 'culture';

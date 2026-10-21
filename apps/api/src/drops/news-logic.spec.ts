@@ -18,6 +18,9 @@ describe('categorize', () => {
     ['Sean Wotherspoon and Mizuno unveil a collab capsule', 'collab'],
     ['Nike Dunk Low "Panda" restock date and where to buy', 'release'],
     ['Rapper spotted wearing rare sneakers on tour', 'culture'],
+    ['Kylie Jenner Makes Her Victoria’s Secret Runway Debut', 'culture'],
+    ['Taylor Swift Channels Cinderella in Dior at the Academy Museum Gala', 'culture'],
+    ['Nike unveils a new Pegasus at the fashion show', 'release'],
   ])('%s -> %s', (t, c) => expect(categorize(t)).toBe(c));
 });
 

@@ -35,6 +35,7 @@ Before adding, compare with `data/releases/upcoming.json` and the database (same
 ## 4. Write the files
 
 - Drops: append to `data/releases/upcoming.json` (format in `docs/releases-how-to-add-drops.md`).
+- Videos: a YouTube link to an official sneaker video (brand or store channel, release trailer, collab film) goes in `data/releases/news.json` as a news story whose `sourceUrl` is the YouTube watch link (`https://www.youtube.com/watch?v=...`). The Watch page of The CHOSN Times plays it inside the magazine. Open the link and confirm it is the real channel and the right video first.
 - News: append to `data/releases/news.json`. The `body` must be written in our own words (at least 40 characters), crediting `sourceName` and `sourceUrl`. Never copy an article or a Perplexity paragraph.
 
 ## 5. Import and tidy
