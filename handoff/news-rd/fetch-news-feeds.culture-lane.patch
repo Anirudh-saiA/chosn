@@ -1,0 +1,53 @@
+--- a/apps/api/src/scripts/fetch-news-feeds.ts
++++ b/apps/api/src/scripts/fetch-news-feeds.ts
+@@ -12,14 +12,18 @@
+ const PAUSE_MS = 1500;
+ const MAX_PER_FEED = 20;
+ const SNEAKER = /sneaker|shoe|footwear|kicks|trainer|nike|jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|vans|onitsuka|hoka|salomon|crocs|birkenstock|drop|release|collab/i;
++// Celebrity, awards and fashion-event feeds: keep a story only if it is about footwear or about a fashion moment people are talking about
++// (red carpet, gala, awards, fashion week, a best-dressed list, a viral outfit). Plain gossip with none of these words is dropped.
++const CULTURE = /sneaker|footwear|kicks|trainers?|nike|jordan|adidas|puma|asics|new balance|reebok|converse|vans|hoka|salomon|red carpet|gala|met gala|awards?|fashion week|runway|best[- ]dressed|worst[- ]dressed|street ?style|viral|outfit|ensemble|couture|show-?stopp/i;
+ // General fashion and news feeds: only items that are clearly about sneakers or footwear (no loose words like "drop" or "release").
+ const STRICT = /sneaker|footwear|kicks|trainers?|nike|air jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|onitsuka|hoka|salomon|birkenstock|shoes?/i;
+ 
+ interface Feed {
+   name: string;
+   url: string;
+-  /** Only keep items that look sneaker-related: true = loose match, 'strict' = clearly about sneakers or footwear (general news and fashion feeds). */
+-  filter?: boolean | 'strict';
++  /** Only keep items that look sneaker-related: true = loose match, 'strict' = clearly about sneakers or footwear (general news and fashion feeds),
++   *  'culture' = footwear OR a fashion event / viral outfit (celebrity, awards and fashion-week feeds). */
++  filter?: boolean | 'strict' | 'culture';
+   region: 'global' | 'india';
+ }
+ 
+@@ -51,6 +55,20 @@
+   { name: 'Inc42', url: 'https://inc42.com/feed/', filter: 'strict', region: 'india' },
+   { name: 'YourStory', url: 'https://yourstory.com/feed', filter: 'strict', region: 'india' },
+   { name: 'India Fashion Icon', url: 'https://indiafashionicon.com/feed/', filter: 'strict', region: 'india' },
++  // Culture lane (celebrities, awards, fashion weeks, viral outfits). Every feed below passed a robots.txt check for our user agent on 2026-10-21.
++  { name: 'Page Six', url: 'https://pagesix.com/feed/', filter: 'culture', region: 'global' },
++  { name: "Harper's Bazaar", url: 'https://www.harpersbazaar.com/rss/all.xml/', filter: 'culture', region: 'global' },
++  { name: 'Elle', url: 'https://www.elle.com/rss/all.xml/', filter: 'culture', region: 'global' },
++  { name: 'Who What Wear', url: 'https://www.whowhatwear.com/rss', filter: 'culture', region: 'global' },
++  { name: 'WWD', url: 'https://wwd.com/feed/', filter: 'culture', region: 'global' },
++  { name: 'Vanity Fair', url: 'https://www.vanityfair.com/feed/rss', filter: 'culture', region: 'global' },
++  { name: 'Hypebeast Fashion', url: 'https://hypebeast.com/fashion/feed', filter: 'culture', region: 'global' },
++  { name: 'BellaNaija Style', url: 'https://www.bellanaija.com/style/feed/', filter: 'culture', region: 'global' },
++  { name: 'Pinkvilla', url: 'https://www.pinkvilla.com/rss.xml', filter: 'culture', region: 'india' },
++  { name: 'Bollywood Hungama', url: 'https://www.bollywoodhungama.com/rss/news.xml', filter: 'culture', region: 'india' },
++  { name: 'Hindustan Times Entertainment', url: 'https://www.hindustantimes.com/feeds/rss/entertainment/rssfeed.xml', filter: 'culture', region: 'india' },
++  { name: 'Indian Express Entertainment', url: 'https://indianexpress.com/section/entertainment/feed/', filter: 'culture', region: 'india' },
++  { name: 'Luxebook India', url: 'https://luxebook.in/feed/', filter: 'culture', region: 'india' },
+ ];
+ 
+ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+@@ -147,7 +165,7 @@
+         continue;
+       }
+       const fresh = items
+-        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || (f.filter === 'strict' ? STRICT : SNEAKER).test(`${it.title} ${it.excerpt}`)))
++        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || (f.filter === 'strict' ? STRICT : f.filter === 'culture' ? CULTURE : SNEAKER).test(`${it.title} ${it.excerpt}`)))
+         .sort((a, b) => b.date.getTime() - a.date.getTime())
+         .slice(0, MAX_PER_FEED);
+       let n = 0;

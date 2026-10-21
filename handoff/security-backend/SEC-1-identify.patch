@@ -1,0 +1,31 @@
+--- a/apps/api/src/drops/notifications/notifications.service.ts
++++ b/apps/api/src/drops/notifications/notifications.service.ts
+@@ async identify(email?: string): Promise<{ subscriberId: string }> {
+-    if (email) {
+-      const normalized = email.toLowerCase().trim();
+-      const [existing] = await this.db
+-        .select({ id: subscribers.id })
+-        .from(subscribers)
+-        .where(eq(subscribers.email, normalized))
+-        .limit(1);
+-      if (existing) return { subscriberId: existing.id };
+-
+-      const [created] = await this.db
+-        .insert(subscribers)
+-        .values({ email: normalized })
+-        .returning({ id: subscribers.id });
+-      if (!created) throw new Error('subscriber insert returned no row');
+-      return { subscriberId: created.id };
+-    }
++    // SEC-1: never hand back an existing subscriber's id because someone typed their e-mail.
++    // Without e-mail verification an address is not proof of ownership. A new address is stored on
++    // a fresh row; a known address gets a fresh anonymous row (the address stays with its owner).
++    if (email) {
++      const normalized = email.toLowerCase().trim();
++      const [created] = await this.db
++        .insert(subscribers)
++        .values({ email: normalized })
++        .onConflictDoNothing({ target: subscribers.email })
++        .returning({ id: subscribers.id });
++      if (created) return { subscriberId: created.id };
++    }

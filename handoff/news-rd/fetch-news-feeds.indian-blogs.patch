@@ -1,0 +1,16 @@
+--- a/apps/api/src/scripts/fetch-news-feeds.ts
++++ b/apps/api/src/scripts/fetch-news-feeds.ts
+@@ -69,6 +69,13 @@
+   { name: 'Hindustan Times Entertainment', url: 'https://www.hindustantimes.com/feeds/rss/entertainment/rssfeed.xml', filter: 'culture', region: 'india' },
+   { name: 'Indian Express Entertainment', url: 'https://indianexpress.com/section/entertainment/feed/', filter: 'culture', region: 'india' },
+   { name: 'Luxebook India', url: 'https://luxebook.in/feed/', filter: 'culture', region: 'india' },
++  // Indian brand and store blogs (Shopify Atom feeds). The brands' own announcements, checked 2026-10-21; several blogs are quiet, which is harmless.
++  { name: 'Campus', url: 'https://www.campusshoes.com/blogs/news.atom', region: 'india' },
++  { name: 'Gully Labs', url: 'https://gullylabs.com/blogs/news.atom', region: 'india' },
++  { name: 'Superkicks', url: 'https://www.superkicks.in/blogs/news.atom', region: 'india' },
++  { name: 'Limited Edt', url: 'https://limitededt.in/blogs/news.atom', region: 'india' },
++  { name: 'Thaely', url: 'https://thaely.com/blogs/news.atom', region: 'india' },
++  { name: 'Crepdog Crew', url: 'https://crepdogcrew.com/blogs/news.atom', region: 'india' },
+ ];
+ 
+ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
