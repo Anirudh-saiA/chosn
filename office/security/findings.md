@@ -2,6 +2,12 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+### SEC-7  Error reports and logs can carry personal data and the watch id    Severity: low    Status: open
+Where: apps/api/src/instrument.ts (Sentry.init with no scrubbing), apps/api/src/email/email.service.ts:25,51 and waitlist.service.ts (e-mail addresses in log lines)        Found: 2026-10-21        Owner: Back end
+What: The watch id (the only credential for wishlist, alerts and e-mail binding) sits in URL paths like `/watch/<id>/email`, and the API's Sentry setup has no `beforeSend` or URL/body scrubbing, so an error or a traced request (10% sampled) can ship that id, and request bodies containing e-mail addresses, to Sentry. Log lines also print recipient e-mail addresses. The web side is better: no replay, no tracing, and no server-only env var is read in any client component (checked all 'use client' files; the only NEXT_PUBLIC values are the API/WS URLs, Sentry DSN, PostHog key and host, which are meant to be public).
+Proof: code read only; I did not send a test event to Sentry (that would leave our machine).
+Fix: add a `beforeSend` that replaces UUIDs in `request.url` and strips `request.data`; log a masked address or the row id instead of the address.        Verified fixed: not yet
+
 ### SEC-6  Dependency advisories (npm audit, production deps): 2 critical, 9 high    Severity: medium    Status: open
 Where: root lockfile; next 16.3.4, proxy-addr, multer, @nestjs/platform-express, sharp, nodemailer, @auth/core        Found: 2026-10-21        Owner: Back end / Front end
 What: `npm audit --omit=dev` reports 16 (1 low, 4 moderate, 9 high, 2 critical). The two criticals: Next.js RCE in `next/og` ImageResponse (installed 16.3.4, fixed in 16.3.6+) and proxy-addr IP spoofing via IPv4-mapped IPv6 (fixed in 2.0.8). Rated medium, not critical, because grep finds no ImageResponse / next/og use in apps/web/src, so the Next RCE is not reachable today. The proxy-addr one matters more: the API sets `trust proxy` and the rate limiters key on `req.ip`.
@@ -36,6 +42,9 @@ Where: POST /notifications/identify (apps/api/src/drops/notifications/notificati
 What: identify() looks up an existing subscriber by e-mail and returns its `subscriberId`. That id is the only credential for `/notifications/subscriptions` (list, add, delete) and is tied to push registrations. There is no e-mail verification, so anyone who knows an address gets control of that person's subscriptions.
 Proof: on localhost, two calls with the same test address (different letter case) returned the identical subscriberId, and `GET /notifications/subscriptions?subscriberId=<id>` answered for it. The address was made up; no real data touched.
 Fix: handoff/security-backend/SEC-1-identify.patch (never return an existing row for an e-mail), plus a spec.        Verified fixed: not yet
+
+## Rotation list (task 1; no values)
+Rotate if the earlier print of `.env.local` left this PC or its session logs: VERCEL_OIDC_TOKEN (first; confirm in Vercel), AUTH_SECRET (signs all web sessions), API_JWT_SECRET (used by both apps), TOTP_ENCRYPTION_KEY (rotating needs a re-encrypt of stored 2FA secrets, ask Back end first). Not known to be exposed but worth rotating before a public host: RESEND_API_KEY, VAPID_PRIVATE_KEY (breaks existing push subscriptions), the affiliate tokens (Flipkart, Admitad, INRDeals, Awin), and the local database password. Use new values on the host; never reuse the local ones.
 
 ## Checked and found fine (2026-10-21)
 - No `.env*` file tracked or ever added to git history; no key, JWT or Resend-pattern strings in any commit.
