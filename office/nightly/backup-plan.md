@@ -1,4 +1,4 @@
-# Database backup plan (task 4): for the founder to approve before anything is built
+# Database backup plan (task 4): APPROVED 2026-10-22, built; see `backup.md` for how it works and the test result
 
 Why: the price history (`price_snapshots`, `daily_best_prices`, `market_summaries`) cannot be re-scraped. Today the only copy is the Docker volume of `chosn-postgres-1` on this PC (database `chosn_dev`, **2.98 GB**). A deleted volume, a Docker reset or a failed disk loses all of it.
 
