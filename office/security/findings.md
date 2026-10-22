@@ -2,6 +2,18 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+### SEC-10  Wishlist e-mail can be reset by anyone holding the watch id, switching off the owner's alerts    Severity: low    Status: open
+Where: POST /watch/:id/email, PUT /watch/:id/items, apps/api/src/catalog/watch.controller.ts        Found: 2026-10-22        Owner: Back end
+What: With only the watch id, a caller can replace the stored e-mail (the owner's `email_confirmed` flips to false at once, so their alerts stop until a new confirmation), replace the whole wishlist, or send a confirmation e-mail to any address (see SEC-4). No account, so the id is the only barrier. The id is a random v4 UUID from `gen_random_uuid()` (122 bits), so it cannot be guessed or enumerated; the risk is leakage only (see SEC-9).
+Proof: logic read in the controller; the prefs call in SEC-9 shows the id alone authorises writes. I did not overwrite a real e-mail; the e-mail route sends mail, so I did not call it.
+Fix: when an e-mail is already confirmed, keep it until the new address is confirmed (store the new one as pending). Rate-limit per watch id as well as per IP.        Verified fixed: not yet
+
+### SEC-9  The personal calendar link contains the master watch id    Severity: medium    Status: open
+Where: GET /drops/my.ics?watch=<id> (apps/api/src/drops/drops.controller.ts:73); link built in apps/web/src/components/drops/MyDrops.tsx:37        Found: 2026-10-22        Owner: Back end + Front end
+What: The link is meant to be pasted into Google, Apple or Outlook calendar, so it is handed to third-party servers and appears in their settings, logs and any shared screenshot. The same id is the credential for the wishlist, alerts, e-mail binding and preferences. Anyone who sees the calendar link can therefore also change the owner's settings (SEC-10), and the path `/watch/<id>` appears in host logs and Sentry (SEC-7). A calendar feed should be read-only and revocable.
+Proof: on localhost, created a test watch; `GET /drops/my.ics?watch=<id>` returned 200 text/calendar; `PATCH /watch/<id>/prefs {"instant":false}` with the same id returned 204 and `GET /watch/<id>` then showed `instant:false`. The calendar response sets no Cache-Control. An unknown id also returns 200 (empty feed), so the endpoint is not an oracle for valid ids.
+Fix: add a separate random `calendar_token` per watch (read-only, regenerable) and use it in the feed URL; keep the watch id out of any shareable link. Add `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer` on the feed.        Verified fixed: not yet
+
 ### SEC-8  Newsletter reader trusts any SPF/DKIM pass, not one that matches the From address    Severity: medium    Status: open
 Where: apps/api/src/scripts/fetch-email-news.ts (`authenticated()`, line 79; used at line 196)        Found: 2026-10-22        Owner: Drops and News desk
 What: A mail is accepted if its Authentication-Results header contains `dkim=pass` or `spf=pass` for any domain. An attacker who owns a domain with valid SPF/DKIM can send mail with a forged From (a brand such as nike.com, or googlealerts-noreply@google.com) and it passes. Impact: made-up headlines on the public news page (fake "drops"), and for Google Alert mail, links to any https site shown as news. The attacker needs the address of the news mailbox. Output is limited: https links only, tags stripped, and React escapes text, so no script injection.
@@ -57,5 +69,7 @@ Rotate if the earlier print of `.env.local` left this PC or its session logs: VE
 - Every admin, community, moderation, report and block mutation route returned 401 without a token on localhost.
 - Admin drops raw SQL: column names come from a fixed whitelist in `check()`, regions are checked against a fixed set before `sql.raw`. Not injectable as written.
 - `/media/:folder/:file`: strict filename regex and folder whitelist; traversal attempts returned 404.
+- Admin (2026-10-22): the web `/admin`, `/admin/drops`, `/admin/prices`, `/admin/moderation`, `/admin/catalog` return 404 for an anonymous visitor (page code calls `notFound()` unless the session role is admin and has an API token). The API rejects missing, garbage, `alg:none` and wrong-secret tokens with 401 on `/admin/drops`; `AdminGuard` re-reads the role from the database on every request, so removing admin takes effect at once. Not tested: a valid non-admin token (I will not read the signing secret), and admin pages with a real admin session.
+- Security headers on the web app (dev server): CSP, X-Frame-Options DENY, nosniff, Referrer-Policy and Permissions-Policy all present. `unsafe-eval` in the CSP is dev-mode only per the config; check a production build before launch.
 - CORS: a request with a foreign Origin got no allow header.
 - Web: the only `dangerouslySetInnerHTML` is a constant CSS string in global-error.tsx.
