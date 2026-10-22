@@ -31,7 +31,10 @@ Needs the founder's own logo file (not made by the Social team). Put it in `offi
 - Do not connect third-party apps or schedulers. The Social team posts nothing; the founder pastes drafts.
 - Follow slowly: the leads in `engage.md`, after confirming each handle.
 
-## Public details to record here once the account exists
-- Handle: (founder to fill)
-- Created on: (founder to fill)
-- Notes on the account (public only): (founder to fill)
+## Public details (from the founder's screenshot, 2026-10-22 17:19 IST)
+- Handle: @chosnsneakers (display name CHOSN), https://x.com/chosnsneakers
+- Bio: option A above, as posted. Category shown: Fashion Company. Location: India.
+- Profile picture and header: the CHOSN globe logo; header text "Compare | Releases | Community". The image files are not in `office/social/images/` yet.
+- Profile shows "Joined July 2026" and a post dated Jul 31, so the account existed before today; 18 posts, 30 following, 0 followers at that moment.
+- The pinned-post draft was posted about 3 minutes before the screenshot (1 like). The screenshot does not show it as pinned: pin it from the post's menu if intended.
+- "Get verified" is a paid X product. No Social team action; the founder decides.
