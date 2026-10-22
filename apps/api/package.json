@@ -33,7 +33,7 @@
     "class-validator": "^0.15.1",
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",
-    "file-type": "^16.5.4",
+    "file-type": "^22.2.0",
     "imapflow": "^2.5.9",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
