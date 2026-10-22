@@ -33,6 +33,10 @@ We are the critic. We say what the shoe is made of, how it is built, where it is
 6. Real versus fake basics: how to check, with no accusations against any seller.
 7. Collab spotlight: what a collab changes in the shoe, and what it does not.
 8. Community question: one clear question people can answer in a line.
+9. Sale: a listing at a date, store price against the MRP the store shows. Never "steal" or "must buy"; say what to check (style code, sizes, returns).
+10. New releases and collabs: the release, the price in rupees, how firm the date is, and what a collab changes in the shoe beyond the logo.
+11. Unexpected news: headline and credit only, then a question or our take marked as an opinion.
+12. Random: culture and retail prompts with a point of view (`random.md`).
 
 ## Ten posts we write (good)
 Prices are shown as placeholders; the script fills them from our own data on the day. Each one is built from a file in `office/social/facts/`, where the sources are.

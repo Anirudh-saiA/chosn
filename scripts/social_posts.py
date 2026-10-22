@@ -1,13 +1,17 @@
 """Daily X (Twitter) post drafts for CHOSN, in the critic voice (see office/social/voice.md).
 
-Reads the fact bank (office/social/facts/*.md) and our own database (SELECT only, through docker exec psql)
-and writes office/social/posts/<date>.md. It posts nothing: the founder copies the text.
+Reads the fact bank (office/social/facts/*.md), office/social/random.md and our own database (SELECT only,
+through docker exec psql) and writes office/social/posts/<date>.md. It posts nothing: the founder copies the text.
 
-Two posts a day, each within 280 characters as X counts them:
-  Morning (about 09:00 IST): a "reality" post built from a fact-bank file: materials, construction, price in rupees from our scrape.
-  Evening (about 19:00): a community question about the same shoe.
-Optional extras in the same file: today's drops (how firm each date is) and the day's sneaker story (headline + credit only).
-Every post lists its sources and a confidence line (Confirmed / Reported / Opinion). A post is not repeated within 30 days.
+Two posts a day (about 09:00 and 19:00 IST), each within 280 characters as X counts them. The kind of post rotates by weekday:
+  reality  a specific shoe: materials, construction, price in rupees (fact bank), with the criticism and a review source
+  question a question about that shoe
+  sale     the biggest listed discount in our own price data (store price against the MRP the store shows)
+  drops    new releases from our drop calendar, with retail price and how firm each date is
+  collab   the latest collab story (headline + credit only) with a question
+  news     the latest unexpected story (headline + credit only) with a question
+  random   a culture or retail prompt from office/social/random.md
+Every post lists its sources and a confidence line (Confirmed / Reported / Opinion). Nothing repeats within 30 days.
 
 Usage: python scripts/social_posts.py [--date YYYY-MM-DD] [--stdout]
 Set SOCIAL_SITE_URL (e.g. https://chosn.in) once the domain exists; until then no link is added.
@@ -26,23 +30,22 @@ import social_images  # noqa: E402
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FACTS = ROOT / "office" / "social" / "facts"
 POSTS = ROOT / "office" / "social" / "posts"
+RANDOM = ROOT / "office" / "social" / "random.md"
 PG = ["docker", "exec", "chosn-postgres-1", "psql", "-U", "postgres", "-d", "chosn_dev", "-At", "-F", "|", "-c"]
 SITE = os.environ.get("SOCIAL_SITE_URL", "").rstrip("/")
 LIMIT = 280
 REPEAT_DAYS = 30
 FIRM = {"confirmed": "confirmed", "reported": "reported", "unconfirmed": "rumoured"}
+CONF = {"confirmed": "Confirmed", "reported": "Reported", "unconfirmed": "Unconfirmed"}
 # listing prices come from these stores only: resale stores would mix a different kind of price into the range
 STORES = ("Myntra", "Ajio", "Flipkart", "Superkicks", "Puma India", "VegNonVeg")
-
-QUESTIONS = [  # fallback when no fact file can be used; one per weekday, Monday first
-    "What was your first pair that made you fall for sneakers? Reply with the pair.",
-    "Which pair do you wear the most: the one you love or the one that is comfy? Be honest.",
-    "A shoe you slept on and now regret? Tell us.",
-    "Retro or new tech: what is your pick for daily wear?",
-    "Weekend fit check: what are you putting on your feet? Drop a pic.",
-    "One pair, any price, no resale: which would you grab?",
-    "Sunday reset: what is the one pair you still want in 2026?",
-]
+SLOTS = {0: ("reality", "question"), 1: ("drops", "sale"), 2: ("reality", "news"), 3: ("collab", "random"),
+         4: ("sale", "reality"), 5: ("reality", "news"), 6: ("random", "drops")}  # weekday (Monday = 0) -> (morning, evening)
+FALLBACK = {"morning": ("reality", "random", "drops"), "evening": ("question", "random", "reality")}
+NEWS_ASK = "What would you want to know about the materials and the price before buying? Reply and we will check the spec."
+CULTURE_ASK = "Does this change how you buy or wear sneakers, or is it noise? Tell us why."
+COLLAB_ASK = "Beyond the logo, what would this collab have to change in the shoe for you to pay more?"
+SKIP_TITLE = "(title ilike '%your chance%' or title ilike '%giveaway%' or title ilike '%discount code%')"  # promotions, not news
 
 
 def q(sql):
@@ -50,6 +53,10 @@ def q(sql):
     if r.returncode != 0:
         sys.exit("database query failed: " + r.stderr.strip()[:300])
     return [line.split("|") for line in r.stdout.splitlines() if line]
+
+
+def esc(s):
+    return s.strip().replace("'", "''")
 
 
 def clip(text, n):
@@ -64,6 +71,20 @@ def x_len(text):
         c = ord(ch)
         n += 1 if (c <= 4351 or 8192 <= c <= 8205 or 8208 <= c <= 8223 or 8242 <= c <= 8247) else 2
     return n
+
+
+def fit(make, name):
+    """make(name) -> text. Shorten the name until the post fits."""
+    n = 80
+    while True:
+        text = make(clip(name, n))
+        if x_len(text) <= LIMIT or n <= 20:
+            return text
+        n -= 8
+
+
+def rupees(v):
+    return f"₹{int(v):,}"
 
 
 # ---- fact bank -------------------------------------------------------------------------------------------
@@ -103,7 +124,6 @@ def prices(db):
     """Live listing prices in rupees for the fact file's models: dict(min, med, max, n) or None."""
     if not db:
         return None
-    esc = lambda s: s.strip().replace("'", "''")
     pairs = " or ".join(f"(lower(s.brand)=lower('{esc(b)}') and lower(s.model)=lower('{esc(m)}'))" for b, m in db)
     stores = ",".join(f"'{s}'" for s in STORES)
     rows = q(f"""select count(*), min(ps.price)::int, percentile_cont(.5) within group (order by ps.price)::int, max(ps.price)::int
@@ -122,12 +142,12 @@ def fill(text, pr):
         return text
     if not pr:
         return None
-    rupees = lambda v: f"{v:,}"
-    return text.replace("{min}", rupees(pr["min"])).replace("{med}", rupees(pr["med"])).replace("{max}", rupees(pr["max"])).replace("{n}", str(pr["n"]))
+    r = lambda v: f"{v:,}"
+    return text.replace("{min}", r(pr["min"])).replace("{med}", r(pr["med"])).replace("{max}", r(pr["max"])).replace("{n}", str(pr["n"]))
 
 
 def recent_ids(day):
-    """Ids of fact-bank posts and questions used in drafts of the previous REPEAT_DAYS days."""
+    """Ids used in drafts of the previous REPEAT_DAYS days."""
     used = set()
     d = datetime.date.fromisoformat(day)
     for f in POSTS.glob("*.md"):
@@ -142,46 +162,85 @@ def recent_ids(day):
     return used
 
 
-def choose(day, facts):
-    """Rotate through the fact bank by date; skip anything used in the last 30 days or without usable prices."""
-    if not facts:
-        return None
-    used = recent_ids(day)
-    start = datetime.date.fromisoformat(day).toordinal() % len(facts)
+# ---- post kinds: each returns a dict or None ------------------------------------------------------------------
+
+def k_reality(day, ctx):
+    facts = ctx["facts"]
+    start = datetime.date.fromisoformat(day).toordinal() % max(len(facts), 1)
     for i in range(len(facts)):
         fct = facts[(start + i) % len(facts)]
         pr = prices(fct["db"])
         for p in fct["posts"]:
-            if p["id"] in used:
+            if p["id"] in ctx["used"]:
                 continue
             text = fill(p["text"], pr)
             if text is None:
                 continue
-            qs = [x for x in fct["questions"] if x["id"] not in used and fill(x["text"], pr)]
-            question = dict(qs[0], text=fill(qs[0]["text"], pr)) if qs else None
-            return {"fact": fct, "post": dict(p, text=text), "question": question, "prices": pr}
+            src = list(p["sources"])
+            if pr:
+                src.append(f"Our own data: {pr['n']} in-stock new listings at {', '.join(STORES)}, read {day}; listing prices, not MRP, mixed colourways")
+            ctx["fact"] = fct
+            return {"label": "reality: a specific shoe", "text": text, "conf": p["conf"], "ids": [p["id"]], "sources": src,
+                    "note": f"fact file `office/social/facts/{fct['file']}` (checked {fct['checked']})", "slug": fct["slug"], "title": fct["title"]}
     return None
 
 
-# ---- optional extras: drops and news (own data) -------------------------------------------------------------
+def k_question(day, ctx):
+    facts = ctx["facts"]
+    order = ([ctx["fact"]] if ctx.get("fact") else []) + facts
+    for fct in order:
+        pr = prices(fct["db"])
+        for x in fct["questions"]:
+            text = fill(x["text"], pr) if x["id"] not in ctx["used"] else None
+            if text:
+                return {"label": "community question about a shoe", "text": text, "conf": "Opinion", "ids": [x["id"]], "sources": [],
+                        "note": "a question, no claim", "slug": fct["slug"], "title": fct["title"]}
+    return None
 
-def drops(day):
-    return q(f"""select s.brand||' '||s.model||' '||s.colorway, d.release_date, d.confirmation, d.india_status,
-        coalesce(d.retail_price::int::text,'')
+
+def k_random(day, ctx):
+    if not RANDOM.exists():
+        return None
+    lines = [ln[2:].strip() for ln in RANDOM.read_text(encoding="utf-8").splitlines() if ln.startswith("- ")]
+    start = datetime.date.fromisoformat(day).toordinal() % max(len(lines), 1)
+    for i in range(len(lines)):
+        idx = (start + i) % len(lines)
+        rid = f"random-{idx + 1}"
+        if rid not in ctx["used"] and x_len(lines[idx]) <= LIMIT:
+            return {"label": "random: culture and retail", "text": lines[idx], "conf": "Opinion", "ids": [rid], "sources": [],
+                    "note": "a question or a marked opinion (`office/social/random.md`)", "slug": "", "title": "a shoe or shop moment you like"}
+    return None
+
+
+def k_sale(day, ctx):
+    stores = ",".join(f"'{s}'" for s in STORES)
+    rows = q(f"""select distinct on (s.id, r.id) s.brand||' '||s.model||' '||s.colorway, r.name, ps.price::int, ps.compare_at_price::int,
+        round(100*(1-ps.price/ps.compare_at_price))::int, ps.listing_url, ps.fetched_at::date
+      from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id join sneakers s on s.id=v.sneaker_id
+      join retailers r on r.id=ps.retailer_id and r.name in ({stores})
+      where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 and ps.compare_at_price>ps.price
+        and s.gender in ('men','women','unisex') and ps.fetched_at>='{day}'::date - 3 order by s.id, r.id, ps.fetched_at desc""")
+    rows = sorted(rows, key=lambda r: -int(r[4]))[:15]
+    start = datetime.date.fromisoformat(day).toordinal() % max(len(rows), 1)
+    for i in range(len(rows)):
+        name, store, price, mrp, pct, url, seen = rows[(start + i) % len(rows)]
+        key = "sale:" + re.sub(r"[^a-z0-9-]", "", url.rstrip("/").rsplit("/", 1)[-1].lower())[:40]
+        if key in ctx["used"] or int(pct) < 20:
+            continue
+        make = lambda n: (f"Listed today: {n} at {store}, {rupees(price)}. The same listing shows an MRP of {rupees(mrp)}, {pct}% off. "
+                          "My take: a discount from a high list price is not a bargain by itself. Check the style code, the sizes left and the return policy.")
+        return {"label": "sale: biggest listed discount in our data", "text": fit(make, name), "conf": "Reported", "ids": [key],
+                "sources": [url, f"Our own data: store listing read {seen}; the MRP is the one the store shows, not checked against the brand's"],
+                "note": "a store listing, so re-check the price and sizes before posting", "slug": "", "title": name}
+    return None
+
+
+def k_drops(day, ctx):
+    rows = q(f"""select s.brand||' '||s.model||' '||s.colorway, d.release_date, d.confirmation, d.india_status, coalesce(d.retail_price::int::text,'')
       from drop_events d join sneakers s on s.id=d.sneaker_id
       where not d.hidden and not d.is_demo and d.release_date between '{day}' and '{day}'::date+7
       order by (d.release_date='{day}') desc, (d.confirmation='confirmed') desc, (d.confirmation='reported') desc,
         (d.india_status='confirmed_india') desc, d.release_date limit 12""")
-
-
-def story(day):
-    rows = q(f"""select title, source, coalesce(image_url,''), india::text from news_items
-      where dup_of is null and not is_demo and published_at >= '{day}'::date - 1 and category is not null
-      order by india desc, is_breaking desc, published_at desc limit 1""")
-    return rows[0] if rows else None
-
-
-def drops_note(day, rows):
     d = datetime.date.fromisoformat(day)
     today = [r for r in rows if r[1] == day]
     pick = (today or rows)[:3]
@@ -199,14 +258,41 @@ def drops_note(day, rows):
     while x_len(text) > LIMIT and len(lines) > 1:
         lines.pop()
         text = f"{head}\n\n" + "\n".join(lines) + f"\n\n{foot}{tail}"
-    return text
+    firm = "Confirmed" if all(r[2] == "confirmed" for r in pick) else "Reported"
+    return {"label": "new releases from our drop calendar", "text": text, "conf": firm, "ids": [f"drops-{day}"],
+            "sources": [f"Our own drop calendar (drop_events), read {day}; each line says confirmed, reported or rumoured"],
+            "note": "dates can move: re-check before posting", "slug": "", "title": pick[0][0]}
 
 
-def story_note(s):
-    if not s:
-        return None, ""
-    title, source, img, india = s
-    return f"{clip(title, 150)}\n(via {source})", img
+def k_news(day, ctx, collab=False):
+    cond = "category='collab'" if collab else "category in ('release','culture')"
+    rows = q(f"""select id::text, title, source, coalesce(source_url,''), coalesce(image_url,''), category from news_items
+      where dup_of is null and not is_demo and published_at >= '{day}'::date - 2 and {cond} and not {SKIP_TITLE}
+        and (array_length(brands,1)>0 or source in ('Highsnobiety','Hypebeast','Footwear News','Sneaker News','Complex'))
+      order by is_breaking desc, india desc, published_at desc limit 10""")
+    for nid, title, source, url, img, cat in rows:
+        key = ("collab:" if collab else "news:") + nid[:8]
+        if key in ctx["used"]:
+            continue
+        text = f"{clip(title, 150)}\n(via {source})\n\n{COLLAB_ASK if collab else (NEWS_ASK if cat == 'release' else CULTURE_ASK)}"
+        pic = (f"data/media{img[len('/media'):]}" if img.startswith("/media/") else img)
+        return {"label": "collab news" if collab else "unexpected news", "text": clip(text, LIMIT), "conf": "Reported", "ids": [key],
+                "sources": [url or f"{source} (headline and credit only)"], "note": "headline and credit only, never publisher text; add your own line if you have one",
+                "slug": "", "title": title, "picture": f"Picture to attach (credit the source): {pic}" if pic else ""}
+    return None
+
+
+KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
+         "news": k_news, "collab": lambda day, ctx: k_news(day, ctx, True)}
+
+
+def make_post(slot, kind, day, ctx):
+    for k in (kind,) + tuple(x for x in FALLBACK[slot] if x != kind):
+        p = KINDS[k](day, ctx)
+        if p:
+            ctx["used"].update(p["ids"])
+            return dict(p, kind=k, wanted_kind=kind)
+    return None
 
 
 # ---- the file ------------------------------------------------------------------------------------------------
@@ -219,48 +305,31 @@ def block(text):
 
 def build(day):
     d = datetime.date.fromisoformat(day)
-    pick = choose(day, load_facts())
-    out = [f"# X posts for {day}", "",
+    ctx = {"facts": load_facts(), "used": recent_ids(day)}
+    morning_kind, evening_kind = SLOTS[d.weekday()]
+    out = [f"# X posts for {day} ({d.strftime('%A')})", "",
            "Copy, paste, post yourself. Nothing here is posted automatically. The voice guide is `office/social/voice.md`. Re-check a price or date if it may have changed since this was written.", ""]
-    pics = []
-    ids = []
-    if pick:
-        f, p, qn = pick["fact"], pick["post"], pick["question"]
-        ids += [p["id"]] + ([qn["id"]] if qn else [])
-        out += ["## Morning post (about 09:00 IST): reality", ""] + block(p["text"])
-        out += [f"Confidence: **{p['conf']}**  |  fact file: `office/social/facts/{f['file']}` (checked {f['checked']})",
-                "Sources (paste as a reply if you like):"] + [f"- {s}" for s in p["sources"]]
-        if pick["prices"]:
-            pr = pick["prices"]
-            out += [f"- Our own data: {pr['n']} in-stock new listings at {', '.join(STORES)}, read {day}; listing prices, not MRP, mixed colourways"]
+    ids, pics = [], []
+    for slot, kind, when in (("morning", morning_kind, "about 09:00 IST"), ("evening", evening_kind, "about 19:00 IST")):
+        p = make_post(slot, kind, day, ctx)
+        out += [f"## {slot.capitalize()} post ({when})", ""]
+        if not p:
+            out += ["(nothing usable today: post a question of your own)", ""]
+            continue
+        out += [f"Type: **{p['label']}**" + (f" (planned: {p['wanted_kind']}, nothing usable)" if p["kind"] != p["wanted_kind"] else ""), ""] + block(p["text"])
+        out += [f"Confidence: **{p['conf']}**  |  {p['note']}"]
+        if p["sources"]:
+            out += ["Sources (paste as a reply if you like):"] + [f"- {s}" for s in p["sources"]]
         out += [""]
-        want = f"your own photo of the {f['title']}, side view with the tag or style code showing if you can"
-        pics.append(("morning", f["slug"], want))
-        if qn:
-            out += ["## Evening post (about 19:00 IST): community question", ""] + block(qn["text"])
-            out += ["Confidence: **Opinion** (a question, no claim).", ""]
-            pics.append(("evening", f["slug"], want))
-    else:
-        out += ["## Morning post", "", "(no usable fact-bank post today: add facts or post a question)", ""]
-        out += ["## Evening post (about 19:00 IST)", ""] + block(QUESTIONS[d.weekday()])
-
-    extras = []
-    dn = drops_note(day, drops(day))
-    if dn:
-        extras += ["### Drops note (own data; dates say confirmed / reported / rumoured)", ""] + block(dn)
-    sn, img = story_note(story(day))
-    if sn:
-        extras += ["### Story of the day (headline + credit only; add your own line)", ""] + block(sn)
-        if img:
-            extras += [f"Picture to attach (credit the source): data/media{img[len('/media'):]}" if img.startswith("/media/") else f"Picture to attach (credit the source): {img}", ""]
-    if extras:
-        out += ["## Optional extras", ""] + extras
-
+        if p.get("picture"):
+            out += [p["picture"], ""]
+        ids += p["ids"]
+        pics.append((slot, p["slug"], f"your own photo of {p['title']}" if p["slug"] else f"your own photo or the brand's press image (check rights) for: {clip(p['title'], 50)}"))
     if pics:
         out += ["## Pictures", ""] + social_images.status_lines(day, pics) + [""]
     out += ["## Rules we follow",
             "- Facts carry a source and a confidence line. Opinions say \"my take\".",
-            "- Drop dates say confirmed / reported / rumoured, as on the site.",
+            "- Drop dates say confirmed / reported / rumoured, as on the site. A sale is a listing at a date, not a promise.",
             "- Headline and credit only, never publisher text. Reply to people who comment: that is the community.",
             "- We criticise products, prices and marketing, never people. Nothing is called fake or a scam without proof.", ""]
     out += [f"<!-- ids: {', '.join(ids)} -->"] + [f"<!-- picture: {s} | {g} | {w} -->" for s, g, w in pics]

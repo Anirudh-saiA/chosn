@@ -1,16 +1,18 @@
 # Content calendar: Fri 23 to Thu 29 October 2026
 
-Written 2026-10-22. The shoe for each day is what `scripts/social_posts.py` picks from the fact bank by date (rotation, no repeat within 30 days). The script writes the draft each morning, so run it again that day and the prices are fresh. Morning is about 09:00 IST, evening about 19:00.
+Written 2026-10-22. The kind of post is set by weekday in `scripts/social_posts.py` (no repeat within 30 days). The script writes the draft each morning, so run it again that day and the prices are fresh. Morning is about 09:00 IST, evening about 19:00.
 
-| Day | Morning (reality post) | Format | Evening (community question) | Picture to supply |
-|---|---|---|---|---|
-| Fri 23 | adidas Superstar II: the brand page contradicts itself on leather | Myth check | Is the shell toe still good design? | Superstar, side view, tag visible |
-| Sat 24 | Air Jordan 1 Low: two spec sheets under one name (style codes DC0774 and CW1381) | Teardown | What would make the higher price worth it? | Jordan 1 Low, inside tag showing the style code |
-| Sun 25 | ASICS Gel-1130: a budget runner's parts at a lifestyle price | What you are paying for | Mesh in an Indian summer: airflow or sweat? | Gel-1130, heel and mesh close-up |
-| Mon 26 | New Balance 550: leather or synthetic depends on colourway | Price reality check | Firm or soft underfoot for a daily walk? | 550, side view |
-| Tue 27 | Air Force 1 '07: the factory depends on the style code, one lists India | Teardown (origin) | Do you check the country on the tag? | AF1, tag with the country of origin |
-| Wed 28 | Dunk Low: the whole spec list against the price | Price reality check | Would you pay the median for these parts? | Dunk Low, midsole and outsole |
-| Thu 29 | Puma Speedcat OG: what a lab test says against the price | Myth check | Worn for walking, built for pedals? | Speedcat, sole and heel |
+| Day | Morning (about 09:00) | Evening (about 19:00) |
+|---|---|---|
+| Fri 23 | **Sale:** the biggest listed discount in our data (store price against the MRP it shows) | **Reality:** adidas Superstar II, the brand page contradicts itself on leather |
+| Sat 24 | **Reality:** Air Jordan 1 Low, two spec sheets under one name | **News:** the latest unexpected sneaker story, headline and credit, with a question |
+| Sun 25 | **Random:** a culture or retail prompt | **Drops:** new releases of the week with retail price and how firm each date is |
+| Mon 26 | **Reality:** New Balance 550, leather or synthetic by colourway | **Question** about the 550 |
+| Tue 27 | **Drops:** new releases with prices | **Sale:** the day's biggest listed discount |
+| Wed 28 | **Reality:** Dunk Low, the spec list against the price | **News:** an unexpected story |
+| Thu 29 | **Collab:** the latest collab story with a question | **Random:** a culture or retail prompt |
+
+Sale, news, collab and drops posts are built from the live data on the day, so only the kind is fixed here, not the shoe or story. A kind with nothing usable falls back to a reality post, a shoe question or a random prompt, and the draft says so. Reality posts rotate through the fact bank (10 shoes now); the founder can ask for a specific shoe to be reviewed next and I add it to the bank with sources.
 
 The pictures are the founder's own. If a day has none, post the text alone rather than use an unlicensed image.
 

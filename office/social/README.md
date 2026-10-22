@@ -1,6 +1,6 @@
 # X (Twitter) posts
 
-The voice is the critic: `voice.md`. Facts live in `facts/` (one file per shoe, with sources and the date checked). Every day `scripts/social_posts.py` writes `posts/<date>.md`: a morning "reality" post (materials, construction, price in rupees from our own scrape), an evening community question about the same shoe, and optional extras (today's drops with how firm each date is, the day's sneaker story as headline and credit only). Each post lists its sources and a confidence line, and shows its length as X counts it (₹ counts as 2).
+The voice is the critic: `voice.md`. Facts live in `facts/` (one file per shoe, with sources and the date checked). Every day `scripts/social_posts.py` writes `posts/<date>.md`: two posts whose kind rotates by weekday: a specific shoe (materials, construction, price in rupees from our scrape), a question, the biggest listed sale in our data, new releases with prices, collab news, unexpected news, or a random culture prompt (`random.md`). Each post lists its sources and a confidence line, and shows its length as X counts it (₹ counts as 2).
 
 Nothing is posted automatically. The founder copies the text and attaches a picture. The 10-minute news cycle runs the script once after 07:00 and refreshes it once after 17:00.
 
