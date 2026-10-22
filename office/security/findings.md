@@ -2,6 +2,12 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+### SEC-8  Newsletter reader trusts any SPF/DKIM pass, not one that matches the From address    Severity: medium    Status: open
+Where: apps/api/src/scripts/fetch-email-news.ts (`authenticated()`, line 79; used at line 196)        Found: 2026-10-22        Owner: Drops and News desk
+What: A mail is accepted if its Authentication-Results header contains `dkim=pass` or `spf=pass` for any domain. An attacker who owns a domain with valid SPF/DKIM can send mail with a forged From (a brand such as nike.com, or googlealerts-noreply@google.com) and it passes. Impact: made-up headlines on the public news page (fake "drops"), and for Google Alert mail, links to any https site shown as news. The attacker needs the address of the news mailbox. Output is limited: https links only, tags stripped, and React escapes text, so no script injection.
+Proof: code read and a unit-level reading of the regex; I did not send mail (outward action). A duplicated Authentication-Results header makes mailparser return an array, which the code treats as failed, so that path fails closed.
+Fix: accept only when the passing domain matches the From domain (`header.from=` / `header.d=` equals or is a subdomain of the sender's domain, or `dmarc=pass`); add a spec with a forged-From sample. Until then keep the email reader off (NEWS_IMAP_* unset).        Verified fixed: not yet
+
 ### SEC-7  Error reports and logs can carry personal data and the watch id    Severity: low    Status: open
 Where: apps/api/src/instrument.ts (Sentry.init with no scrubbing), apps/api/src/email/email.service.ts:25,51 and waitlist.service.ts (e-mail addresses in log lines)        Found: 2026-10-21        Owner: Back end
 What: The watch id (the only credential for wishlist, alerts and e-mail binding) sits in URL paths like `/watch/<id>/email`, and the API's Sentry setup has no `beforeSend` or URL/body scrubbing, so an error or a traced request (10% sampled) can ship that id, and request bodies containing e-mail addresses, to Sentry. Log lines also print recipient e-mail addresses. The web side is better: no replay, no tracing, and no server-only env var is read in any client component (checked all 'use client' files; the only NEXT_PUBLIC values are the API/WS URLs, Sentry DSN, PostHog key and host, which are meant to be public).
@@ -12,7 +18,7 @@ Fix: add a `beforeSend` that replaces UUIDs in `request.url` and strips `request
 Where: root lockfile; next 16.3.4, proxy-addr, multer, @nestjs/platform-express, sharp, nodemailer, @auth/core        Found: 2026-10-21        Owner: Back end / Front end
 What: `npm audit --omit=dev` reports 16 (1 low, 4 moderate, 9 high, 2 critical). The two criticals: Next.js RCE in `next/og` ImageResponse (installed 16.3.4, fixed in 16.3.6+) and proxy-addr IP spoofing via IPv4-mapped IPv6 (fixed in 2.0.8). Rated medium, not critical, because grep finds no ImageResponse / next/og use in apps/web/src, so the Next RCE is not reachable today. The proxy-addr one matters more: the API sets `trust proxy` and the rate limiters key on `req.ip`.
 Proof: npm audit output from the repo root, 2026-10-21; grep for ImageResponse in apps/web/src returned nothing.
-Fix: upgrade next to a patched 16.3.x, proxy-addr >=2.0.8, sharp >=0.35.5, multer >=2.3.0 (via @nestjs/platform-express), nodemailer. One branch, tests run. Not yet reviewed: dev-only dependencies and the new packages imapflow, mailparser, page-flip.        Verified fixed: not yet
+Fix: upgrade next to a patched 16.3.x, proxy-addr >=2.0.8, sharp >=0.35.5, multer >=2.3.0 (via @nestjs/platform-express), file-type. One branch, tests run. Full triage with reachability, dev-tool noise and the new packages: office/security/dependency-triage.md.        Verified fixed: not yet
 
 ### SEC-5  API sends no security headers; X-Powered-By is on    Severity: low    Status: open
 Where: apps/api/src/main.ts        Found: 2026-10-21        Owner: Back end
