@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Marquee } from '@/components/fx/Marquee';
+import { brandLogoFile } from '@/components/ui/BrandMark';
 
 /**
  * Where the data comes from, kept strictly to what the app really ingests:
@@ -9,19 +10,41 @@ import { Marquee } from '@/components/fx/Marquee';
  * mean the brand's own store is a price source - the two groups are labelled
  * separately for that reason. Add a name here only once its adapter exists.
  */
-const RETAILERS = ['Flipkart', 'Myntra', 'Ajio', 'END. Clothing', 'Superkicks', 'VegNonVeg'];
-const BRANDS = ['Nike', 'Jordan', 'adidas', 'Yeezy', 'New Balance', 'Converse', 'Vans', 'ASICS', 'Puma'];
+const RETAILERS: Item[] = [
+  { name: 'Superkicks', logo: '/stores/superkicks.png' },
+  { name: 'Crepdog Crew', logo: '/stores/crepdog-crew.png' },
+  { name: 'VegNonVeg', logo: '/stores/vegnonveg.png' },
+  { name: 'Mainstreet Marketplace', logo: '/stores/mainstreet-marketplace.png' },
+  { name: 'Myntra', logo: '/stores/myntra.png' },
+  { name: 'Limited Edt', logo: '/stores/limited-edt.png' },
+  { name: 'Puma India', logo: '/stores/puma-india.png' },
+  { name: 'Gully Labs', logo: '/stores/gully-labs.png' },
+  { name: 'Culture Circle', logo: '/stores/culture-circle.png' },
+];
+// A brand shows its logo when we have one (public/brands), and just its name otherwise.
+const BRANDS: Item[] = ['Nike', 'Jordan', 'adidas', 'Yeezy', 'New Balance', 'Converse', 'Vans', 'ASICS', 'Puma'].map((name) => {
+  const file = brandLogoFile(name);
+  return { name, logo: file ? `/brands/${file}` : null };
+});
 
-function Group({ label, names }: { label: string; names: string[] }) {
+interface Item {
+  name: string;
+  logo: string | null;
+}
+
+function Group({ label, items }: { label: string; items: Item[] }) {
   return (
     <>
       <span className="mx-6 shrink-0 rounded-full bg-text px-3.5 py-1.5 font-mono text-[0.62rem] font-extrabold uppercase tracking-[0.22em] text-[#F4F1EA]">
         {label}
       </span>
-      {names.map((n) => (
-        <span key={n} className="flex shrink-0 items-center">
-          <span className="px-6 font-display text-[1.7rem] font-bold leading-none tracking-tight text-text">
-            {n}
+      {items.map((n) => (
+        <span key={n.name} className="flex shrink-0 items-center">
+          <span className="flex items-center gap-3 px-6">
+            {n.logo && (
+              <img src={n.logo} alt="" className="h-8 w-auto max-w-[5.5rem] object-contain" loading="lazy" draggable={false} />
+            )}
+            <span className="font-display text-[1.7rem] font-bold leading-none tracking-tight text-text">{n.name}</span>
           </span>
           <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass" />
         </span>
@@ -37,7 +60,7 @@ export function SourcesStrip() {
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-2 pb-4">
         <p className="font-mono text-[0.7rem] font-extrabold uppercase tracking-[0.26em] text-text">Where our prices come from</p>
         <Link
-          href="/transparency"
+          href="/stores"
           className="inline-flex items-center gap-1.5 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-text-soft transition-colors hover:text-text"
         >
           How we source data <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -46,8 +69,8 @@ export function SourcesStrip() {
 
       <div className="glass-frost overflow-hidden rounded-full py-4">
         <Marquee duration={38} repeat={2}>
-          <Group label="Retailers" names={RETAILERS} />
-          <Group label="Brands we track" names={BRANDS} />
+          <Group label="Retailers" items={RETAILERS} />
+          <Group label="Brands we track" items={BRANDS} />
         </Marquee>
       </div>
     </section>

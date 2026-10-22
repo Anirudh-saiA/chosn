@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CornerDownLeft, Search, Sparkles, Newspaper, Flame, Users, Bell } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, CornerDownLeft, Search } from 'lucide-react';
+import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { SneakerArt } from '@/components/ui/SneakerArt';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -15,25 +16,27 @@ interface Hit {
   colorway: string;
   defaultSize: number;
   currentPrice: number | null;
+  bestAvailablePrice: number | null;
+  primaryImageUrl: string | null;
 }
 
-const LINKS = [
-  { label: 'Search sneakers', href: '/sneakers', icon: Search },
-  { label: 'Upcoming drops', href: '/drops', icon: Flame },
-  { label: 'News', href: '/news', icon: Newspaper },
-  { label: 'Community', href: '/community', icon: Users },
-  { label: 'Notifications', href: '/notifications', icon: Bell },
-];
+/** Where the search button is on screen, so the box can grow out of it. */
+export interface PaletteOrigin {
+  x: number;
+  y: number;
+}
+
+const EXAMPLES = ['Nike Dunk Low', 'Air Jordan 4', 'New Balance 550', 'Adidas Samba', 'Air Force 1'];
 
 const inr = (n: number) => `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(n))}`;
 
 /**
- * ⌘K / Ctrl+K / "/" palette: jump anywhere or search the live catalog.
- * Fully keyboard operable (↑ ↓ Enter Esc), focus-trapped by the modal
- * pattern (aria-modal, focus moves to the input, restored on close).
+ * Search box, centred on the screen: it grows out of the header's search button over a blurred backdrop,
+ * results slide in one after another. ↑ ↓ Enter Esc all work; focus moves to the input and is restored on close.
  */
-export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CommandPalette({ open, onClose, origin }: { open: boolean; onClose: () => void; origin?: PaletteOrigin | null }) {
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +50,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       setQ('');
       setHits([]);
       setActive(0);
-      setTimeout(() => inputRef.current?.focus(), 30);
+      setTimeout(() => inputRef.current?.focus(), 120);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -69,7 +72,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/catalog/search?q=${encodeURIComponent(term)}&limit=6`, { signal: ctrl.signal });
+        const res = await fetch(`${API_URL}/catalog/search?q=${encodeURIComponent(term)}&limit=8`, { signal: ctrl.signal });
         if (!res.ok) throw new Error();
         const body = await res.json();
         setHits(body.results ?? []);
@@ -85,11 +88,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     };
   }, [q]);
 
-  const links = useMemo(
-    () => (q.trim() ? LINKS.filter((l) => l.label.toLowerCase().includes(q.trim().toLowerCase())) : LINKS),
-    [q],
-  );
-  const total = hits.length + links.length;
+  const term = q.trim();
+  const seeAll = term.length >= 2 && hits.length > 0 ? 1 : 0; // the row after the hits
+  const total = hits.length + seeAll;
 
   const go = useCallback(
     (href: string) => {
@@ -104,13 +105,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       if (i < hits.length) {
         const h = hits[i]!;
         go(`/sneakers/${encodeURIComponent(h.styleCode)}/${h.defaultSize}`);
-      } else if (links[i - hits.length]) {
-        go(links[i - hits.length]!.href);
-      } else if (q.trim()) {
-        go(`/sneakers?q=${encodeURIComponent(q.trim())}`);
+      } else if (term) {
+        go(`/sneakers?q=${encodeURIComponent(term)}`);
       }
     },
-    [hits, links, go, q],
+    [hits, go, term],
   );
 
   function onKey(e: React.KeyboardEvent) {
@@ -122,42 +121,56 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       setActive((a) => (total ? (a - 1 + total) % total : 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (total === 0 && q.trim()) go(`/sneakers?q=${encodeURIComponent(q.trim())}`);
-      else choose(active);
+      if (total > 0) choose(active);
+      else if (term) go(`/sneakers?q=${encodeURIComponent(term)}`);
     } else if (e.key === 'Escape') {
       onClose();
     }
   }
 
+  // Start the box at the search button (relative to the screen centre) and let it spring to the middle.
+  const from = useMemo(() => {
+    if (reduce || !origin || typeof window === 'undefined') return { x: 0, y: -16, scale: 0.97 };
+    return { x: origin.x - window.innerWidth / 2, y: origin.y - window.innerHeight / 2, scale: 0.12 };
+  }, [open, origin, reduce]);
+
+  const ease = [0.16, 1, 0.3, 1] as const;
+
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[90] flex items-start justify-center px-4 pt-[12vh]"
+          className="fixed inset-0 z-[90] flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: 0.2 }}
         >
-          <button
+          <motion.button
             type="button"
             aria-label="Close search"
-            className="absolute inset-0 cursor-default bg-vault-deep/75 backdrop-blur-md"
+            className="absolute inset-0 cursor-default bg-[#F1F7FB]/70"
+            initial={{ backdropFilter: 'blur(0px)' }}
+            animate={{ backdropFilter: 'blur(14px)' }}
+            exit={{ backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.35, ease }}
             onClick={onClose}
           />
+
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-label="Search CHOSN"
             onKeyDown={onKey}
-            initial={{ opacity: 0, y: -14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.985 }}
-            transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-            className="glass ticks relative w-full max-w-xl overflow-hidden shadow-lift"
+            layout
+            initial={{ opacity: 0, ...from, borderRadius: 999 }}
+            animate={{ opacity: 1, x: 0, y: 0, scale: 1, borderRadius: 28 }}
+            exit={{ opacity: 0, ...from, borderRadius: 999 }}
+            transition={reduce ? { duration: 0.15 } : { type: 'spring', stiffness: 230, damping: 25, mass: 0.9, opacity: { duration: 0.18 } }}
+            className="relative w-full max-w-[40rem] overflow-hidden border border-[#0A0A0A]/10 bg-white/95 shadow-[0_40px_120px_-30px_rgba(20,33,61,0.45)] backdrop-blur-xl"
           >
-            <div className="flex items-center gap-3 border-b border-text/10 px-4">
-              <Search className="h-4 w-4 shrink-0 text-brass" aria-hidden />
+            <div className="flex items-center gap-3 px-5">
+              <Search className="h-5 w-5 shrink-0 text-[#0A0A0A]" strokeWidth={2.2} aria-hidden />
               <input
                 ref={inputRef}
                 value={q}
@@ -167,77 +180,106 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 }}
                 placeholder="Search a sneaker, brand or style code…"
                 aria-label="Search sneakers"
-                className="h-14 w-full bg-transparent font-sans text-body text-text outline-none placeholder:text-text-faint"
+                autoComplete="off"
+                className="h-16 w-full bg-transparent font-sans text-[1.1rem] text-text outline-none placeholder:text-text-faint"
               />
-              <kbd className="hidden shrink-0 border border-text/15 px-1.5 py-0.5 font-mono text-[0.65rem] text-text-faint sm:block">ESC</kbd>
             </div>
 
-            <div className="max-h-[52vh] overflow-y-auto p-2" data-lenis-prevent>
-              {q.trim().length >= 2 && (
-                <p className="px-3 pb-1 pt-2 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">
-                  {loading ? 'Searching…' : hits.length ? 'Sneakers' : 'No sneakers match'}
-                </p>
+            {/* A thin bar that runs while results load */}
+            <div className="relative h-px bg-text/10">
+              {loading && (
+                <motion.span
+                  className="absolute inset-y-0 left-0 w-1/3 bg-[#D97E00]"
+                  animate={{ x: ['-100%', '300%'] }}
+                  transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+                />
               )}
-              {hits.map((h, i) => (
-                <button
-                  key={h.styleCode}
-                  type="button"
-                  onClick={() => choose(i)}
-                  onMouseEnter={() => setActive(i)}
-                  className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${active === i ? 'bg-brass/10' : 'hover:bg-text/[0.04]'}`}
-                >
-                  <span className="flex h-11 w-16 shrink-0 items-center justify-center bg-vault-deep/70">
-                    <SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-ui-label font-semibold text-text">
-                      {h.brand} {h.model}
-                    </span>
-                    <span className="block truncate font-mono text-meta text-text-faint">
-                      {h.styleCode} · {h.colorway}
-                    </span>
-                  </span>
-                  {h.currentPrice != null && <span className="font-mono text-data-inline text-text">{inr(h.currentPrice)}</span>}
-                  {active === i && <CornerDownLeft className="h-3.5 w-3.5 text-brass" aria-hidden />}
-                </button>
-              ))}
+            </div>
 
-              {links.length > 0 && (
-                <p className="px-3 pb-1 pt-3 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">Go to</p>
+            <div className="max-h-[56vh] overflow-y-auto p-2" data-lenis-prevent>
+              {term.length < 2 && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.3 }} className="px-3 pb-3 pt-2">
+                  <p className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">Popular searches</p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {EXAMPLES.map((ex) => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => {
+                          setQ(ex);
+                          inputRef.current?.focus();
+                        }}
+                        className="rounded-full border border-text/15 px-3.5 py-1.5 text-[0.84rem] text-text-soft transition-colors hover:border-text hover:text-text"
+                      >
+                        {ex}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
               )}
-              {links.map((l, j) => {
-                const i = hits.length + j;
-                const Icon = l.icon;
+
+              {term.length >= 2 && !loading && hits.length === 0 && (
+                <div className="px-3 py-6 text-center">
+                  <p className="text-[0.95rem] font-semibold text-text">No sneakers match “{term}”</p>
+                  <p className="mt-1 text-[0.82rem] text-text-soft">Check the spelling, or try just the brand or model.</p>
+                </div>
+              )}
+
+              {hits.map((h, i) => {
+                const price = h.bestAvailablePrice ?? h.currentPrice;
                 return (
-                  <button
-                    key={l.href}
+                  <motion.button
+                    key={h.styleCode}
                     type="button"
+                    initial={reduce ? false : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.03 * i, duration: 0.28, ease }}
                     onClick={() => choose(i)}
                     onMouseEnter={() => setActive(i)}
-                    className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${active === i ? 'bg-brass/10' : 'hover:bg-text/[0.04]'}`}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors ${active === i ? 'bg-[#F1F7FB]' : 'hover:bg-text/[0.04]'}`}
                   >
-                    <Icon className="h-4 w-4 text-text-soft" aria-hidden />
-                    <span className="flex-1 text-ui-label text-text">{l.label}</span>
-                    <ArrowRight className={`h-3.5 w-3.5 transition-opacity ${active === i ? 'text-brass opacity-100' : 'opacity-0'}`} aria-hidden />
-                  </button>
+                    <span className="relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-text/10">
+                      {h.primaryImageUrl ? (
+                        <ShoePhoto
+                          key={h.primaryImageUrl}
+                          src={h.primaryImageUrl}
+                          alt=""
+                          className="h-full w-full object-contain p-1"
+                          fallback={<SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />}
+                        />
+                      ) : (
+                        <SneakerArt colorway={h.colorway} brand={h.brand} className="h-9 w-14" shadow={false} />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-ui-label font-semibold text-text">
+                        {h.brand} {h.model.trim()}
+                      </span>
+                      <span className="block truncate font-mono text-meta text-text-faint">
+                        {h.styleCode} · {h.colorway}
+                      </span>
+                    </span>
+                    {price != null && <span className="font-mono text-data-inline font-semibold text-text">{inr(price)}</span>}
+                    {active === i && <CornerDownLeft className="h-3.5 w-3.5 text-[#D97E00]" aria-hidden />}
+                  </motion.button>
                 );
               })}
 
-              {q.trim() && !loading && hits.length === 0 && (
-                <button
+              {seeAll === 1 && (
+                <motion.button
                   type="button"
-                  onClick={() => go(`/sneakers?q=${encodeURIComponent(q.trim())}`)}
-                  className="mt-1 flex w-full items-center gap-3 px-3 py-2.5 text-left text-ui-label text-text-soft hover:bg-text/[0.04]"
+                  initial={reduce ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.03 * hits.length + 0.05 }}
+                  onClick={() => choose(hits.length)}
+                  onMouseEnter={() => setActive(hits.length)}
+                  className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${active === hits.length ? 'bg-[#F1F7FB]' : 'hover:bg-text/[0.04]'}`}
                 >
-                  <Sparkles className="h-4 w-4 text-brass" aria-hidden />
-                  Search the full catalog for “{q.trim()}”
-                </button>
+                  <Search className="h-4 w-4 text-[#0A0A0A]" aria-hidden />
+                  <span className="flex-1 truncate text-ui-label font-semibold text-text">See all results for “{term}”</span>
+                  <ArrowRight className={`h-3.5 w-3.5 transition-opacity ${active === hits.length ? 'text-[#D97E00] opacity-100' : 'opacity-0'}`} aria-hidden />
+                </motion.button>
               )}
-            </div>
-
-            <div className="flex items-center justify-between border-t border-text/10 px-4 py-2 font-mono text-[0.65rem] text-text-faint">
-              <span>↑↓ navigate · ↵ open</span>
-              <span>CHOSN</span>
             </div>
           </motion.div>
         </motion.div>

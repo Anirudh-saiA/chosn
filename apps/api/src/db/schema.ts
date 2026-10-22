@@ -153,6 +153,25 @@ export const retailers = pgTable(
     /** A pointer into the secrets store — never the credential itself. */
     apiCredentialsRef: text('api_credentials_ref'),
     status: retailerStatusEnum('status').notNull().default('pending_integration'),
+    /** The store's own published delivery estimate (days) and where it came from — drizzle/0019. */
+    deliveryMinDays: integer('delivery_min_days'),
+    deliveryMaxDays: integer('delivery_max_days'),
+    deliveryNote: text('delivery_note'),
+    deliverySourceUrl: text('delivery_source_url'),
+    /** Store rating; null until a citable source exists (rating_source / rating_url say which). */
+    rating: numeric('rating', { precision: 2, scale: 1 }),
+    reviewCount: integer('review_count'),
+    ratingSource: text('rating_source'),
+    ratingUrl: text('rating_url'),
+    ratingUpdatedAt: timestamp('rating_updated_at', { withTimezone: true }),
+    /** What the store itself publishes about paying, shipping and returns, and its live offers — drizzle/0020. */
+    paymentMethods: text('payment_methods').array(),
+    shippingNote: text('shipping_note'),
+    returnsNote: text('returns_note'),
+    returnsTone: text('returns_tone'),
+    infoSourceUrl: text('info_source_url'),
+    offers: jsonb('offers').notNull().default([]),
+    offersUpdatedAt: timestamp('offers_updated_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -192,6 +211,8 @@ export const priceSnapshots = pgTable(
     listingUrl: text('listing_url').notNull(),
     /** This retailer's own listing image, captured at fetch time — the fallback tier below sneakers.primaryImageUrl. See 0018_price_snapshot_image_url.sql. */
     imageUrl: text('image_url'),
+    /** The store's own "was" price (Shopify compare_at_price), when it shows one higher than the price. See 0033_compare_at_price.sql. */
+    compareAtPrice: numeric('compare_at_price', { precision: 12, scale: 2 }),
     authenticityVerified: boolean('authenticity_verified').notNull().default(false),
     /** Fast current-price lookup without scanning history. */
     isLatest: boolean('is_latest').notNull().default(true),
@@ -335,6 +356,12 @@ export const waitlistEntries = pgTable('waitlist_entries', {
   interests: text('interests').array().notNull().default([]),
   source: text('source').notNull().default('landing_page'),
   confirmed: boolean('confirmed').notNull().default(true),
+  name: text('name'),
+  trackedShoes: text('tracked_shoes').array().notNull().default([]),
+  unsubscribeToken: uuid('unsubscribe_token').notNull().defaultRandom(),
+  welcomeSentAt: timestamp('welcome_sent_at', { withTimezone: true }),
+  followupSentAt: timestamp('followup_sent_at', { withTimezone: true }),
+  unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   /** Day 16 — set once this email creates a real account; never retroactively guessed, never deleted. See 0008_auth.sql. */
   linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),

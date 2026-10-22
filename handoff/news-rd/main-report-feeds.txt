@@ -1,0 +1,46 @@
+[news-feeds] 1 new items; 0 old removed
+  - Hypebeast: 19 in feed, 19 recent, 0 new
+  - Highsnobiety: 14 in feed, 9 recent, 0 new
+  - Sneaker Bar Detroit: 25 in feed, 20 recent, 0 new
+  - Just Fresh Kicks: 12 in feed, 12 recent, 0 new
+  - WearTesters: 18 in feed, 7 recent, 0 new
+  - Sneaker Files: 7 in feed, 7 recent, 0 new
+  - Esquire India: 3 in feed, 0 recent, 0 new
+  - GQ India: 30 in feed, 7 recent, 1 new
+  - SoleSavy: 11 in feed, 11 recent, 0 new
+  - Footwear News: 10 in feed, 7 recent, 0 new
+  - Gear Patrol: 75 in feed, 16 recent, 0 new
+  - Fashionista: 50 in feed, 2 recent, 0 new
+  - Business of Fashion: 100 in feed, 6 recent, 0 new
+  - Vogue: 30 in feed, 1 recent, 0 new
+  - GQ: 30 in feed, 1 recent, 0 new
+  - Esquire: 50 in feed, 1 recent, 0 new
+  - Dazed: 15 in feed, 2 recent, 0 new
+  - Vogue India: 30 in feed, 0 recent, 0 new
+  - Rolling Stone India: 10 in feed, 0 recent, 0 new
+  - Hindustan Times Lifestyle: 65 in feed, 0 recent, 0 new
+  - Times of India Fashion: 20 in feed, 0 recent, 0 new
+  - Indian Express Lifestyle: 200 in feed, 0 recent, 0 new
+  - Economic Times Retail: 10 in feed, 1 recent, 0 new
+  - Inc42: 24 in feed, 0 recent, 0 new
+  - YourStory: 20 in feed, 0 recent, 0 new
+  - India Fashion Icon: 10 in feed, 0 recent, 0 new
+  - Page Six: 10 in feed, 1 recent, 0 new
+  - Harper's Bazaar: 50 in feed, 11 recent, 0 new
+  - Elle: 50 in feed, 10 recent, 0 new
+  - Who What Wear: 50 in feed, 13 recent, 0 new
+  - WWD: 10 in feed, 4 recent, 0 new
+  - Vanity Fair: 30 in feed, 3 recent, 0 new
+  - Hypebeast Fashion: 20 in feed, 5 recent, 0 new
+  - BellaNaija Style: 50 in feed, 10 recent, 0 new
+  - Pinkvilla: 50 in feed, 1 recent, 0 new
+  - Bollywood Hungama: 50 in feed, 2 recent, 0 new
+  - Hindustan Times Entertainment: 92 in feed, 4 recent, 0 new
+  - Indian Express Entertainment: 200 in feed, 3 recent, 0 new
+  - Luxebook India: 10 in feed, 1 recent, 0 new
+  - Campus: 24 in feed, 4 recent, 0 new
+  - Gully Labs: 30 in feed, 0 recent, 0 new
+  - Superkicks: 25 in feed, 0 recent, 0 new
+  - Limited Edt: 4 in feed, 0 recent, 0 new
+  - Thaely: 4 in feed, 0 recent, 0 new
+  - Crepdog Crew: 1 in feed, 0 recent, 0 new

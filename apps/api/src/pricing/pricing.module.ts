@@ -14,6 +14,8 @@ import { FetchTriggerController } from './fetch-trigger.controller';
 import { MarketIntelligenceCacheService } from './market-intelligence-cache.service';
 import { MarketIntelligenceController } from './market-intelligence.controller';
 import { MarketIntelligenceService } from './market-intelligence.service';
+import { PriceImportController } from './price-import/price-import.controller';
+import { PriceImportService } from './price-import/price-import.service';
 import { PriceSnapshotService } from './price-snapshot.service';
 
 /**
@@ -26,7 +28,7 @@ import { PriceSnapshotService } from './price-snapshot.service';
  * retailers row. Nothing in this module or PriceFetchService changes.
  */
 @Module({
-  controllers: [FetchHealthController, FetchTriggerController, MarketIntelligenceController],
+  controllers: [FetchHealthController, FetchTriggerController, MarketIntelligenceController, PriceImportController],
   providers: [
     pgPoolProvider,
     redisProvider,
@@ -34,6 +36,7 @@ import { PriceSnapshotService } from './price-snapshot.service';
     ...RETAILER_ADAPTER_CLASSES,
     retailerAdaptersProvider,
     PriceSnapshotService,
+    PriceImportService,
     FetchHealthService,
     PriceFetchService,
     MarketIntelligenceCacheService,

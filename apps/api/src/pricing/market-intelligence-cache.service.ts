@@ -46,6 +46,18 @@ export class MarketIntelligenceCacheService {
     }
   }
 
+  /** Bulk write-through for the batched refresh: one pipelined round trip instead of one per variant. */
+  async setMany(summaries: MarketIntelligenceSummary[]): Promise<void> {
+    if (summaries.length === 0) return;
+    try {
+      const pipe = this.redis.pipeline();
+      for (const s of summaries) pipe.set(this.key(s.sneakerVariantId), JSON.stringify(s), 'EX', TTL_SECONDS);
+      await pipe.exec();
+    } catch (err) {
+      this.logger.warn(`cache write failed for ${summaries.length} variants: ${(err as Error).message}`);
+    }
+  }
+
   async invalidate(variantId: string): Promise<void> {
     try {
       await this.redis.del(this.key(variantId));

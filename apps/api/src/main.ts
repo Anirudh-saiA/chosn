@@ -29,6 +29,8 @@ async function bootstrap() {
   // both the production and staging Vercel URLs can be allowed at once
   // — a single-origin WEB_ORIGIN (or none set) behaves exactly as
   // before.
+  // CSV price imports arrive as JSON text; the 100kb default is too small for a big sheet.
+  app.useBodyParser('json', { limit: '1mb' });
   app.enableCors({ origin: parseAllowedOrigins(process.env.WEB_ORIGIN) });
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),

@@ -31,7 +31,7 @@ export function DropStatusBadge({ dropEventId, initialStatus, className = '' }: 
     return () => clearTimeout(t);
   }, [isLive]);
 
-  const label = status === 'live' ? 'Live now' : status === 'sold_out' ? 'Sold out' : 'Upcoming';
+  const label = status === 'live' ? 'Live now' : status === 'sold_out' ? 'Released' : 'Upcoming';
 
   return (
     <span

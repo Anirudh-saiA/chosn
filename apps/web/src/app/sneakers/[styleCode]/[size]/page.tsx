@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { DropStatusBadge } from '@/components/drops/DropStatusBadge';
-import { NotifyToggle } from '@/components/drops/NotifyToggle';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { PageShell } from '@/components/ui/PageShell';
 import { PriceComparisonView } from '@/components/pricing/PriceComparisonView';
-import { fetchAllVariantParams, fetchCatalogVariant, formatInr, formatSize } from '@/lib/catalog';
+import { fetchAllVariantParams, fetchCatalogVariant, fetchColours, fetchSimilar, formatInr, formatSize } from '@/lib/catalog';
 import { fetchDropForSneaker } from '@/lib/drops';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -72,9 +70,11 @@ export async function generateStaticParams() {
 
 export default async function SneakerPricePage({ params }: PageProps) {
   const { styleCode, size } = await params;
-  const [data, drop] = await Promise.all([
+  const [data, drop, similar, colours] = await Promise.all([
     loadVariant(styleCode, size),
     fetchDropForSneaker(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
+    fetchSimilar(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
+    fetchColours(styleCode, { next: { revalidate: REVALIDATE_SECONDS } }),
   ]);
   if (!data) notFound();
 
@@ -101,12 +101,10 @@ export default async function SneakerPricePage({ params }: PageProps) {
         styleCode={styleCode}
         initialData={data}
         imageUrl={imageUrl}
-        // Most sneakers have no drop_event yet — this is the normal
-        // case, not a loading state, so it renders nothing.
-        badges={drop ? <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} /> : null}
-        notify={
-          <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
-        }
+        // Most sneakers have no drop_event yet - the normal case, so no badge.
+        drop={drop ? { id: drop.id, status: drop.status } : null}
+        colours={colours}
+        similar={similar}
       />
     </PageShell>
   );

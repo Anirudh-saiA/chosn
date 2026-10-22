@@ -1,3 +1,7 @@
+export type NewsCategory = 'release' | 'collab' | 'culture' | 'industry';
+
+export const CATEGORY_LABEL: Record<NewsCategory, string> = { release: 'Releases', collab: 'Collabs', culture: 'Culture', industry: 'Industry' };
+
 /** Mirrors apps/api/src/drops/news.service.ts's NewsListItem. */
 export interface NewsListItem {
   id: string;
@@ -6,21 +10,33 @@ export interface NewsListItem {
   source: string;
   sourceUrl: string | null;
   isBreaking: boolean;
+  /** Gathered from another site's public feed: headline, excerpt and a link out. */
+  external?: boolean;
   publishedAt: string;
   dropEventId: string | null;
+  /** Tags: brands named, kind of story, India angle; the shoe it is about (a Compare search); other sites that ran the same story. */
+  brands?: string[];
+  category?: NewsCategory | null;
+  india?: boolean;
+  shoeQuery?: string | null;
+  /** A picture kept on our server and its credit line. */
+  imageUrl?: string | null;
+  imageCredit?: string | null;
+  alsoCoveredBy?: string[];
   dropSneaker: { styleCode: string; brand: string; model: string } | null;
 }
 
 export interface NewsListResponse {
   items: NewsListItem[];
   total: number;
+  sources?: string[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 /** Never throws — an empty feed is a legitimate state (task 6), not a failed page. */
 export async function fetchNewsList(
-  params: { limit?: number; offset?: number; dropEventId?: string } = {},
+  params: { limit?: number; offset?: number; dropEventId?: string; external?: '0' | '1'; brand?: string; category?: NewsCategory; sort?: 'latest' | 'relevance' } = {},
   init?: RequestInit,
 ): Promise<NewsListResponse> {
   try {
@@ -28,6 +44,10 @@ export async function fetchNewsList(
     if (params.limit) query.set('limit', String(params.limit));
     if (params.offset) query.set('offset', String(params.offset));
     if (params.dropEventId) query.set('dropEventId', params.dropEventId);
+    if (params.external) query.set('external', params.external);
+    if (params.brand) query.set('brand', params.brand);
+    if (params.category) query.set('category', params.category);
+    if (params.sort) query.set('sort', params.sort);
     const qs = query.toString();
     const res = await fetch(`${API_URL}/news${qs ? `?${qs}` : ''}`, init);
     if (!res.ok) return { items: [], total: 0 };

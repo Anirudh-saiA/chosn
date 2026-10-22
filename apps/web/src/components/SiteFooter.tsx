@@ -9,8 +9,9 @@ const LINK = 'font-display text-[1.15rem] uppercase tracking-[0.12em] text-[#0A0
 const COLUMNS = [
   [
     ['/sneakers', 'Compare'],
-    ['/drops', 'Drops'],
-    ['/news', 'News'],
+    ['/brands', 'Brands'],
+    ['/price-drops', 'Crazy falls'],
+    ['/releases', 'Releases'],
     ['/community', 'Community'],
   ],
   [
@@ -18,6 +19,7 @@ const COLUMNS = [
     [FEEDBACK_MAILTO, 'Feedback'],
   ],
   [
+    ['/stores', 'Stores we compare'],
     ['/transparency', 'Transparency'],
     ['/community-guidelines', 'Guidelines'],
     ['/terms', 'Terms'],
@@ -33,7 +35,7 @@ const COLUMNS = [
  */
 export function SiteFooter() {
   return (
-    <footer className="relative mt-24 overflow-hidden bg-white">
+    <footer className="relative mt-24 overflow-hidden bg-[#dce9f3]">
       <div className="mx-auto max-w-[90rem] px-5 pb-8 pt-10 sm:px-8">
         <div className="relative flex min-h-[26rem] items-center justify-center">
           {/* outline-only wordmark in the hero's display face, orange; the links sit on top of it */}

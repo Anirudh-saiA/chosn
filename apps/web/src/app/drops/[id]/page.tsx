@@ -16,9 +16,10 @@ import { Reveal } from '@/components/fx/Reveal';
 import { paletteFor } from '@/lib/sneaker/palette';
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { formatInr } from '@/lib/catalog';
 import { listPosts } from '@/lib/community';
-import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo } from '@/lib/drops';
+import { DropFollow } from '@/components/drops/DropFollow';
+import { IndiaPanel } from '@/components/drops/IndiaPanel';
+import { fetchDropDetail, fetchDropsList, formatRegions, formatReleaseTime, parsePurchaseLinks, parseRaffleInfo, formatDropPrice } from '@/lib/drops';
 import { getChatRoomByDrop } from '@/lib/chat';
 import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
 
@@ -95,19 +96,20 @@ export default async function DropDetailPage({ params }: PageProps) {
 
   const specs = [
     { icon: CalendarDays, label: 'Release date', value: releaseDateLabel },
-    { icon: Clock, label: 'Time', value: drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA' },
+    { icon: Clock, label: 'Indian time', value: drop.indiaTime ?? (drop.releaseTime ? `${formatReleaseTime(drop.releaseTime)} IST` : 'TBA') },
     { icon: MapPin, label: 'Regions', value: regionText || '—' },
-    ...(drop.retailPrice ? [{ icon: Tag, label: 'Retail price', value: formatInr(Number(drop.retailPrice)) }] : []),
+    ...(drop.retailPrice ? [{ icon: Tag, label: drop.fxRate ? 'Retail price (converted to rupees)' : 'Retail price', value: formatDropPrice(drop, true) }] : []),
+    ...(drop.sourceName ? [{ icon: Tag, label: drop.confirmation === 'confirmed' || !drop.confirmation ? 'Confirmed by' : drop.confirmation === 'reported' ? 'Reported by' : 'Source (unconfirmed)', value: drop.sourceName }] : []),
   ];
 
   return (
     <PageShell width="7xl">
       <DropLiveProvider>
         <Link
-          href="/drops"
+          href="/releases?tab=drops"
           className="mb-8 inline-flex min-h-[44px] items-center gap-2 font-mono text-meta uppercase tracking-[0.14em] text-text-soft transition-colors hover:text-brass-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Drop calendar
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
@@ -134,6 +136,9 @@ export default async function DropDetailPage({ params }: PageProps) {
               <p className="pointer-events-none absolute left-4 top-4 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-brass sm:left-6 sm:top-6">
                 {sneaker.styleCode}
               </p>
+              {sneaker.imageCredit ? (
+                <p className="pointer-events-none absolute bottom-3 right-4 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-text-faint">{sneaker.imageCredit}</p>
+              ) : null}
             </div>
           </Reveal>
 
@@ -176,7 +181,20 @@ export default async function DropDetailPage({ params }: PageProps) {
             </Reveal>
 
             <Reveal delay={0.14}>
-              <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+              <div className="flex flex-col gap-4">
+                <DropFollow dropId={drop.id} brand={sneaker.brand} dateOnly={!drop.releaseTime} />
+                <NotifyToggle brand={sneaker.brand} styleCode={sneaker.styleCode} modelLabel={`${sneaker.brand} ${sneaker.model}`} />
+              </div>
+            </Reveal>
+
+            {drop.story ? (
+              <Reveal delay={0.15}>
+                <p className="text-body leading-relaxed text-text-soft">{drop.story}</p>
+              </Reveal>
+            ) : null}
+
+            <Reveal delay={0.15}>
+              <IndiaPanel drop={drop} />
             </Reveal>
 
             <Reveal delay={0.16}>

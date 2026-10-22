@@ -75,9 +75,12 @@ function cspHeaderValue() {
     // (an <img> load can't execute script the way a script-src or
     // connect-src opening would; the realistic residual risk is a
     // tracking-pixel-style information leak via image request, not XSS).
-    'img-src': ["'self'", 'data:', 'https:'],
+    // Pictures of upcoming drops are hosted by our own API (/media/releases), which is plain http on a local machine.
+    'img-src': ["'self'", 'data:', 'https:', api.http],
     'font-src': ["'self'"], // next/font self-hosts every face at build time (layout.tsx's own comment) — no fonts.gstatic.com needed at runtime
     'connect-src': ["'self'", api.http, api.ws, posthogHost, ...(sentryHost ? [sentryHost] : [])],
+    // The magazine's video pages play YouTube videos in its privacy-friendly embed (no cookies until played); nothing else may be framed.
+    'frame-src': ['https://www.youtube-nocookie.com'],
     'frame-ancestors': ["'none'"], // the actual CSP-level anti-clickjacking directive — X-Frame-Options below is the same protection for older browsers that don't read this
     'base-uri': ["'self'"],
     'form-action': ["'self'"],

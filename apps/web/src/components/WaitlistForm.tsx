@@ -16,11 +16,17 @@ type Status = 'idle' | 'submitting' | 'joined' | 'already-joined' | 'error';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export function WaitlistForm() {
+  const [name, setName] = useState('');
+  const [shoe, setShoe] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const emailId = useId();
+  const nameId = useId();
+  const phoneId = useId();
+  const shoeId = useId();
   const statusId = useId();
 
   function toggleInterest(tag: string) {
@@ -40,7 +46,13 @@ export function WaitlistForm() {
       const res = await fetch(`${API_URL}/waitlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, interests: interests.length ? interests : undefined }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email,
+          phone: phone.trim() || undefined,
+          interests: interests.length ? interests : undefined,
+          shoes: shoe.trim() ? [shoe.trim()] : undefined,
+        }),
       });
 
       if (res.ok) {
@@ -101,6 +113,35 @@ export function WaitlistForm() {
   const busy = status === 'submitting';
   return (
     <form onSubmit={handleSubmit} className="max-w-[46ch]" noValidate>
+      <label htmlFor={nameId} className={labelClass}>
+        Your name
+      </label>
+      <Input
+        id={nameId}
+        name="name"
+        required
+        maxLength={60}
+        autoComplete="given-name"
+        placeholder="Your first name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="mb-4 mt-2 min-h-[48px]"
+      />
+
+      <label htmlFor={phoneId} className={labelClass}>
+        Phone number <span className="normal-case tracking-normal text-text-faint">(optional)</span>
+      </label>
+      <Input
+        id={phoneId}
+        type="tel"
+        name="phone"
+        autoComplete="tel"
+        placeholder="+91 98765 43210"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="mb-5 mt-2 min-h-[48px]"
+      />
+
       <label htmlFor={emailId} className={labelClass}>
         Email address
       </label>
@@ -150,6 +191,19 @@ export function WaitlistForm() {
           })}
         </div>
       </fieldset>
+
+      <label htmlFor={shoeId} className={`${labelClass} mt-5 block`}>
+        Which shoe are you chasing? <span className="normal-case tracking-normal text-text-faint">(optional)</span>
+      </label>
+      <Input
+        id={shoeId}
+        name="shoe"
+        maxLength={80}
+        placeholder="e.g. Jordan 4 Military Blue"
+        value={shoe}
+        onChange={(e) => setShoe(e.target.value)}
+        className="mt-2 min-h-[48px]"
+      />
 
       {/* Live region stays mounted (empty) so screen readers announce the message when it appears. */}
       <div id={statusId} role="alert" className="mt-4 min-h-[1.25em]">

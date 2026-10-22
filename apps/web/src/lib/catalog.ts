@@ -27,6 +27,30 @@ export interface MarketIntelligence {
   computedAt: string;
 }
 
+/** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. */
+export interface StoreOffer {
+  kind: string;
+  text: string;
+  code?: string;
+  bank?: string;
+  upTo?: number;
+  conditions?: string;
+  url?: string;
+  source?: string;
+  seenAt?: string;
+}
+
+/** A group of ways to pay (UPI, cards, wallets ...) exactly as the store shows them. */
+export interface PaymentGroup {
+  kind: string;
+  label: string;
+  items: string[];
+  note?: string;
+  unavailable?: boolean;
+  source?: string;
+  seenAt?: string;
+}
+
 export interface CatalogOffer {
   retailerSlug: string;
   retailerName: string;
@@ -42,6 +66,32 @@ export interface CatalogOffer {
   imageUrl: string | null;
   fetchedAt: string;
   fetchFrequencyMinutes: number;
+  /** The store's own published delivery estimate in days (null = not published). */
+  deliveryMinDays: number | null;
+  deliveryMaxDays: number | null;
+  deliveryNote: string | null;
+  deliverySourceUrl: string | null;
+  /** Store rating — only ever set from a cited source; null = no review data. */
+  rating: number | null;
+  reviewCount: number | null;
+  ratingSource: string | null;
+  ratingUrl: string | null;
+  /** The store's Trust score (0-100), how much evidence is behind it, and the working. Null until computed. */
+  trustScore?: number | null;
+  trustConfidence?: 'high' | 'medium' | 'low' | null;
+  trustDetail?: { parts: Record<string, number>; why: string[]; sources: Array<{ title: string; url: string }>; formula: string; computed: string } | null;
+  /** Payment methods the store says it accepts; empty = the store doesn't say (nothing is shown). */
+  paymentMethods: string[];
+  shippingNote: string | null;
+  returnsNote: string | null;
+  /** 'ok' | 'limited' | 'none' */
+  returnsTone: string | null;
+  infoSourceUrl: string | null;
+  /** Live offers read from the store's own site, plus the ones checked by hand. */
+  offers: StoreOffer[];
+  /** Every way to pay, grouped. Cached pages from before this field existed have none. */
+  paymentOptions?: PaymentGroup[];
+  offersUpdatedAt: string | null;
   isStale: boolean;
   /** 'fixture' = placeholder data, not a real quote — see OfferTable's disclosure. */
   mode: 'live' | 'fixture' | 'manual';
@@ -55,6 +105,8 @@ export interface CatalogSneaker {
   silhouette: string | null;
   gender: string;
   primaryImageUrl: string | null;
+  /** Other angles of the same pair; empty when only the primary photo is known. */
+  galleryImageUrls?: string[];
 }
 
 export interface CatalogVariant {
@@ -67,14 +119,46 @@ export interface CatalogVariant {
 export interface SiblingSize {
   size: number;
   sizeSystem: string;
+  /** At least one connected store has this size in stock right now (undefined from an older API: treat as available). */
+  available?: boolean;
 }
 
 export interface CatalogResponse {
   sneaker: CatalogSneaker;
   variant: CatalogVariant;
   siblingSizes: SiblingSize[];
+  /** Every store CHOSN reads prices from. */
+  connectedStores?: Array<{ slug: string; name: string; logoUrl?: string | null }>;
   offers: CatalogOffer[];
   marketIntelligence: MarketIntelligence | null;
+  /** Buy now / Wait outlook for this shoe in this size (apps/api price-outlook.ts). */
+  outlook?: PriceOutlook | null;
+}
+
+export interface PriceOutlook {
+  verdict: 'buy_now' | 'wait' | 'fair' | 'unclear';
+  headline: string;
+  score: number;
+  confidence: 'low' | 'medium' | 'high';
+  factors: Array<{ label: string; effect: 'buy' | 'wait' | 'info'; detail: string; points: number }>;
+  peerDropShare: number | null;
+  peerCount: number;
+  peerWindowDays: number;
+  historyDays: number;
+  model: string;
+}
+
+/** One colourway of a model (mirrors apps/api catalog.service ColourOption). */
+export interface ColourOption {
+  styleCode: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  defaultSize: number;
+  /** UK sizes this colourway has in stock. */
+  sizesInStock: number[];
+  bestAvailablePrice: number | null;
+  /** The shoe the page is about. */
+  current: boolean;
 }
 
 export interface SearchResultItem {
@@ -88,8 +172,21 @@ export interface SearchResultItem {
   defaultSizeSystem: string;
   currentPrice: number | null;
   bestAvailablePrice: number | null;
+  /** Buy now / Wait / Fair price for the size the card shows; null when there is too little evidence to call it. */
+  outlook?: 'buy_now' | 'wait' | 'fair' | 'unclear' | null;
   signal: Signal | null;
   currency: string;
+  /** How many real stores have this shoe in stock (search results only). */
+  storeCount?: number;
+  /** Search results: the stores that have this shoe in stock, A to Z. */
+  storeNames?: string[];
+  /** Search results: every matching colourway of this model, the shown one first (one card per model). */
+  colours?: Array<Pick<ColourOption, 'styleCode' | 'colorway' | 'primaryImageUrl' | 'defaultSize' | 'bestAvailablePrice'> & { sizes?: number[]; storeSlugs?: string[]; sizeList?: Array<{ size: number; available: boolean }>; offers?: Array<{ slug: string; price: number; inStock: boolean; wasPrice: number | null }> }>;
+  /** Only on similar-sneaker results: same model in another colourway. */
+  sameModel?: boolean;
+  /** Only on similar-sneaker results: cheapest in-stock store and its direct listing link. */
+  bestRetailerName?: string;
+  listingUrl?: string;
 }
 
 export interface CommunityPostSearchResult {
@@ -101,17 +198,50 @@ export interface CommunityPostSearchResult {
   createdAt: string;
 }
 
+export interface FacetOption {
+  value: string;
+  count: number;
+}
+
+export interface SearchFacets {
+  brands: FacetOption[];
+  stores: Array<{ slug: string; name: string; count: number }>;
+  colors: FacetOption[];
+  price: { min: number; max: number; p98: number };
+}
+
 export interface SearchResponse {
   results: SearchResultItem[];
+  /** Name and logo of every live store. */
+  storeDirectory?: Array<{ slug: string; name: string; logoUrl: string | null }>;
   total: number;
   brands: string[];
+  facets: SearchFacets;
   communityPosts: CommunityPostSearchResult[];
 }
 
 export interface SearchQuery {
   q?: string;
+  /** Comma-separated lists for brand / store / color. */
   brand?: string;
+  store?: string;
+  color?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  minStores?: string;
+  soldOut?: string;
+  sort?: string;
   signal?: string;
+  /** Buy now / Wait verdict filter. */
+  outlook?: string;
+  /** UK size: only shoes in stock in this size, priced for it. */
+  size?: string;
+  /** Only shoes a store first listed in the last N days. */
+  newDays?: string;
+  /** Page number (1-based); the browse page turns it into limit + offset for the API. */
+  page?: string;
+  limit?: string;
+  offset?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -119,9 +249,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 /** Server-side search/browse (Day 11) — query params drive the filter, same endpoint either way. */
 export async function fetchSearch(query: SearchQuery, init?: RequestInit): Promise<SearchResponse> {
   const params = new URLSearchParams();
-  if (query.q) params.set('q', query.q);
-  if (query.brand) params.set('brand', query.brand);
-  if (query.signal) params.set('signal', query.signal);
+  for (const [key, value] of Object.entries(query)) {
+    if (value) params.set(key, value);
+  }
 
   const res = await fetch(`${API_URL}/catalog/search?${params.toString()}`, init);
   if (!res.ok) throw new Error(`search fetch failed: ${res.status}`);
@@ -173,6 +303,56 @@ export async function fetchCatalogVariant(
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`catalog fetch failed: ${res.status}`);
   return res.json() as Promise<CatalogResponse>;
+}
+
+/** One shoe in the side-by-side compare view (mirrors apps/api catalog.service CompareItem). */
+export interface CompareItem {
+  styleCode: string;
+  brand: string;
+  model: string;
+  colorway: string;
+  primaryImageUrl: string | null;
+  bestPrice: number | null;
+  bestRetailerName: string | null;
+  sizesInStock: number[];
+  linkSize: number | null;
+  offers: Array<{
+    retailerSlug: string;
+    retailerName: string;
+    bestPrice: number;
+    listingUrl: string;
+    sizesInStock: number[];
+  }>;
+}
+
+/** Shoes similar to `styleCode` (other colourways, then the brand's closest models) that are in stock somewhere. */
+export async function fetchSimilar(styleCode: string, init?: RequestInit): Promise<SearchResultItem[]> {
+  try {
+    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/similar?limit=14`, init);
+    if (!res.ok) return [];
+    return ((await res.json()) as { results: SearchResultItem[] }).results;
+  } catch {
+    return []; // the rail is an extra — never fail the page over it
+  }
+}
+
+/** The model's colourways, this shoe first (empty when the API can't be reached - the picker just hides). */
+export async function fetchColours(styleCode: string, init?: RequestInit): Promise<ColourOption[]> {
+  try {
+    const res = await fetch(`${API_URL}/catalog/${encodeURIComponent(styleCode)}/colours`, init);
+    if (!res.ok) return [];
+    return ((await res.json()) as { colours: ColourOption[] }).colours;
+  } catch {
+    return [];
+  }
+}
+
+/** Up to four shoes side by side, in the order requested. */
+export async function fetchCompare(styleCodes: string[], init?: RequestInit): Promise<CompareItem[]> {
+  if (styleCodes.length === 0) return [];
+  const res = await fetch(`${API_URL}/catalog/compare?styles=${encodeURIComponent(styleCodes.join(','))}`, init);
+  if (!res.ok) throw new Error(`compare fetch failed: ${res.status}`);
+  return ((await res.json()) as { items: CompareItem[] }).items;
 }
 
 /** en-IN grouping (lakh/crore boundaries) — the market this product is built for. */

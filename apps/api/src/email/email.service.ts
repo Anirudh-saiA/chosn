@@ -1,22 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-
-const CONFIRMATION_HTML = `
-<div style="background:#F6F5F1;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
-  <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #ddd;padding:32px;">
-    <p style="font-size:20px;font-weight:bold;color:#141414;margin:0 0 24px;letter-spacing:0.02em;">
-      CH<span style="color:#C6963C;">O</span>SN
-    </p>
-    <p style="font-size:16px;color:#141414;margin:0 0 16px;">You're on the list.</p>
-    <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 16px;">
-      We'll email you the moment community access opens — drop alerts,
-      restock pings, and everything else, sent to this address.
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#555;margin:0;">No action needed right now.</p>
-    <p style="font-size:13px;color:#999;margin:32px 0 0;">— CHOSN</p>
-  </div>
-</div>
-`.trim();
+import { followupMail, welcomeMail, type WaitlistMailContext } from './waitlist-templates';
 
 @Injectable()
 export class EmailService {
@@ -31,17 +15,61 @@ export class EmailService {
     this.resend = key ? new Resend(key) : null;
   }
 
-  async sendWaitlistConfirmation(email: string): Promise<void> {
+  get enabled(): boolean {
+    return this.resend !== null;
+  }
+
+  /** A plain transactional mail (wishlist alerts, confirmations). True only when Resend accepted it. */
+  async sendMail(to: string, subject: string, html: string, text: string, unsubscribeUrl?: string): Promise<boolean> {
     if (!this.resend) {
-      this.logger.debug(`RESEND_API_KEY unset — skipping confirmation email to ${email}`);
-      return;
+      this.logger.debug(`RESEND_API_KEY unset - skipping mail to ${to}`);
+      return false;
+    }
+    const { error } = await this.resend.emails.send({
+      from: process.env.RESEND_FROM ?? 'CHOSN <onboarding@resend.dev>',
+      replyTo: process.env.RESEND_REPLY_TO || undefined,
+      to,
+      subject,
+      html,
+      text,
+      headers: unsubscribeUrl ? { 'List-Unsubscribe': `<${unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : undefined,
+    });
+    if (error) {
+      this.logger.warn(`resend rejected mail to ${to}: ${error.message}`);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Returns true only when Resend accepted the message. Resend reports
+   * failures in the response (it does not throw), so that has to be
+   * checked or a rejected send would be recorded as delivered.
+   */
+  async sendWaitlistMail(kind: 'welcome' | 'followup', to: string, ctx: WaitlistMailContext): Promise<boolean> {
+    if (!this.resend) {
+      this.logger.debug(`RESEND_API_KEY unset — skipping ${kind} email to ${to}`);
+      return false;
     }
 
-    await this.resend.emails.send({
+    const { subject, html, text } = kind === 'welcome' ? welcomeMail(ctx) : followupMail(ctx);
+    const { error } = await this.resend.emails.send({
       from: process.env.RESEND_FROM ?? 'CHOSN <onboarding@resend.dev>',
-      to: email,
-      subject: "You're on the CHOSN waitlist",
-      html: CONFIRMATION_HTML,
+      replyTo: process.env.RESEND_REPLY_TO || undefined,
+      to,
+      subject,
+      html,
+      text,
+      headers: {
+        'List-Unsubscribe': `<${ctx.unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
+
+    if (error) {
+      this.logger.warn(`resend rejected ${kind} email to ${to}: ${error.message}`);
+      return false;
+    }
+    return true;
   }
 }

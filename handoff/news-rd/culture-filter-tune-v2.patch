@@ -1,0 +1,57 @@
+--- a/apps/api/src/scripts/fetch-news-feeds.ts
++++ b/apps/api/src/scripts/fetch-news-feeds.ts
+@@ -12,9 +12,12 @@
+ const PAUSE_MS = 1500;
+ const MAX_PER_FEED = 20;
+ const SNEAKER = /sneaker|shoe|footwear|kicks|trainer|nike|jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|vans|onitsuka|hoka|salomon|crocs|birkenstock|drop|release|collab/i;
+-// Celebrity, awards and fashion-event feeds: keep a story only if it is about footwear or about a fashion moment people are talking about
+-// (red carpet, gala, awards, fashion week, a best-dressed list, a viral outfit). Plain gossip with none of these words is dropped.
+-const CULTURE = /sneaker|footwear|kicks|trainers?|nike|jordan|adidas|puma|asics|new balance|reebok|converse|vans|hoka|salomon|red carpet|gala|met gala|awards?|fashion week|runway|best[- ]dressed|worst[- ]dressed|street ?style|viral|outfit|ensemble|couture|show-?stopp/i;
++// Celebrity, awards and fashion-event feeds. A footwear word may sit anywhere (headline or excerpt). A fashion EVENT word must be in the headline
++// itself, because an excerpt that mentions "runway" or "viral" is usually about something else. Shopping lists and "how to style" pieces are dropped.
++const FOOTWEAR = /sneaker|footwear|\bkicks\b|\btrainers?\b|air jordan|jordan brand|\b(nike|adidas|puma|asics|new balance|reebok|converse|vans|hoka|salomon)\b/i;
++const EVENT_TITLE = /red carpet|\bgala\b|met gala|\bawards?\b|fashion (week|show)|runway|best[- ]dressed|worst[- ]dressed|street ?style|couture|victoria.s secret|\b(iifa|filmfare|oscars?|grammys?|emmys?|bafta|cannes|golden globes?)\b|\b(ss|fw|aw)\d{2}\b|viral (outfit|look|dress|gown|moment)/i;
++const SHOPPING = /\b(shop|on[- ]sale|under \$\d+|ways to (style|wear)|basics|must-haves?)\b/i;
++const keepCulture = (title: string, excerpt: string) => FOOTWEAR.test(`${title} ${excerpt}`) || (EVENT_TITLE.test(title) && !SHOPPING.test(title));
+ // General fashion and news feeds: only items that are clearly about sneakers or footwear (no loose words like "drop" or "release").
+ const STRICT = /sneaker|footwear|kicks|trainers?|nike|air jordan|adidas|puma|asics|new balance|reebok|yeezy|converse|onitsuka|hoka|salomon|birkenstock|shoes?/i;
+ 
+@@ -172,7 +175,7 @@
+         continue;
+       }
+       const fresh = items
+-        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || (f.filter === 'strict' ? STRICT : f.filter === 'culture' ? CULTURE : SNEAKER).test(`${it.title} ${it.excerpt}`)))
++        .filter((it) => it.date.getTime() >= cutoff && (!f.filter || (f.filter === 'culture' ? keepCulture(it.title, it.excerpt) : (f.filter === 'strict' ? STRICT : SNEAKER).test(`${it.title} ${it.excerpt}`))))
+         .sort((a, b) => b.date.getTime() - a.date.getTime())
+         .slice(0, MAX_PER_FEED);
+       let n = 0;
+--- a/apps/api/src/drops/news-logic.ts
++++ b/apps/api/src/drops/news-logic.ts
+@@ -57,9 +57,15 @@
+ const RELEASE = /\b(releases?|released|drops?|dropping|launch(es|ed)?|arrives?|available|restock|re-?issue|returns?|unveils?|debuts?|first look|official images|where to buy|release date|colou?rways?|pack)\b/i;
+ const CULTURE = /\b(celebrity|celebs?|style|outfit|fashion week|runway|street ?style|wears?|spotted|red carpet|cricketer|rapper|singer|actor|athlete|album|tour|music|film|trend|guide|best|review|how to)\b/i;
+ 
++// A fashion event (red carpet, gala, awards, a runway show) that is not about shoes or a footwear brand is culture, even when its headline says
++// "debut" or "unveils": a runway debut is not a product release.
++const FASHION_EVENT = /\b(red carpet|gala|met gala|awards?|fashion (week|show)|runway|best[- ]dressed|couture|premiere)\b/i;
++const FOOTWEAR_WORDS = /\b(sneakers?|shoes?|footwear|kicks|trainers?|boots?|loafers?|sandals?|heels?|nike|jordan|adidas|puma|asics|new balance|reebok|converse|vans|hoka|salomon|yeezy|crocs|birkenstock|onitsuka)\b/i;
++
+ /** What kind of story a headline (plus excerpt) is. Industry beats collab beats release beats culture; an unclear one counts as culture. */
+ export function categorize(text: string): NewsCategory {
+   if (INDUSTRY.test(text)) return 'industry';
++  if (FASHION_EVENT.test(text) && !FOOTWEAR_WORDS.test(text)) return 'culture';
+   if (COLLAB.test(text)) return 'collab';
+   if (RELEASE.test(text)) return 'release';
+   if (CULTURE.test(text)) return 'culture';
+--- a/apps/api/src/drops/news-logic.spec.ts
++++ b/apps/api/src/drops/news-logic.spec.ts
+@@ -18,6 +18,9 @@
+     ['Sean Wotherspoon and Mizuno unveil a collab capsule', 'collab'],
+     ['Nike Dunk Low "Panda" restock date and where to buy', 'release'],
+     ['Rapper spotted wearing rare sneakers on tour', 'culture'],
++    ['Kylie Jenner Makes Her Victoria’s Secret Runway Debut', 'culture'],
++    ['Taylor Swift Channels Cinderella in Dior at the Academy Museum Gala', 'culture'],
++    ['Nike unveils a new Pegasus at the fashion show', 'release'],
+   ])('%s -> %s', (t, c) => expect(categorize(t)).toBe(c));
+ });
+ 

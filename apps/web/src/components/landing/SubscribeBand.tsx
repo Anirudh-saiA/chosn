@@ -10,13 +10,17 @@ type Status = 'idle' | 'submitting' | 'joined' | 'already-joined' | 'error';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
-/** Same /waitlist endpoint as the rest of the site: email in, one button out. */
+/** Same /waitlist endpoint as the rest of the site: name and email (phone optional) in, one button out. */
 export function SubscribeBand({ shoeId }: { shoeId: string }) {
   const s = shoeById(shoeId);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
+  const nameId = useId();
   const emailId = useId();
+  const phoneId = useId();
   const statusId = useId();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -28,7 +32,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
       const res = await fetch(`${API_URL}/waitlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ name: name.trim(), email, ...(phone.trim() ? { phone: phone.trim() } : {}) }),
       });
       if (res.ok) {
         setStatus('joined');
@@ -43,7 +47,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
         return;
       }
       setStatus('error');
-      setMessage(msg ?? 'That email looks invalid — double-check and try again.');
+      setMessage(msg ?? 'Check your details and try again.');
     } catch {
       setStatus('error');
       setMessage('Something went wrong — try again in a moment.');
@@ -88,7 +92,22 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                 {status === 'joined' ? "You're on the list — we'll email you." : "You're already on the list."}
               </p>
             ) : (
-              <form onSubmit={handleSubmit} noValidate className="mx-auto mt-8 flex max-w-lg flex-col gap-3 sm:flex-row">
+              <form onSubmit={handleSubmit} noValidate className="mx-auto mt-8 grid max-w-lg gap-3 sm:grid-cols-2">
+                <label htmlFor={nameId} className="sr-only">
+                  Your name
+                </label>
+                <input
+                  id={nameId}
+                  type="text"
+                  name="name"
+                  required
+                  maxLength={60}
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                />
                 <label htmlFor={emailId} className="sr-only">
                   Email address
                 </label>
@@ -103,7 +122,20 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-describedby={status === 'error' ? statusId : undefined}
                   aria-invalid={status === 'error'}
-                  className="min-w-0 flex-1 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                />
+                <label htmlFor={phoneId} className="sr-only">
+                  Phone number (optional)
+                </label>
+                <input
+                  id={phoneId}
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  placeholder="Phone (optional)"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
                 />
                 <button
                   type="submit"
@@ -111,7 +143,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   className="btn-shine btn-shine-idle whitespace-nowrap rounded-full px-8 py-4 font-sans text-[0.74rem] font-extrabold uppercase tracking-[0.2em] shadow-[0_12px_24px_-12px_rgba(0,0,0,0.6)] disabled:opacity-60"
                   style={{ background: '#fff', color: '#0A0A0A' }}
                 >
-                  {status === 'submitting' ? 'Joining…' : 'Submit'}
+                  {status === 'submitting' ? 'Joining…' : 'Join'}
                 </button>
               </form>
             )}

@@ -78,6 +78,8 @@ export interface PriceSnapshotInput {
   inStock: boolean;
   listingUrl: string;
   imageUrl: string | null;
+  /** The store's own "was" price, when it shows one above the price. */
+  compareAtPrice?: string | null;
   authenticityVerified: boolean;
   fetchedAt: Date;
 }

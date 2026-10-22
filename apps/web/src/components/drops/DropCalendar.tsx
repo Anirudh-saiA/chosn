@@ -1,28 +1,69 @@
 'use client';
 
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cx } from '@chosn/ui';
 import type { DropListItem } from '@/lib/drops';
+import { resolveSneakerImage } from '@/lib/resolve-sneaker-image';
+import { DropCard } from './DropCard';
+import { SneakerPlaceholderArt } from './SneakerPlaceholderArt';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-function toDateKey(y: number, m: number, d: number): string {
+function key(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-const STATUS_DOT: Record<DropListItem['status'], string> = {
-  live: 'bg-signal',
-  upcoming: 'bg-brass-bright',
-  sold_out: 'bg-text-faint',
-};
+function longDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/** The little card that floats over a date: up to three shoes releasing that day. */
+function Peek({ drops, align }: { drops: DropListItem[]; align: 'left' | 'center' | 'right' }) {
+  return (
+    <motion.div
+      role="tooltip"
+      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 6, scale: 0.97 }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      className={cx(
+        'pointer-events-none absolute bottom-[calc(100%+10px)] z-30 w-56 rounded-2xl border border-text/10 bg-white p-2 shadow-[0_18px_40px_-12px_rgba(10,10,10,0.35)]',
+        align === 'left' && 'left-0',
+        align === 'right' && 'right-0',
+        align === 'center' && 'left-1/2 -translate-x-1/2',
+      )}
+    >
+      <ul className="flex flex-col gap-1.5">
+        {drops.slice(0, 3).map((d) => (
+          <li key={d.id} className="flex items-center gap-2.5">
+            <span className="h-11 w-14 shrink-0 overflow-hidden rounded-lg bg-text/[0.05]">
+              <SneakerPlaceholderArt
+                brand={d.sneaker.brand}
+                model={d.sneaker.model}
+                colorway={d.sneaker.colorway}
+                imageUrl={resolveSneakerImage(d.sneaker.primaryImageUrl)}
+                aspect="wide"
+                className="!aspect-auto h-full w-full border-0"
+              />
+            </span>
+            <span className="min-w-0 text-left">
+              <span className="block truncate font-mono text-[0.58rem] uppercase tracking-[0.14em] text-text-faint">{d.sneaker.brand}</span>
+              <span className="block truncate text-[0.8rem] font-semibold leading-tight text-text">{d.sneaker.model}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {drops.length > 3 && <p className="mt-1.5 px-1 text-left font-mono text-[0.6rem] uppercase tracking-[0.14em] text-text-faint">+{drops.length - 3} more</p>}
+    </motion.div>
+  );
+}
 
 /**
- * Month grid; days with drops glow. The calendar only owns which day is
- * selected — the caller decides how that filters the list. Keyboard: the
- * grid is one tab stop (roving tabindex); arrow keys move by day/week,
- * Home/End jump to the start/end of the month, Enter/Space selects.
+ * A minimal month calendar. Days with drops are filled; hover one and the shoes float above it; click it and the calendar turns over to
+ * show only that day's shoes, with a way back. The caller owns which day is selected.
  */
 export function DropCalendar({
   drops,
@@ -33,188 +74,176 @@ export function DropCalendar({
   onSelectDay: (date: string | null) => void;
   selectedDate: string | null;
 }) {
+  const reduce = useReducedMotion();
   const today = new Date();
+  const todayKey = key(today.getFullYear(), today.getMonth(), today.getDate());
   const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
-  const [focusDay, setFocusDay] = useState(1);
-  const cellRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [hover, setHover] = useState<string | null>(null);
+  const [dir, setDir] = useState(1);
+  const root = useRef<HTMLDivElement>(null);
 
-  const dropsByDate = useMemo(() => {
+  // The day view is shorter than the month, so bring the card back into view when it turns over.
+  useEffect(() => {
+    const el = root.current;
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+  }, [selectedDate, reduce]);
+
+  const byDate = useMemo(() => {
     const map = new Map<string, DropListItem[]>();
-    for (const drop of drops) {
-      const existing = map.get(drop.releaseDate);
-      if (existing) existing.push(drop);
-      else map.set(drop.releaseDate, [drop]);
-    }
+    for (const d of drops) map.set(d.releaseDate, [...(map.get(d.releaseDate) ?? []), d]);
     return map;
   }, [drops]);
 
-  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const first = new Date(viewYear, viewMonth, 1);
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const startWeekday = firstOfMonth.getDay(); // 0 = Sunday
+  const lead = (first.getDay() + 6) % 7; // Monday first
+  const cells: Array<number | null> = [...Array.from({ length: lead }, () => null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  const monthLabel = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const monthCount = cells.reduce<number>((n, day) => n + (day ? (byDate.get(key(viewYear, viewMonth, day))?.length ?? 0) : 0), 0);
 
-  const cells: (number | null)[] = [
-    ...Array.from({ length: startWeekday }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
+  const atStart = viewYear === today.getFullYear() && viewMonth === today.getMonth();
 
-  function changeMonth(delta: number) {
-    let y = viewYear;
-    let m = viewMonth + delta;
-    if (m < 0) {
-      m = 11;
-      y -= 1;
-    } else if (m > 11) {
-      m = 0;
-      y += 1;
-    }
-    setViewYear(y);
-    setViewMonth(m);
-    setFocusDay(1);
-    onSelectDay(null); // a day selected in the previous month has nothing to mean here
+  function go(delta: number) {
+    setDir(delta);
+    const d = new Date(viewYear, viewMonth + delta, 1);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+    setHover(null);
   }
 
-  function moveFocus(next: number) {
-    const clamped = Math.min(daysInMonth, Math.max(1, next));
-    setFocusDay(clamped);
-    cellRefs.current.get(clamped)?.focus();
-  }
-
-  function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, day: number) {
-    const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
-    if (e.key in step) {
-      e.preventDefault();
-      moveFocus(day + (step[e.key] ?? 0));
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      moveFocus(1);
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      moveFocus(daysInMonth);
-    }
-  }
-
-  const monthLabel = firstOfMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  const monthDropCount = cells.reduce<number>(
-    (n, day) => n + (day ? (dropsByDate.get(toDateKey(viewYear, viewMonth, day))?.length ?? 0) : 0),
-    0,
-  );
-
-  const navBtn =
-    'flex h-11 w-11 items-center justify-center border border-text/[0.12] text-text-soft transition-colors hover:border-brass/60 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
+  const dayDrops = selectedDate ? (byDate.get(selectedDate) ?? []) : [];
+  const turn = reduce ? { duration: 0 } : { duration: 0.32, ease: [0.4, 0, 0.2, 1] as const };
+  const nav = 'flex h-10 w-10 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
 
   return (
-    <div className="panel ticks p-4 sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => changeMonth(-1)} aria-label="Previous month" className={navBtn}>
-          <ChevronLeft className="h-5 w-5" aria-hidden />
-        </button>
-        <div className="text-center">
-          <p aria-live="polite" className="font-display text-2xl font-bold text-text">
-            {monthLabel}
-          </p>
-          <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
-            {monthDropCount} {monthDropCount === 1 ? 'drop' : 'drops'} this month
-          </p>
-        </div>
-        <button type="button" onClick={() => changeMonth(1)} aria-label="Next month" className={navBtn}>
-          <ChevronRight className="h-5 w-5" aria-hidden />
-        </button>
-      </div>
-
-      <div role="group" aria-label={`Drops in ${monthLabel}`}>
-        <div
-          aria-hidden
-          className="mb-1 grid grid-cols-7 gap-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-text-faint sm:gap-1.5"
-        >
-          {WEEKDAYS.map((label) => (
-            <div key={label} className="py-1 text-center">
-              <span className="sm:hidden">
-                {label.slice(0, 1)}
-              </span>
-              <span className="hidden sm:inline">
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-          {cells.map((day, i) => {
-            if (day === null) return <div key={`empty-${i}`} aria-hidden />;
-            const dateKey = toDateKey(viewYear, viewMonth, day);
-            const dayDrops = dropsByDate.get(dateKey) ?? [];
-            const has = dayDrops.length > 0;
-            const isSelected = selectedDate === dateKey;
-            const isToday = dateKey === toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
-            const label = `${new Date(viewYear, viewMonth, day).toLocaleDateString('en-IN', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}, ${has ? `${dayDrops.length} ${dayDrops.length === 1 ? 'drop' : 'drops'}` : 'no drops'}${isToday ? ', today' : ''}`;
-
-            return (
-              <div key={dateKey}>
-                <button
-                  type="button"
-                  ref={(el) => {
-                    if (el) cellRefs.current.set(day, el);
-                    else cellRefs.current.delete(day);
-                  }}
-                  tabIndex={day === focusDay ? 0 : -1}
-                  aria-label={label}
-                  aria-pressed={has ? isSelected : undefined}
-                  aria-disabled={!has}
-                  onFocus={() => setFocusDay(day)}
-                  onKeyDown={(e) => onKeyDown(e, day)}
-                  onClick={() => has && onSelectDay(isSelected ? null : dateKey)}
-                  className={cx(
-                    'relative flex h-12 w-full flex-col items-center justify-center gap-1 border font-mono text-data-inline transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:h-16',
-                    !has && 'cursor-default border-transparent text-text-faint',
-                    has &&
-                      !isSelected &&
-                      'border-brass/40 bg-brass/[0.08] text-text shadow-[inset_0_0_18px_rgba(255,168,0,.18)] hover:border-brass hover:bg-brass/15 hover:shadow-glow-brass',
-                    isSelected && 'border-brass-bright bg-brass-gradient font-semibold text-vault-deep shadow-glow-brass',
-                    isToday && !isSelected && 'border-text/40',
-                  )}
-                >
-                  <span>{day}</span>
-                  {has && (
-                    <span className="flex gap-0.5" aria-hidden="true">
-                      {dayDrops.slice(0, 3).map((d) => (
-                        <span
-                          key={d.id}
-                          className={cx('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-vault-deep' : STATUS_DOT[d.status])}
-                        />
-                      ))}
-                    </span>
-                  )}
-                </button>
+    <div ref={root} className="mx-auto w-full max-w-3xl scroll-mt-24 [perspective:1400px]">
+      <AnimatePresence mode="wait" initial={false}>
+        {selectedDate === null ? (
+          <motion.div
+            key="month"
+            initial={{ rotateY: -90, opacity: 0 }}
+            animate={{ rotateY: 0, opacity: 1 }}
+            exit={{ rotateY: 90, opacity: 0 }}
+            transition={turn}
+            className="rounded-[2rem] border border-text/10 bg-white p-5 shadow-[0_24px_60px_-30px_rgba(10,10,10,0.35)] sm:p-8"
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <button type="button" onClick={() => go(-1)} disabled={atStart} aria-label="Previous month" className={cx(nav, atStart && 'pointer-events-none opacity-30')}>
+                <ChevronLeft className="h-5 w-5" aria-hidden />
+              </button>
+              <div className="text-center">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.p
+                    key={monthLabel}
+                    initial={{ opacity: 0, x: reduce ? 0 : dir * 14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: reduce ? 0 : dir * -14 }}
+                    transition={{ duration: 0.16 }}
+                    aria-live="polite"
+                    className="font-display text-2xl font-bold text-text"
+                  >
+                    {monthLabel}
+                  </motion.p>
+                </AnimatePresence>
+                <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-text-faint">
+                  {monthCount} {monthCount === 1 ? 'drop' : 'drops'}
+                </p>
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <button type="button" onClick={() => go(1)} aria-label="Next month" className={nav}>
+                <ChevronRight className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-text/[0.08] pt-4 text-meta text-text-faint">
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[0.65rem] uppercase tracking-[0.12em]">
-          <li className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-signal" aria-hidden /> Live
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-brass-bright" aria-hidden /> Upcoming
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-text-faint" aria-hidden /> Sold out
-          </li>
-        </ul>
-        <p>
-          <Link href="/notifications" className="text-brass-bright underline decoration-brass/40 underline-offset-4 hover:decoration-brass-bright">
-            Manage your notifications
-          </Link>{' '}
-          to get alerted before a day fills up.
-        </p>
-      </div>
+            <div aria-hidden className="mb-2 grid grid-cols-7 text-center font-mono text-[0.7rem] text-text-faint">
+              {WEEKDAYS.map((w, i) => (
+                <span key={i}>{w}</span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-1.5">
+              {cells.map((day, i) => {
+                if (day === null) return <span key={`e${i}`} aria-hidden />;
+                const dk = key(viewYear, viewMonth, day);
+                const list = byDate.get(dk) ?? [];
+                const has = list.length > 0;
+                const isToday = dk === todayKey;
+                const col = (lead + day - 1) % 7;
+                const align = col <= 1 ? 'left' : col >= 5 ? 'right' : 'center';
+                const label = `${longDate(dk)}, ${has ? `${list.length} ${list.length === 1 ? 'drop' : 'drops'}` : 'no drops'}`;
+                return (
+                  <div key={dk} className="relative flex justify-center">
+                    {has ? (
+                      <motion.button
+                        type="button"
+                        aria-label={label}
+                        onClick={() => onSelectDay(dk)}
+                        onMouseEnter={() => setHover(dk)}
+                        onMouseLeave={() => setHover((h) => (h === dk ? null : h))}
+                        onFocus={() => setHover(dk)}
+                        onBlur={() => setHover((h) => (h === dk ? null : h))}
+                        whileHover={reduce ? undefined : { scale: 1.08 }}
+                        whileTap={reduce ? undefined : { scale: 0.96 }}
+                        transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                        className={cx(
+                          'relative flex h-11 w-11 items-center justify-center rounded-full bg-[#FFD84A] font-mono text-[0.85rem] font-semibold text-[#0A0A0A] transition-colors hover:bg-[#FFC400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:h-12 sm:w-12',
+                          isToday && 'ring-2 ring-text',
+                        )}
+                      >
+                        {day}
+                        {list.length > 1 && (
+                          <span aria-hidden className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-1 font-mono text-[0.55rem] text-white">
+                            {list.length}
+                          </span>
+                        )}
+                      </motion.button>
+                    ) : (
+                      <span
+                        aria-label={label}
+                        className={cx('flex h-11 w-11 items-center justify-center rounded-full font-mono text-[0.85rem] text-text-faint sm:h-12 sm:w-12', isToday && 'ring-1 ring-text/40')}
+                      >
+                        {day}
+                      </span>
+                    )}
+                    <AnimatePresence>{has && hover === dk ? <Peek drops={list} align={align} /> : null}</AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="day"
+            initial={{ rotateY: -90, opacity: 0 }}
+            animate={{ rotateY: 0, opacity: 1 }}
+            exit={{ rotateY: 90, opacity: 0 }}
+            transition={turn}
+            className="rounded-[2rem] border border-text/10 bg-white p-5 shadow-[0_24px_60px_-30px_rgba(10,10,10,0.35)] sm:p-8"
+          >
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => onSelectDay(null)}
+                aria-label="Back to the calendar"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                <ArrowLeft className="h-5 w-5" aria-hidden />
+              </button>
+              <div className="text-right">
+                <p className="font-display text-xl font-bold text-text">{longDate(selectedDate)}</p>
+                <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-text-faint">
+                  {dayDrops.length} {dayDrops.length === 1 ? 'drop' : 'drops'}
+                </p>
+              </div>
+            </div>
+            <ul className="grid gap-5 sm:grid-cols-2">
+              {dayDrops.map((d, i) => (
+                <DropCard key={d.id} drop={d} index={i} />
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,0 +1,311 @@
+{
+  "_help": "Offers and payment options that cannot be read from a store's public pages (they sit behind its checkout) or that were verified by hand. Add what you see on a store's payment page: bank / card offers, coupon codes, wallet cashback. Every entry needs 'text' and 'source' (where you saw it) and 'seenAt' (YYYY-MM-DD). kind is one of: sale, coupon, bank, card, wallet, emi, shipping, credit, info. Optional: code (a coupon code), bank (issuer or wallet name), upTo (rupees, for 'up to' savings or cashback), conditions, url, endsOn (YYYY-MM-DD). Entries past endsOn are dropped on import. The daily update merges this file into the live store data. Never add an offer you have not seen on the store itself.",
+  "superkicks": {
+    "offers": [
+      {
+        "kind": "emi",
+        "text": "EMI and pay-later plans on selected pairs",
+        "conditions": "The monthly amount is shown on each product page",
+        "url": "https://www.superkicks.in/pages/faq",
+        "source": "Superkicks FAQ and product pages",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "upi",
+        "label": "UPI",
+        "items": [
+          "UPI"
+        ]
+      },
+      {
+        "kind": "netbanking",
+        "label": "Net banking",
+        "items": [
+          "Net banking"
+        ]
+      },
+      {
+        "kind": "card",
+        "label": "Cards",
+        "items": [
+          "Credit cards",
+          "Debit cards"
+        ]
+      },
+      {
+        "kind": "emi",
+        "label": "EMI & pay later",
+        "items": [
+          "EMI instalments",
+          "Pay later"
+        ],
+        "note": "The monthly amount is shown on each product page."
+      },
+      {
+        "kind": "cod",
+        "label": "Cash on delivery",
+        "items": [
+          "Cash on delivery"
+        ]
+      }
+    ]
+  },
+  "crepdog-crew": {
+    "offers": [
+      {
+        "kind": "wallet",
+        "text": "Mobikwik wallet: scratch card for ₹1 – ₹75 cashback",
+        "bank": "Mobikwik",
+        "upTo": 75,
+        "conditions": "Applied on the wallet payment step; terms on the store's payment page",
+        "source": "Crepdog Crew payment page (PayU)",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "wallet",
+        "text": "Mobikwik wallet: second scratch-card offer, up to ₹250 cashback",
+        "bank": "Mobikwik",
+        "upTo": 250,
+        "conditions": "Shown as a second offer card on the same payment page; check its terms there",
+        "source": "Crepdog Crew payment page (PayU)",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "coupon",
+        "text": "15% off for new email subscribers",
+        "conditions": "A pop-up on the store asks for your email; terms are on the store",
+        "url": "https://crepdogcrew.com/",
+        "source": "Crepdog Crew site pop-up",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "emi",
+        "text": "3 or 6 month EMI on selected pairs",
+        "conditions": "The monthly amount is shown on each product page",
+        "source": "Crepdog Crew product page",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "wallet",
+        "label": "Wallets",
+        "items": [
+          "Airtel Payments Bank",
+          "Amazon Pay",
+          "OlaMoney (Postpaid + Wallet)",
+          "Mobikwik wallet",
+          "PhonePe"
+        ],
+        "source": "Crepdog Crew payment page (PayU)",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "emi",
+        "label": "EMI",
+        "items": [
+          "3 or 6 month EMI"
+        ],
+        "note": "Instalments via Snapmint; the monthly amount is on each product page.",
+        "source": "Crepdog Crew product page",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "cod",
+        "label": "Partial COD",
+        "items": [
+          "Partial cash on delivery"
+        ],
+        "note": "Labelled on the product page; terms are on the store.",
+        "source": "Crepdog Crew product page",
+        "seenAt": "2026-10-17"
+      }
+    ]
+  },
+  "vegnonveg": {
+    "offers": [
+      {
+        "kind": "info",
+        "text": "No coupon codes at the moment; discounted pairs are in the Markdowns section",
+        "url": "https://www.vegnonveg.com/faq",
+        "source": "VegNonVeg FAQ (\"Any offers available?\")",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "credit",
+        "text": "Store credit can be applied on the payment page",
+        "conditions": "Log in with the email the credit is linked to",
+        "url": "https://www.vegnonveg.com/faq",
+        "source": "VegNonVeg FAQ",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "shipping",
+        "text": "Free shipping above ₹2,000; express shipping ₹300 (delivery in 3 working days after dispatch)",
+        "url": "https://www.vegnonveg.com/faq",
+        "source": "VegNonVeg FAQ",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "upi",
+        "label": "UPI",
+        "items": [
+          "UPI"
+        ]
+      },
+      {
+        "kind": "netbanking",
+        "label": "Net banking",
+        "items": [
+          "Net banking"
+        ]
+      },
+      {
+        "kind": "card",
+        "label": "Cards",
+        "items": [
+          "Credit cards",
+          "Debit cards"
+        ]
+      },
+      {
+        "kind": "emi",
+        "label": "EMI",
+        "items": [
+          "Cardless EMI"
+        ]
+      },
+      {
+        "kind": "credit",
+        "label": "Store credit",
+        "items": [
+          "VNV store credit"
+        ],
+        "note": "Apply it on the payment page at checkout."
+      },
+      {
+        "kind": "cod",
+        "label": "Cash on delivery",
+        "items": [],
+        "unavailable": true,
+        "note": "Not available"
+      }
+    ]
+  },
+  "myntra": {
+    "offers": [
+      {
+        "kind": "coupon",
+        "text": "Flat ₹500 off on your first purchase via the Myntra app",
+        "conditions": "First purchase on the app; terms are on Myntra",
+        "url": "https://www.myntra.com/",
+        "source": "Myntra home page",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "bank",
+        "text": "Flat ₹20 off on UPI payments with leading partners",
+        "bank": "UPI",
+        "upTo": 20,
+        "conditions": "Marked with * on the home page; the partner list and terms are on Myntra",
+        "url": "https://www.myntra.com/",
+        "source": "Myntra home page",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "emi",
+        "text": "Credit-card EMI on HDFC, ICICI, SBI, Axis, Amex, HSBC, IndusInd, Kotak, RBL and Standard Chartered cards",
+        "conditions": "Your bank decides eligibility and the plan",
+        "url": "https://www.myntra.com/faqs",
+        "source": "Myntra FAQ",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "emi",
+        "label": "EMI",
+        "items": [
+          "HDFC",
+          "ICICI",
+          "SBI",
+          "Axis",
+          "Amex",
+          "HSBC",
+          "IndusInd",
+          "Kotak",
+          "RBL",
+          "Standard Chartered"
+        ],
+        "note": "Credit-card EMI; your bank decides eligibility.",
+        "source": "Myntra FAQ",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "cod",
+        "label": "Cash on delivery",
+        "items": [
+          "Cash on delivery"
+        ],
+        "note": "Orders of ₹299 to ₹49,999 in selected pincodes; a small handling fee applies.",
+        "source": "Myntra FAQ",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "wallet",
+        "label": "Wallets and credit",
+        "items": [
+          "PhonePe Wallet",
+          "Myntra Credit",
+          "Gift cards"
+        ],
+        "source": "Myntra FAQ",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "emi",
+        "label": "Pay later",
+        "items": [
+          "Simpl Pay in 3"
+        ],
+        "source": "Myntra FAQ",
+        "seenAt": "2026-10-17"
+      }
+    ]
+  },
+  "mainstreet-marketplace": {
+    "offers": [
+      {
+        "kind": "info",
+        "text": "Store banner: 100% money-back guarantee by Razorpay",
+        "conditions": "Terms are on the store",
+        "url": "https://marketplace.mainstreet.co.in/",
+        "source": "Mainstreet Marketplace home page",
+        "seenAt": "2026-10-17"
+      },
+      {
+        "kind": "info",
+        "text": "Imported to order: listings say \"Ships in 28 days\"; no cancellation once ordered (store credit only if an item becomes unavailable)",
+        "url": "https://marketplace.mainstreet.co.in/policies/refund-policy",
+        "source": "Mainstreet Marketplace policies",
+        "seenAt": "2026-10-17"
+      }
+    ],
+    "paymentOptions": [
+      {
+        "kind": "card",
+        "label": "Payment gateway",
+        "items": [
+          "Razorpay"
+        ],
+        "note": "The store runs its checkout through Razorpay; the methods are shown at checkout.",
+        "source": "Mainstreet Marketplace home page",
+        "seenAt": "2026-10-17"
+      }
+    ]
+  }
+}

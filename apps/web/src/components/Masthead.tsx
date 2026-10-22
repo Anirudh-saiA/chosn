@@ -5,15 +5,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Menu, Search, X } from 'lucide-react';
-import { CommandPalette } from '@/components/ui/CommandPalette';
+import { CommandPalette, type PaletteOrigin } from '@/components/ui/CommandPalette';
 import { WishlistNav } from '@/components/wishlist/WishlistNav';
 import { Logo } from '@/components/ui/Logo';
+import { COMING_SOON } from '@/lib/features';
+import { BellBadge } from '@/components/watch/BellBadge';
 
-const NAV = [
+/** Small tag shown next to a nav link whose section isn't open yet. */
+function SoonTag() {
+  return (
+    <span className="ml-2 rounded-full bg-[#0A0A0A]/10 px-1.5 py-0.5 align-middle text-[0.5rem] font-bold tracking-[0.14em] text-[#0A0A0A]/60">
+      SOON
+    </span>
+  );
+}
+
+const NAV: Array<{ href: string; label: string; soon?: boolean }> = [
   { href: '/sneakers', label: 'Compare' },
-  { href: '/drops', label: 'Drops' },
-  { href: '/news', label: 'News' },
-  { href: '/community', label: 'Community' },
+  { href: '/releases', label: 'Releases', soon: COMING_SOON.releases },
+  { href: '/community', label: 'Community', soon: COMING_SOON.community },
 ] as const;
 
 /**
@@ -25,6 +35,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteOrigin, setPaletteOrigin] = useState<PaletteOrigin | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const logoRef = useRef<HTMLSpanElement>(null); // landing: logo glides from centre to the left corner as you scroll
   const [pastHero, setPastHero] = useState(false); // landing: over the white sections, so header goes dark
@@ -81,11 +92,13 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
       const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        setPaletteOrigin(null);
         setPaletteOpen((o) => !o);
       } else if (e.key === 'Escape') {
         setMenuOpen(false);
       } else if (e.key === '/' && !typing) {
         e.preventDefault();
+        setPaletteOrigin(null);
         setPaletteOpen(true);
       }
     };
@@ -176,6 +189,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                       className="group flex items-baseline justify-between border-b border-[#0A0A0A]/10 py-6 font-display text-5xl uppercase tracking-[0.02em] text-[#0A0A0A] transition-[padding,color] duration-300 hover:pl-3 hover:text-[#0A0A0A]/60"
                     >
                       {item.label}
+{item.soon && <SoonTag />}
                       <span className="font-mono text-xs text-[#0A0A0A]/40">0{i + 1}</span>
                     </Link>
                   </motion.div>
@@ -211,6 +225,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                   }`}
                 >
                   {item.label}
+{item.soon && <SoonTag />}
                   {active && (
                     <motion.span
                       layoutId="nav-active"
@@ -225,7 +240,12 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
-              onClick={() => setPaletteOpen(true)}
+              onClick={(e) => {
+                // The search box grows out of this button.
+                const r = e.currentTarget.getBoundingClientRect();
+                setPaletteOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                setPaletteOpen(true);
+              }}
               aria-label="Search sneakers"
               className="flex h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
             >
@@ -235,9 +255,10 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
             <Link
               href="/notifications"
               aria-label="Notifications"
-              className="hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
+              className="relative hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
             >
               <Bell className="h-[20px] w-[20px]" strokeWidth={2.2} />
+              <BellBadge />
             </Link>
             <button
               type="button"
@@ -274,6 +295,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                     className="flex items-baseline justify-between border-b border-text/10 py-5 font-display text-4xl font-semibold text-text"
                   >
                     {item.label}
+{item.soon && <SoonTag />}
                     <span className="font-mono text-meta text-brass">0{i + 1}</span>
                   </Link>
                 </motion.div>
@@ -288,7 +310,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
         )}
       </AnimatePresence>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CommandPalette open={paletteOpen} origin={paletteOrigin} onClose={() => setPaletteOpen(false)} />
     </>
   );
 }

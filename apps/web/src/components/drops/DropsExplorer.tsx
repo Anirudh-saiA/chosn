@@ -1,21 +1,16 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, List, X } from 'lucide-react';
-import { cx } from '@chosn/ui';
-import type { DropListItem, DropStatus } from '@/lib/drops';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import type { DropListItem } from '@/lib/drops';
+import { API_URL } from '@/lib/watch';
 import { DropCalendar } from './DropCalendar';
-import { DropFeatured, pickFeaturedDrop } from './DropFeatured';
-import { DropListView } from './DropListView';
 
-type ViewMode = 'list' | 'calendar';
-type StatusFilter = 'all' | DropStatus;
-
-const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'live', label: 'Live now' },
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'sold_out', label: 'Sold out' },
+const REGION_CHIPS: Array<[string | null, string]> = [
+  [null, 'All regions'],
+  ['india', 'India'],
+  ['us', 'US'],
+  ['global', 'Global'],
 ];
 
 /**
@@ -23,123 +18,58 @@ const STATUS_CHIPS: { value: StatusFilter; label: string }[] = [
  * from the original brief): it's scannable immediately, while a calendar
  * needs a moment to orient. Flip the initial `useState` to change it.
  */
-export function DropsExplorer({ drops }: { drops: DropListItem[] }) {
-  const [view, setView] = useState<ViewMode>('list');
+export function DropsExplorer({ drops: all }: { drops: DropListItem[] }) {
+  // Earlier months are left out entirely: the calendar starts at the current month.
+  const drops = useMemo(() => {
+    const t = new Date();
+    const from = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-01`;
+    return all.filter((d) => d.releaseDate >= from);
+  }, [all]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [status, setStatus] = useState<StatusFilter>('all');
   const [brand, setBrand] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>(null);
 
-  const featured = useMemo(() => pickFeaturedDrop(drops), [drops]);
   const brands = useMemo(() => Array.from(new Set(drops.map((d) => d.sneaker.brand))).sort(), [drops]);
-  const counts = useMemo(() => {
-    const c: Record<StatusFilter, number> = { all: drops.length, live: 0, upcoming: 0, sold_out: 0 };
-    for (const d of drops) c[d.status] += 1;
-    return c;
-  }, [drops]);
 
   const filtered = useMemo(
-    () => drops.filter((d) => (status === 'all' || d.status === status) && (!brand || d.sneaker.brand === brand)),
-    [drops, status, brand],
+    () => drops.filter((d) => (!brand || d.sneaker.brand === brand) && (!region || d.regions.includes(region))),
+    [drops, brand, region],
   );
   const visibleDrops = useMemo(
     () => (selectedDate ? filtered.filter((d) => d.releaseDate === selectedDate) : filtered),
     [filtered, selectedDate],
   );
 
+  const select =
+    'min-h-[40px] cursor-pointer appearance-none rounded-full border border-text/10 bg-white px-4 pr-8 font-mono text-[0.72rem] text-text transition-colors [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-text/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
+
   return (
-    <div className="flex flex-col gap-10">
-      {featured && <DropFeatured drop={featured} />}
-
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div role="group" aria-label="View" className="inline-flex border border-text/[0.12] bg-vault-raised/70">
-            <ViewButton icon={<List className="h-4 w-4" aria-hidden />} label="List" active={view === 'list'} onClick={() => setView('list')} />
-            <ViewButton
-              icon={<CalendarDays className="h-4 w-4" aria-hidden />}
-              label="Calendar"
-              active={view === 'calendar'}
-              onClick={() => setView('calendar')}
-            />
-          </div>
-          <p className="font-mono text-meta text-text-faint" aria-live="polite">
-            {visibleDrops.length} of {drops.length} drops
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
-            {STATUS_CHIPS.map((c) => (
-              <Chip key={c.value} active={status === c.value} onClick={() => setStatus(c.value)}>
-                {c.label} <span className="ml-1 opacity-70">{counts[c.value]}</span>
-              </Chip>
+    <div className="flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-wrap gap-2">
+          <select aria-label="Filter by region" value={region ?? ''} onChange={(e) => setRegion(e.target.value || null)} className={select}>
+            {REGION_CHIPS.map(([v, l]) => (
+              <option key={String(v)} value={v ?? ''}>{l}</option>
             ))}
-          </div>
+          </select>
           {brands.length > 1 && (
-            <div role="group" aria-label="Filter by brand" className="flex flex-wrap gap-2">
-              <Chip active={brand === null} onClick={() => setBrand(null)}>
-                All brands
-              </Chip>
+            <select aria-label="Filter by brand" value={brand ?? ''} onChange={(e) => setBrand(e.target.value || null)} className={select}>
+              <option value="">All brands</option>
               {brands.map((b) => (
-                <Chip key={b} active={brand === b} onClick={() => setBrand(brand === b ? null : b)}>
-                  {b}
-                </Chip>
+                <option key={b} value={b}>{b}</option>
               ))}
-            </div>
+            </select>
           )}
         </div>
       </div>
 
-      {view === 'calendar' && <DropCalendar drops={filtered} selectedDate={selectedDate} onSelectDay={setSelectedDate} />}
+      <DropCalendar drops={filtered} selectedDate={selectedDate} onSelectDay={setSelectedDate} />
 
-      {selectedDate && (
-        <p className="flex items-center gap-3 font-mono text-meta text-text-soft">
-          Showing drops on {selectedDate}
-          <button
-            type="button"
-            onClick={() => setSelectedDate(null)}
-            className="inline-flex min-h-[44px] items-center gap-1 border border-text/[0.12] px-3 text-text-soft transition-colors hover:border-brass/60 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden /> Clear
-          </button>
-        </p>
-      )}
-
-      <DropListView drops={visibleDrops} />
+      <p className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-1 font-mono text-[0.72rem] text-text-faint">
+        <span aria-live="polite">{visibleDrops.length} of {drops.length} drops</span>
+        <Link href="/drops/mine" className="min-h-[36px] content-center text-text underline-offset-4 hover:underline">My drops</Link>
+        <a href={`${API_URL}/drops/calendar.ics`} className="min-h-[36px] content-center text-text underline-offset-4 hover:underline">Add all to my calendar</a>
+      </p>
     </div>
-  );
-}
-
-function ViewButton({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx(
-        'inline-flex min-h-[44px] items-center gap-2 px-4 font-sans text-ui-label font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice',
-        active ? 'bg-brass-gradient text-vault-deep' : 'text-text-soft hover:text-text',
-      )}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cx(
-        'inline-flex min-h-[44px] items-center rounded-full border px-4 font-mono text-data-delta font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:min-h-[36px]',
-        active
-          ? 'border-brass-bright/60 bg-brass/15 text-brass-bright'
-          : 'border-text/[0.12] text-text-soft hover:border-text/30 hover:text-text',
-      )}
-    >
-      {children}
-    </button>
   );
 }

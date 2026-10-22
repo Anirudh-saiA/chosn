@@ -1,0 +1,86 @@
+Reusable prompt: the CHOSN landing page design
+
+Replace everything in [BRACKETS] with the new site's details, then paste the whole prompt into your AI coding tool. Where the prompt says "warm palette", use the warm colours section; it overrides any cold colours mentioned earlier.
+
+----------------------------------------
+
+Build a single-page marketing/landing site for [BRAND NAME], [ONE-LINE WHAT IT DOES], in Next.js (App Router) + TypeScript + Tailwind CSS, with framer-motion for the menu and Lenis for smooth scrolling. The look is minimal, editorial and premium: a pure white page, near-black ink (#0A0A0A), no tinted backgrounds and no decorative shadows. Colour comes only from photos, videos and a few accents: marker yellow #FFD84A for highlights, one brand accent [ACCENT COLOUR, e.g. orange #FF7A1A], and per-card colours for products.
+
+Type
+- Display: a heavy condensed face (Anton) in UPPERCASE for the wordmark, section titles, card titles and every button.
+- Body: Manrope (bold/extra-bold). Labels and numbers: JetBrains Mono, tiny, wide letter-spacing, uppercase.
+- Handwriting accent: Caveat, orange, for doodle annotations only.
+
+Buttons (one style everywhere)
+Solid black pill, white text, display font ~1.05rem, uppercase, letter-spacing 0.18em, padding ~28px x 14px, a soft drop shadow, hover lightens to #262626. Example labels: "Compare →", "Community →", and a split pill "Drops / News" (two links divided by a slash).
+
+Header
+- Fixed, transparent, NO nav bar. Only the logo mark (no wordmark text) and a three-line menu button on the top right.
+- On load the logo sits top-centre. As you scroll, it glides continuously (scroll-linked, time-eased, smoothstep) from centre to the top-left corner. Clicking the logo smooth-scrolls to the top.
+- Logo and menu are white over the hero video, and switch to dark once you scroll past the hero.
+- The menu button morphs into an X. Opening it dims and blurs the page and slides a white panel in from the right (rounded left corners) with big display-font links that stagger in. Close with Esc, a click outside the panel, the X, or choosing a link.
+
+1. Hero (full screen)
+- Full-bleed looping muted video (desktop and mobile sources, poster), light dark gradient on top.
+- Giant centred wordmark, then a two-line tagline in quotes: "[LINE 1 with the brand name in white]. [LINE 2]." The rest of the tagline is the accent colour. A "Scroll down" cue with a bouncing chevron sits at the bottom.
+- Load sequence (CSS keyframes, about 3s): video fades up from black; the wordmark starts zoomed about 7x and blurred and eases out to size; each tagline line slides up out of a mask (staggered); then the header and scroll cue fade in. When the menu opens, wordmark and tagline fade out. Respect prefers-reduced-motion.
+
+Section openers: the "slit reveal" (sections 01, 02, 03)
+Each section is preceded by a sticky full-screen WHITE sheet carrying a huge centred title ("01 COMPARE.", "02 DISCOVER.", "03 CONNECT."). On scroll a horizontal band opens through the middle of the sheet (clip-path with an even-odd polygon, growing from a hairline to the full height, smoothstep-eased) so the section underneath shows through while the title stays still and is eaten by the band. The section content starts about 35-70svh below so its first lines meet the band as it opens. Hide the sheet when fully open. No effect for reduced motion.
+
+Scroll-highlight lead lines
+Each section starts with a large bold lead sentence (display size ~2.6rem max) with two key phrases that get a marker-yellow highlight sweeping left to right (background-size 0% to 100%, ~0.9s, second phrase delayed 0.2s) when the text reaches the upper ~40% of the screen, and un-highlight when scrolling back up. Highlighted text turns black. Do NOT start the sweep while the slit sheet still covers the text.
+
+01 Compare
+- Lead line: "The same sneaker across every retailer, shipping included — so you see what you'll actually pay." plus a "Compare" button at the top right.
+- A rounded frosted band with an infinitely scrolling marquee of [RETAILER NAMES], pausing on hover.
+- Below, ONE example product (centred product photo, tiny "Illustrative figures" note) compared across two sites in a 3-column grid: [Site A] | doodle notes | [Site B]. Rows: Price, Delivery, "How legit is the order" (score /100). Site headers are solid brand colours (blue / red). Between the columns, hand-drawn orange double-headed arrows with Caveat notes ("₹1,700 cheaper", "6 days faster", "+27 trust points"). The better value in each row is circled with a hand-drawn orange ring and marker-highlighted. All of it animates in while scrolled into view (ring and arrows draw via stroke-dashoffset, notes rise and fade) and reverses on scroll up.
+
+02 Discover
+- Top: lead line with two highlights on the left, a 4x4 grid of brand logos on the right. Every logo sits in an identical fixed-size tile (80x48px), object-contain, slightly dimmed and fully opaque on hover.
+- Below: a semicircle "wheel" of portrait product cards (aspect about 3:4.3), full viewport width, six visible at once on a very gentle arc, close but not touching (card spacing about 9 degrees on a radius of about 100vw, cards about 13vw wide). Implementation: each card is placed with rotate(angle) translateY(-R) translate(-50%,-50%) around a centre below the arc; opacity fades for cards beyond the visible angle; the list loops.
+- Interaction: a mouse wheel over a card turns the wheel (down = clockwise, one notch = one card), with frame-rate-independent easing (about 250ms time constant) and snapping to the nearest card when input stops. A wheel anywhere else scrolls the page normally (mark the cards data-lenis-prevent, attach a non-passive wheel listener). Dragging sideways also turns it. Position the cards in the server render too so they show before JS.
+- Card design: rounded 1.6rem, brand name tiny mono top-left, product centred and unrotated, product name bold bottom-left. Dark/vivid gradient backgrounds for cut-out photos; white-background photos sit on a clean white card with dark text and mix-blend-multiply so true colours show. Never tint the photo.
+- A "Drops / News" split pill centred in the hollow under the arc.
+
+03 Connect (exactly one screen tall on desktop)
+- Lead line with two highlights: "Every drop deserves a conversation. Talk style and sneakers with a community that shares your taste." and a "Community" button top right.
+- Left: three stacked horizontal cards (thin border, no shadow), each a flat coloured square icon tile (red flame, blue chat bubble, green shield) beside a display-font title and one sentence. Right: a 1:1 autoplay muted looping video, same height as the card stack. Size both with one CSS variable --v: min(46vw, calc(100svh - 20rem)).
+
+Waitlist band
+A rounded card with a looping background video, a dark gradient wash, and centred text: small mono "BE FIRST IN", huge display "JOIN THE WAITLIST.", one sentence, and an email field plus a white "Submit" pill. States: submitting, joined, already joined, error.
+
+Footer (minimal)
+- A large outline-only wordmark: Anton, transparent fill, 2px orange stroke (-webkit-text-stroke), about 26vw, centred. Three short columns of display-font links sit ON TOP of it in black: [LINKS]. "Feedback" is a mailto: to [EMAIL]. Legal links (Transparency, Guidelines, Terms, Privacy) open real documents.
+- Beneath: a thin rule, the marketplace/affiliate disclosure in small grey text on the left, "© year BRAND" on the right.
+
+Warm colour palette (use instead of the cold black/white + blue accents)
+Keep the page itself clean, but let warmth carry the brand:
+- Page: warm ivory #FFFBF5 (never grey). Ink: warm near-black #1C1410 (not pure black). Soft text: #6B5A4E.
+- Primary accent: burnt orange #E8742A. Secondary: terracotta #C8532B and saffron #F4A300.
+- Highlight marker: marigold #FFC043 (replaces the yellow). Doodle annotations and rings: terracotta.
+- Depth colours for cards/tiles (use as gradients, light to dark): clay #D9694F to #7A1F1F, amber #F6B445 to #B86A0E, sand #F3E7D6 to #D8C2A0, cocoa #6B4630 to #2A160C, rust #B5451B to #5E1E08, rose #E58E7A to #A53D2D.
+- Buttons stay solid warm-black pills with ivory text; on hover shift to #3A2A20. Video overlays use a warm black wash (rgba(28,20,16,0.45)), never a blue-grey one.
+- Photo and video grade: warm, golden-hour, slightly lifted blacks, gentle grain. Reject cold, blue or neon imagery.
+
+Imagery and content ideas (what to place in each section)
+Use real photography or footage with people, texture and light. Avoid generic stock and flat icons.
+- Hero video (5-8s loop, 16:9, shot slow and warm): golden-hour street or workspace, a close-up of hands using the product, steam/dust/sunlight in the air, shallow depth of field. Over it: the big wordmark and a one-line belonging-style tagline.
+- Slit-reveal title sheets: keep them type only. If you want more, add a very faint warm paper grain behind the giant title.
+- Compare / comparison section: a single hero product photo cut out on a transparent background (soft contact shadow only) above the two-column comparison. Retailer or partner marquee: use real logos in a single warm-grey monotone so they read as one set.
+- Discover wheel / product carousel: 12-16 portrait cards. Per card, one clean cut-out product on its own warm gradient (clay, amber, cocoa, rust, rose, sand), alternating light and dark cards so the arc has rhythm. For white products use a cream card with dark text.
+- Logo grid: 16 brand marks in identical tiles, same visual weight, warm-grey.
+- Community / "Connect" section: a 1:1 black-and-white or warm-toned video of real people (a group laughing, hands exchanging items, a market, a cheering crowd), 7-10s loop. Pair with three icon tiles in terracotta, saffron and cocoa.
+- Waitlist banner video: slow wide shot with people walking or a calm landscape, warm wash on top so the white form text stays readable.
+- Footer: outline wordmark in burnt orange on ivory, nothing else decorative.
+- Optional extras that add beauty without clutter: a hand-drawn doodle arrow or underline in terracotta next to key words; a small rotating "stamp" badge (circular text) near the hero; subtle paper grain at 3-4% opacity; photo cutouts that slightly overlap section edges.
+- Always supply: a poster image for every video, mobile-sized video versions, and alt text for every image.
+
+Global rules
+- Pure white background everywhere; hide the page scrollbar on the landing page only; Lenis smooth scrolling (off for touch and reduced motion).
+- Everything animated is transform/opacity/clip-path, driven by rAF with passive scroll listeners, and has a prefers-reduced-motion fallback.
+- Semantic HTML: one h1, an sr-only h2 per section (the big titles are decorative), alt text on all images, aria-label on icon buttons, visible focus states.
+- Cut backgrounds out of product photos where possible; for white-on-white shoes use the multiply technique above.
+- Gotchas: a generic .glass-card > * rule can force position: relative onto absolutely positioned children, so use !absolute there. Any gating rewrite (for example a "coming soon" redirect) must exclude /hero, /brands, /wheel and other public asset folders.
+
+Deliver production-ready code, one component per section, with the content and media in data files so they can be swapped without touching layout.

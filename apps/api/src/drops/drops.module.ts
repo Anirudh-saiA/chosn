@@ -1,12 +1,19 @@
 import { Module } from '@nestjs/common';
+import { pgPoolProvider } from '../db/db.provider';
+import { EmailService } from '../email/email.service';
 import { RateLimitGuard } from '../common/rate-limit.guard';
 import { PricingModule } from '../pricing/pricing.module';
+import { AdminDropsController } from './admin-drops.controller';
+import { DropReminderService } from './drop-reminder.service';
+import { DropWatchController } from './drop-watch.controller';
 import { DropHealthController } from './drop-health.controller';
 import { DropHealthService } from './drop-health.service';
 import { DropLiveGateway } from './drop-live.gateway';
 import { DropNewsAutoPostService } from './drop-news-auto-post.service';
 import { DropPushConsumer } from './drop-push.consumer';
 import { DropSchedulerService } from './drop-scheduler.service';
+import { MagazineController } from './magazine.controller';
+import { MediaController } from './media.controller';
 import { DropsController } from './drops.controller';
 import { DropsService } from './drops.service';
 import { NewsController } from './news.controller';
@@ -37,7 +44,7 @@ import { WebPushService } from './web-push.service';
  */
 @Module({
   imports: [PricingModule],
-  controllers: [DropHealthController, DropsController, NewsController, NotificationsController],
+  controllers: [DropHealthController, DropsController, AdminDropsController, DropWatchController, MediaController, MagazineController, NewsController, NotificationsController],
   providers: [
     RateLimitGuard,
     DropSchedulerService,
@@ -49,6 +56,9 @@ import { WebPushService } from './web-push.service';
     NotificationsService,
     DropsService,
     NewsService,
+    DropReminderService,
+    EmailService,
+    pgPoolProvider,
   ],
   // Day 24: CommunityModule's own push consumer (CommunityPushConsumer)
   // reuses this WebPushService rather than a second `web-push`-wrapping

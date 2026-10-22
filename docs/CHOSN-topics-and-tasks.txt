@@ -1,0 +1,413 @@
+CHOSN: ALL TOPICS, AND EVERY TASK TO FINISH AND DEPLOY IT
+Written 20 October 2026. Plain text, so it opens anywhere. Status tags: [DONE] [PARTLY] [NOT STARTED] [NEEDS YOU] (a step only you can do).
+
+====================================================================================================
+1. WHAT CHOSN IS TODAY
+====================================================================================================
+CHOSN is a sneaker price-comparison and release site for India. It reads prices from 9 Indian stores
+every night, pairs the same shoe across stores, and shows the cheapest price, delivery, payment
+options, a store Trust score, a Buy now / Wait call, a drop calendar and news. It never sells shoes:
+it sends people to the store.
+Numbers right now (local database): 36,897 shoes, 439,478 shoe-sizes, 1.49 million price records, 9
+live stores, 154 drops in the calendar, 138 news items, database size about 2 GB.
+Where it runs: only on your PC (Postgres and Redis in Docker, the NestJS API on port 4000, the
+Next.js website on port 3002). Nothing is on the internet yet. The nightly update runs from Windows
+Task Scheduler at 02:00 on your PC.
+Code: GitHub repo Anirudh-saiA/chosn, branch develop. Everything up to the Related-sneakers cards is
+pushed. Six later commits (Releases gateway, drops, news, rupees, pictures, extra feeds) are saved
+locally and not pushed yet.
+
+====================================================================================================
+2. ALL TOPICS AVAILABLE SO FAR, WITH STATUS AND WHAT IS LEFT
+====================================================================================================
+
+A. Price data pipeline (the heart of the site)
+----------------------------------------------
+  - [DONE] Scrapers for 9 stores: Superkicks, Crepdog Crew, VegNonVeg, Mainstreet Marketplace,
+    Myntra, Limited Edt, Puma India, Gully Labs, Culture Circle. Polite: robots.txt, identified
+    User-Agent, pacing, 24-hour pause if a store says no.
+  - [DONE] Nightly run (about 40 minutes): scrape in parallel, pair shoes across stores, import with
+    price history, refresh derived tables, wishlist alerts, outlook log, new arrivals, exchange
+    rates, news feeds, release dates, drop pictures. Weekly full run on Sundays 01:00 for the three
+    slow stores.
+  - [DONE] Safety checks (a store that fails does not stop the others), run lock, run summary file,
+    optional alert mail.
+  - [PARTLY] Stores not connected: Flipkart, Ajio, END. Clothing exist only as old test rows.
+    Amazon, Nike, adidas, New Balance, On, Reebok, Onitsuka were checked and are not workable by
+    scraping (blocked or no public data).
+  - [NEEDS YOU] Affiliate accounts and APIs for Amazon India, Flipkart, Ajio, Myntra (via networks
+    such as Cuelinks, EarnKaro, Impact) so those stores can be read legitimately and earn
+    commission.
+  - Tasks left: (1) scan Indian homegrown brands via their public Shopify data (Comet, Gully Labs,
+    Thaely, Neeman's, Bacca Bucci, Campus, CHNKS, Almost Gods, Red Tape were all found available);
+    (2) move the nightly job off your PC (see section 4); (3) add alerting when a store returns far
+    fewer products than yesterday; (4) a freshness page showing when each store was last read.
+
+B. Compare (search and browse)
+------------------------------
+  - [DONE] Search by name, style code, brand; filters for brand, store, colour, price, stores count,
+    Buy now / Worth waiting; sorts incl. Best time to buy; My size (UK) picker that filters to shoes
+    in stock in your size, with that size's own price; two-column compact cards on phones; numbered
+    pages; empty state with nearby sizes.
+  - [DONE] Card: logo, colours, photo arrows, size row, store price tiles, whole card clickable,
+    wishlist heart, compare tray, Buy now / Wait label.
+  - Tasks left (from the Compare PDF): R1 price-history message ("tracking since 17 Oct"); R2 jump
+    to page / Load more; R3 check Mainstreet delivery of 28 days; R4 popular-first default
+    (Mainstreet long tail); R5 SEO tags (canonical, prev/next, unique titles); R6 Biggest price drop
+    sort; R7 search synonyms and typos (AF1, AJ1); R8 speed (cache size searches); R9 price chart
+    that marks store sell-outs; R10 merge same shoe under different names; R11 common sizes first;
+    R12 duplicate discount badge.
+
+C. Shoe page
+------------
+  - [DONE] Every store's price for the chosen size with delivery, returns, payment options, store
+    offers, Buy button; price history; Buy now / Wait card with reasons; store Trust chip; "shoppers
+    chose this store" counts; related sneakers as full cards.
+  - Tasks left: price history needs weeks of data to look good; per-store price lines; share link
+    with a preview image; total price including shipping highlighted.
+
+D. Buy now / Wait model, Trust score, feedback
+----------------------------------------------
+  - [DONE] Transparent scoring model (other stores, store sale price, own history, how similar shoes
+    moved, stock, sale calendar). Verdict stored for every in-stock shoe-size nightly. Every
+    prediction is logged and later compared with what the price did.
+  - [PARTLY] Not machine learning yet: only about 4 days of history exist for most shoes. First real
+    outcome numbers arrive about 3 November (14-day) and 19 November (30-day).
+  - [DONE] Store Trust score from reviews, business checks (domain age, GST number, contact
+    details), returns, clarity, standing; "not enough evidence" is shown when data is thin.
+  - [DONE] Post-purchase feedback form (did it arrive on time, as described) feeding the Trust score
+    once a store has 10+ answers.
+  - Tasks left: schedule compute_trust, business_checks and collect_signals (still manual); Google
+    Places key for independent store ratings [NEEDS YOU]; train a learned model once there are 60 to
+    90 days of outcomes (about January); position-bias correction of click data.
+
+E. Wishlist, alerts, notifications
+----------------------------------
+  - [DONE] Heart saves a shoe and size; target price; nightly check for size back in stock, price
+    drop, target reached, sold out; bell inbox with unread count; optional e-mail (confirmed by
+    link, unsubscribe in every mail); weekly summary.
+  - [NEEDS YOU] E-mails to real people cannot be sent until a domain is verified in Resend (the
+    current test sender only reaches your own address).
+  - [NOT STARTED] WhatsApp alerts (needs a WhatsApp Business account and approved message
+    templates); push alerts for drops exist for brands and models.
+
+F. Releases: drops, calendar, news (just built)
+-----------------------------------------------
+  - [DONE] Gateway page: Drops left, News right, full window, opens along a horizontal seam, Back
+    plays it in reverse; two stand-in pictures behind the halves.
+  - [DONE] Drop calendar: month calendar, list, filters (status, region, brand), price in rupees
+    (converted at the European Central Bank rate and marked "about"), date confidence badge
+    (Confirmed / Reported / Unconfirmed), source on every drop, .ics download for
+    Google/Apple/Outlook calendar. 154 drops: 141 Reported, 6 Released, 7 Unconfirmed.
+  - [DONE] Just landed: shoes a store listed for the first time in the last 14 days (fills from
+    tonight's run onward).
+  - [DONE] Pictures for 156 of 159 drops: from stores, SoleDispatch release pages and Sneaker Files,
+    saved on our server with a credit line.
+  - [DONE] News: our own stories written from named sources with a link back, plus headlines
+    gathered every night from public feeds (27 feeds configured), shown as links out to the
+    original.
+  - [DONE] Homegrown watch: Comet, Gully Labs, Almost Gods, Puma x Superkicks, Limited Edt x adidas:
+    last release, next drop, sources.
+  - [DONE] Automation each night: exchange rates, news feeds, release dates (SoleDispatch), drop
+    pictures, new arrivals.
+  - Tasks left: (1) admin panel to add, edit and approve drops and articles with draft / approved /
+    published; (2) reminders 1 day and 15 minutes before a drop; (3) Morning and Night editions
+    built and published automatically, with a push; (4) Market Watch section; (5) Predictions (needs
+    outcome data); (6) celebrity, fashion-week and global coverage (needs an editor or licensed
+    feeds); (7) more release trackers so more dates become "Reported" (Sneaker Bar Detroit, Nice
+    Kicks, Sole Retriever, Foot Locker, Sneaker Release Dates, Drop-list were found open); (8)
+    official brand newsrooms for "Confirmed" (none had a usable open feed; needs a manual or partner
+    route); (9) scan Indian brand sites for new products; (10) tidy duplicates in drops (for example
+    two Oregon Ducks Air Force 1 entries); (11) fix feeds that returned nothing (Esquire India,
+    Hindustan Times, Times of India parsing); (12) replace the two stand-in gateway pictures with
+    your videos; (13) tag news by brand and category, rank by relevance, remove near-duplicates.
+  - [NEEDS YOU] Videos for the gateway (box opening for Drops, press run for News, or your own);
+    decide whether to use brand press-kit images; decide how to handle rumoured dates.
+
+G. Accounts, login, privacy
+---------------------------
+  - [PARTLY] Login, sign-up, forgot password, delete account, two-factor setup pages exist.
+    Wishlist, size, alerts and feedback work without an account on an anonymous device id.
+  - Tasks left: optional sign-up with e-mail and Google; "save my wishlist to my account" (claim the
+    anonymous list); an account page (size, alerts, e-mail choices, export and delete data);
+    separate consent switches for alerts and for marketing mail; privacy page that lists exactly
+    what is collected.
+  - [NEEDS YOU] Google OAuth credentials; a lawyer's read of the privacy policy for India's data
+    protection law (DPDP Act, 2023).
+
+H. Community
+------------
+  - [PARTLY] Code exists (posts, comments, reputation, moderation, legit check uploads, chat rooms)
+    but the whole section is switched off behind "Coming soon".
+  - Tasks left: complete and test posts, comments, notifications, moderation tools and abuse
+    handling; image upload storage (needs a storage bucket); rules and reporting; seed content; then
+    open it.
+
+I. Landing page, design, brand
+------------------------------
+  - [DONE] Landing page: hero video, split reveals, retailer band with logos, real-data comparison
+    table (Samba) with payment row and Buy now / Wait verdict, brand wall with all 77 brands,
+    subscribe band (waitlist saved to database and an Excel copy).
+  - [DONE] Brand catalogue PDF (logos, colours, fonts) in docs/. Design: Anton headlines, Manrope
+    body, JetBrains Mono numbers, Caveat notes; navy, ink and pale-blue palette.
+  - Tasks left: smoother transitions elsewhere, dark mode decision, accessibility pass, mobile pass
+    on every page, real logo files for brands that only show a name.
+
+J. Money (monetisation)
+-----------------------
+  - [NOT STARTED] Affiliate tracking on Buy links, disclosure text (an "AffiliateDisclosure"
+    component exists), click and conversion reporting.
+  - [NEEDS YOU] Sign up to the affiliate programs and networks; decide commission policy and the
+    order of stores in the list (the site ranks by value, not by commission, and says so).
+
+K. Legal and compliance
+-----------------------
+  - [PARTLY] Terms, privacy, community guidelines and transparency pages exist as drafts.
+  - Tasks left: lawyer review; cookie and analytics consent (a banner exists); affiliate disclosure
+    on every page with Buy links; image and data rights (pictures are credited to their publishers;
+    remove on request; consider replacing with press images); terms of the sites we read (robots.txt
+    is respected everywhere); data deletion process; grievance contact.
+
+L. Quality, speed, SEO, mobile
+------------------------------
+  - [DONE] Continuous checks on GitHub (lint, typecheck, 43 tests) pass; Railway keep-alive workflow
+    disabled.
+  - Tasks left: more tests (watch alerts, feedback, drops import, news feeds, search with size);
+    load test the API; cache heavy searches; sitemap and robots.txt for the site; structured data on
+    shoe pages; Core Web Vitals pass; mobile test on real phones; installable web app (PWA) with
+    push.
+
+====================================================================================================
+3. SOURCES: 85 CHECKED, 48 AVAILABLE
+====================================================================================================
+"Available" means the site's robots.txt allows our identified reader AND it publishes a public feed
+or public product data. News feeds give headlines and links only; we never copy articles. Checked
+2026-10-20.
+
+News and press: 26 available of 48
+----------------------------------
+  + AVAILABLE  Kicks On Fire (global)
+  + AVAILABLE  SoleSavy (global)
+  + AVAILABLE  Footwear News (global)
+  + AVAILABLE  Gear Patrol footwear (global)
+  + AVAILABLE  Hypebeast (global)
+  + AVAILABLE  Highsnobiety (global)
+  + AVAILABLE  Sneaker Bar Detroit (global)
+  + AVAILABLE  Just Fresh Kicks (global)
+  + AVAILABLE  WearTesters (global)
+  + AVAILABLE  Sneaker Files (global)
+  + AVAILABLE  Fashionista (global)
+  + AVAILABLE  Business of Fashion (global)
+  + AVAILABLE  Vogue (global)
+  + AVAILABLE  GQ (global)
+  + AVAILABLE  Esquire (global)
+  + AVAILABLE  Dazed (global)
+  + AVAILABLE  GQ India (India)
+  + AVAILABLE  Vogue India (India)
+  + AVAILABLE  Rolling Stone India (India)
+  + AVAILABLE  Hindustan Times lifestyle (India)
+  + AVAILABLE  Times of India fashion (India)
+  + AVAILABLE  Indian Express lifestyle (India)
+  + AVAILABLE  Economic Times retail (India)
+  + AVAILABLE  Inc42 (India)
+  + AVAILABLE  YourStory (India)
+  + AVAILABLE  India Fashion Icon (India)
+  x NOT USABLE Sneaker News: robots.txt does not allow us or cannot be read
+  x NOT USABLE Sole Collector: robots.txt does not allow us or cannot be read
+  x NOT USABLE Complex Sneakers: no feed or data (HTTPError404)
+  x NOT USABLE Nice Kicks: robots.txt does not allow us or cannot be read
+  x NOT USABLE Sneaker Freaker: no feed or data (HTTPError404)
+  x NOT USABLE Sole Retriever: no feed or data (HTTPError403)
+  x NOT USABLE Sneakers Magazine: no feed or data (HTTPError404)
+  x NOT USABLE Sneakerjagers: no feed or data (HTTPError404)
+  x NOT USABLE House of Heat: no feed or data (HTTPError404)
+  x NOT USABLE Slam Jam: robots.txt does not allow us or cannot be read
+  x NOT USABLE Homegrown: no feed or data (200)
+  x NOT USABLE Esquire India: no feed or data (200)
+  x NOT USABLE Elle India: no feed or data (200)
+  x NOT USABLE Man's World India: no feed or data (200)
+  x NOT USABLE Lifestyle Asia India: robots.txt does not allow us or cannot be read
+  x NOT USABLE The Hindu life & style: robots.txt does not allow us or cannot be read
+  x NOT USABLE Mint Lounge: no feed or data (HTTPError410)
+  x NOT USABLE Indian Retailer: no feed or data (200)
+  x NOT USABLE FashionUnited India: no feed or data (HTTPError404)
+  x NOT USABLE Media Infoline: no feed or data (200)
+  x NOT USABLE Storyboard18: no feed or data (HTTPError404)
+  x NOT USABLE Business Standard lifestyle: robots.txt does not allow us or cannot be read
+
+Official brand newsrooms: 0 available of 10
+-------------------------------------------
+  x NOT USABLE Nike News: no feed or data (200)
+  x NOT USABLE adidas News: no feed or data (202)
+  x NOT USABLE Puma newsroom: no feed or data (HTTPError404)
+  x NOT USABLE New Balance newsroom: robots.txt does not allow us or cannot be read
+  x NOT USABLE ASICS press: no feed or data (HTTPError404)
+  x NOT USABLE Reebok: no feed or data (200)
+  x NOT USABLE Converse blog: robots.txt does not allow us or cannot be read
+  x NOT USABLE Onitsuka Tiger: no feed or data (HTTPError404)
+  x NOT USABLE HOKA: no feed or data (HTTPError406)
+  x NOT USABLE Salomon: no feed or data (HTTPError404)
+
+Release calendars: 10 available of 12
+-------------------------------------
+  + AVAILABLE  SoleDispatch (global)
+  + AVAILABLE  Sneaker Files calendar (global)
+  + AVAILABLE  Sneaker Bar Detroit calendar (global)
+  + AVAILABLE  Nice Kicks calendar (global)
+  + AVAILABLE  Sole Retriever calendar (global)
+  + AVAILABLE  Foot Locker calendar (global)
+  + AVAILABLE  Sneaker Release Dates (global)
+  + AVAILABLE  Drop-list (global)
+  + AVAILABLE  Highsnobiety calendar (global)
+  + AVAILABLE  Just Fresh Kicks Jordan dates (global)
+  x NOT USABLE Hibbett calendar: robots.txt does not allow us or cannot be read
+  x NOT USABLE House of Heat Jordan dates: no feed or data (HTTPError403)
+
+Indian brands and retailers (public product data): 12 available of 15
+---------------------------------------------------------------------
+  + AVAILABLE  Comet (India)
+  + AVAILABLE  Gully Labs (India)
+  + AVAILABLE  Thaely (India)
+  + AVAILABLE  Neeman's (India)
+  + AVAILABLE  Bacca Bucci (India)
+  + AVAILABLE  Campus (India)
+  + AVAILABLE  CHNKS (India)
+  + AVAILABLE  Almost Gods (India)
+  + AVAILABLE  Red Tape (India)
+  + AVAILABLE  Superkicks (India)
+  + AVAILABLE  Crepdog Crew (India)
+  + AVAILABLE  Limited Edt (India)
+  x NOT USABLE Go CKH: robots.txt does not allow us or cannot be read
+  x NOT USABLE VegNonVeg: robots.txt does not allow us or cannot be read
+  x NOT USABLE Sneakers India (Kicks Crew India): no feed or data (HTTPError404)
+ In use every night right now: 9 stores, 27 news feeds, SoleDispatch (dates), Sneaker Files (dates,
+pictures), Frankfurter (exchange rates). Not yet wired in although available: the Indian brand
+product data (9 brands), 6 more release calendars, and any feeds that returned nothing.
+
+====================================================================================================
+4. EVERYTHING NEEDED TO DEPLOY, STEP BY STEP
+====================================================================================================
+Order matters. Steps marked [NEEDS YOU] need your accounts or money.
+
+Step 1. Decide and buy
+----------------------
+  - [NEEDS YOU] Domain name (for the site, e-mail sending and the API address). Buy it and keep DNS
+    access.
+  - [NEEDS YOU] Accounts: hosting for the website, hosting for the API and jobs, a managed Postgres,
+    a Redis, an object-storage bucket, Resend, Sentry, PostHog (analytics), a Google Cloud project
+    (login and Places). Many have free tiers to start.
+
+Step 2. Hosting layout (recommended)
+------------------------------------
+  - Website (Next.js): Vercel. The GitHub workflow already has Vercel preview and production jobs;
+    they need the VERCEL_TOKEN and project settings.
+  - API (NestJS): an always-on server (Railway, Render, Fly.io or a small VPS), NOT serverless,
+    because it holds a live WebSocket for drops, a BullMQ job queue, and a scheduler. The old
+    Railway address no longer exists and must be replaced.
+  - Postgres: managed Postgres (extensions needed: pg_trgm and pgcrypto). Size today about 2 GB and
+    growing with price history; plan 10 GB and daily backups. The migrations run on boot (0044 so
+    far).
+  - Redis: managed Redis for the job queue and rate limits.
+  - Nightly scrapers: a small Linux VM or container with Python, Node, Playwright and Chromium, a
+    cron entry at 02:00 and a Sunday 01:00 full run. About 40 minutes nightly. Do not use a
+    serverless host. Risk: datacentre IP addresses are sometimes blocked by stores; if so, run it
+    from a home machine or a residential-IP server.
+  - Files: pictures (data/media/releases) and scraped working files (data/...) need a persistent
+    disk or an object-storage bucket; the API has a storage service ready for an S3-compatible
+    bucket.
+
+Step 3. Configuration (environment variables)
+---------------------------------------------
+  - Website: NEXT_PUBLIC_API_URL (the API https address), AUTH_SECRET, AUTH_URL, NEXT_PUBLIC_POSTHOG
+    key and host, SENTRY_DSN; COMING_SOON=off only when you are ready to open the site.
+  - API: DATABASE_URL, REDIS_URL, API_JWT_SECRET, TOTP_ENCRYPTION_KEY, WEB_URL, API_PUBLIC_URL,
+    RESEND_API_KEY, RESEND_FROM (an address on your verified domain), RESEND_REPLY_TO, STORAGE_*
+    (bucket), VAPID keys for web push, GOOGLE_PLACES_API_KEY (optional), MEDIA_DIR. Do NOT set
+    SHOW_DEMO_RELEASES in production.
+  - Generate fresh secrets for production; never reuse the local test values.
+
+Step 4. First launch of the data
+--------------------------------
+  - Run migrations on the empty production database (automatic on API boot).
+  - Run the full pipeline once to fill the catalogue (several hours the first time): all stores,
+    pairing, import, then the derived tables.
+  - Then run, in order: update-fx, track-new-arrivals (first run marks a baseline), compute-outlook-
+    priors, log-outlook, fetch-news-feeds, scrape_release_dates + import-drops, fetch_drop_images,
+    compute_trust (after business_checks and collect_signals), send-watch-alerts.
+  - Import your curated drops and news (data/releases/upcoming.json, news.json) if you want them in
+    production; the automatic ones refill nightly.
+
+Step 5. E-mail
+--------------
+  - [NEEDS YOU] Verify the domain in Resend (DNS records), set RESEND_FROM. Until then waitlist,
+    wishlist and confirmation mails do not reach real people. Test each mail type to a real inbox
+    and check spam placement.
+
+Step 6. Security and safety
+---------------------------
+  - HTTPS everywhere; set CORS to the real website address; check the content-security-policy still
+    allows pictures from the API (https is already allowed); keep the admin guard; keep rate limits;
+    turn on dependency alerts (Dependabot exists).
+  - Protect secrets in the host's secret store, not in files; rotate the Resend key that was shared
+    earlier.
+
+Step 7. Monitoring and operations
+---------------------------------
+  - Error tracking (Sentry), uptime check on the API /health (replaces the dead keep-alive), job-
+    failure alert mail from the nightly run, a data-freshness check (alert if a store has not
+    updated in 36 hours), daily database backup and a tested restore.
+  - A short runbook: what to do if a store blocks us, if the nightly run fails, if the database
+    fills, how to roll back a bad deploy.
+
+Step 8. Pre-launch checklist
+----------------------------
+  - Legal pages reviewed; cookie banner and analytics consent working; affiliate disclosure on pages
+    with Buy links; privacy page matches what is collected.
+  - Mobile check on real phones; slow-network check; accessibility check; search-engine basics
+    (sitemap, robots.txt, titles, canonical tags).
+  - Remove or hide anything still behind "Coming soon" that is not ready (Community stays closed
+    until built).
+  - Soft launch to a small group, watch behaviour for a few weeks (what you planned), then buy-in
+    marketing and go public.
+
+====================================================================================================
+5. DECISIONS ONLY YOU CAN MAKE
+====================================================================================================
+  - Hosting choice and budget; domain name.
+  - Pictures: keep the current credited pictures, ask permission, or move to official press images.
+  - Resale price: show only our own market price (recommended) or buy a resale data feed.
+  - Sell / Hold advice: recommended to avoid (it is financial advice); keep Buy now / Wait.
+  - Rumoured dates: allowed only as a clearly labelled "Unconfirmed" tag (current behaviour).
+  - Mobile apps: start as an installable web app; native iOS/Android later only if usage proves it.
+  - Who writes editorial content (celebrity, fashion week, global) or which licensed feeds to buy.
+  - Whether to add WhatsApp alerts (cost and approval needed).
+
+====================================================================================================
+6. WORK I CAN DO RIGHT AWAY ONCE YOU SAY GO (NOTHING HERE NEEDS YOUR ACCOUNTS)
+====================================================================================================
+    1. Compare: all 12 remaining items (R1 to R12).
+    2. Indian brand scanner: read the public product data of Comet, Gully Labs, Thaely, Neeman's,
+    Bacca Bucci, Campus, CHNKS, Almost Gods and Red Tape; show their newest products and last drop
+    automatically in Homegrown watch and Just landed.
+    3. More release calendars: add 6 open trackers so more dates become Reported; duplicate clean-up
+    of drops; fix the feeds that returned nothing.
+    4. News upgrades: brand and category tags, relevance ranking, near-duplicate removal, an India-
+    only filter.
+    5. Releases build-out from the spec: admin panel, article model, reminders (1 day and 15
+    minutes), Morning and Night editions with push, Market Watch.
+    6. Accounts: optional sign-up (e-mail, Google when you have credentials), claim wishlist,
+    account page, consent switches, data export and delete.
+    7. Deployment files: Dockerfiles for the API and the scraper job, a production compose file,
+    GitHub Actions deploy workflows, an environment variable template, a bootstrap script for a
+    fresh database, and a runbook.
+    8. Monitoring: health endpoint checks, freshness alert, job-failure mail, backup script.
+    9. Tests: API tests for watch alerts, feedback, drops import, news feeds and size search; a load
+    test.
+    10. SEO and speed: sitemap, structured data, canonical tags, caching of heavy searches, Core Web
+    Vitals pass.
+    11. Draft legal text (privacy, terms, affiliate disclosure) for a lawyer to review.
+    12. Community: finish and test the section behind the flag.
+    13. Trust and outlook: schedule the trust jobs, outcome report, prepare model training once data
+    exists.
+
+(End of document)

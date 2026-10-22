@@ -1,0 +1,23 @@
+# CHOSN's own n8n (separate from any other n8n on this PC). Open http://localhost:5679 and create the owner login on first visit.
+#   docker compose -f automation/n8n/docker-compose.yml up -d
+# It reaches the control service (scripts/webscraper/control.py) on this PC as host.docker.internal:8765.
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: chosn-n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5679:5678"
+    environment:
+      - GENERIC_TIMEZONE=Asia/Kolkata
+      - TZ=Asia/Kolkata
+      - N8N_SECURE_COOKIE=false
+      - N8N_HOST=localhost
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - chosn-n8n-data:/home/node/.n8n
+volumes:
+  chosn-n8n-data:

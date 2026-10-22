@@ -11,7 +11,7 @@ export const revalidate = 300;
 
 export default function HomePage() {
   return (
-    <div className="hide-page-scrollbar isolate min-h-screen overflow-x-clip bg-white text-text [&_footer]:!mt-0">
+    <div className="page-shell hide-page-scrollbar isolate min-h-screen overflow-x-clip text-text [&_footer]:!mt-0">
       <Masthead overlay />
       <main id="main">
         <HeroVideo />

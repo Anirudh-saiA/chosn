@@ -1,16 +1,17 @@
 import type { Metadata } from 'next';
 import { CommunityResults } from '@/components/search/CommunityResults';
 import { EmptyState } from '@/components/search/EmptyState';
-import { SearchControls } from '@/components/search/SearchControls';
+import { BrowseShortcuts } from '@/components/search/BrowseShortcuts';
+import { ResultsToolbar } from '@/components/search/ResultsToolbar';
 import { SneakerCard } from '@/components/search/SneakerCard';
-import { CountUp } from '@/components/fx/CountUp';
 import { Reveal } from '@/components/fx/Reveal';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
+import { Pagination } from '@/components/search/Pagination';
 import { PageShell } from '@/components/ui/PageShell';
-import { fetchSearch } from '@/lib/catalog';
+import { fetchSearch, type SearchQuery } from '@/lib/catalog';
 
 export const metadata: Metadata = {
-  title: 'Search sneakers',
+  title: 'Compare sneaker prices',
   description: 'Search and browse the CHOSN launch catalog — compare real-time prices across every tracked retailer.',
 };
 
@@ -20,51 +21,66 @@ export const metadata: Metadata = {
 // minutes behind the live page it links to is unremarkable.
 export const revalidate = 300;
 
+const PAGE_SIZE = 24; // divides evenly into the 2, 3 and 4 card rows
+
 interface PageProps {
-  searchParams: Promise<{ q?: string; brand?: string; signal?: string }>;
+  searchParams: Promise<SearchQuery>;
 }
 
 export default async function SneakersBrowsePage({ searchParams }: PageProps) {
-  const { q, brand, signal } = await searchParams;
-  const { results, total, brands, communityPosts } = await fetchSearch(
-    { q, brand, signal },
+  const query = await searchParams;
+  const { q } = query;
+  const page = Math.max(1, Math.floor(Number(query.page)) || 1);
+  const filters: SearchQuery = { ...query };
+  delete filters.page;
+  const apiFilters: SearchQuery = { ...filters };
+  if (apiFilters.size === 'any') delete apiFilters.size; // "any size": nothing to filter by
+  const { results, total, facets, communityPosts, storeDirectory } = await fetchSearch(
+    { ...apiFilters, limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) },
     { next: { revalidate: 300 } },
   );
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const stores = Object.fromEntries((storeDirectory ?? []).map((s) => [s.slug, { name: s.name, logoUrl: s.logoUrl }]));
 
   return (
-    <PageShell width="7xl">
-      <PageHeader
-        eyebrow="Catalog / Live prices"
-        title="Search sneakers"
-        description="Every pair we track, compared across every retailer CHOSN watches."
-        className="!mb-8 lg:!mb-10"
-      >
-        <p className="flex items-baseline gap-2 border border-text/[0.1] bg-vault-raised/60 px-4 py-2.5" aria-live="polite">
-          <span className="live-dot" aria-hidden />
-          <span className="font-mono text-2xl font-medium tabular-nums text-brass-bright">
-            <CountUp to={total} duration={0.9} />
-          </span>
-          <span className="font-mono text-meta uppercase tracking-[0.12em] text-text-soft">
-            {total === 1 ? 'sneaker' : 'sneakers'} tracked
-          </span>
-        </p>
-      </PageHeader>
+    <PageShell width="full" plain>
+      <header className="mb-6 border-b-2 border-[#0A0A0A] pb-8">
+        <Reveal delay={0.05}>
+          <h1 className="font-display text-[clamp(4.5rem,15vw,12rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">Compare.</h1>
+        </Reveal>
+        <div className="mt-6">
+          <ScrollHighlight
+            before="Every pair we track,"
+            first="across every retailer"
+            between=", shipping included — with the "
+            second="best price"
+            after="first."
+            triggerAt={0.8}
+            textClass="max-w-4xl text-[clamp(1.3rem,2.6vw,2.3rem)] leading-[1.25]"
+          />
+        </div>
+      </header>
 
-      <SearchControls brands={brands} />
-
-      <div className="mt-8">
-        {results.length === 0 ? (
-          <EmptyState query={q} />
-        ) : (
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {results.map((item, i) => (
-              <Reveal as="li" key={item.styleCode} delay={(i % 4) * 0.06} y={18}>
-                <SneakerCard item={item} />
-              </Reveal>
-            ))}
-          </ul>
-        )}
+      <div>
+        <div className="min-w-0">
+          <ResultsToolbar total={total} facets={facets} />
+          {results.length === 0 ? (
+            <EmptyState query={q} size={query.size} params={{ ...filters }} />
+          ) : (
+            <ul className="grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+              {results.map((item, i) => (
+                <Reveal as="li" key={item.styleCode} delay={(i % 3) * 0.06} y={18}>
+                  <SneakerCard item={item} stores={stores} />
+                </Reveal>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
+
+      <Pagination page={Math.min(page, pages)} pages={pages} params={{ ...filters }} />
+
+      <BrowseShortcuts />
 
       <CommunityResults posts={communityPosts} />
     </PageShell>

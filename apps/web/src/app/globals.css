@@ -334,6 +334,21 @@ html.lenis body {
   .page-shell {
     position: relative;
     isolation: isolate;
+    /* Warm off-white for every page except the landing page (which doesn't use PageShell). */
+    --warm-page: #eaf3fa;
+    --warm-raised: #f5fafe;
+    --warm-frame: #dce9f3;
+    background-color: var(--warm-page);
+  }
+  html:has(.page-shell) {
+    background: #eaf3fa;
+  }
+  /* Anything hard-coded white inside these pages (cards, footer, sticky header) becomes warm. */
+  .page-shell .bg-white {
+    background-color: var(--warm-raised);
+  }
+  .page-shell .bg-white\/80 {
+    background-color: rgb(234 243 250 / 0.88);
   }
 
   .link-underline {
@@ -864,16 +879,16 @@ html[data-menu-open] .hero-wordmark, html[data-menu-open] .hero-tagline { opacit
 
 /* Landing hero intro: on load the CHOSN wordmark starts zoomed right in and eases out to its resting size. */
 @keyframes hero-zoom-out {
-  from { transform: scale(7); filter: blur(18px); opacity: 0.2; }
-  60% { filter: blur(0); opacity: 1; }
-  to { transform: scale(1); filter: blur(0); opacity: 1; }
+  from { transform: scale(2.4); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
 }
 @keyframes hero-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
-.hero-wordmark { animation: hero-zoom-out 2.4s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
-.hero-cue { animation: hero-fade-in 1s ease-out 1.8s backwards; }
+.hero-wordmark { animation: hero-zoom-out 1.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards; will-change: transform, opacity; }
+.hero-cue { animation: hero-fade-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.5s backwards; }
 @media (prefers-reduced-motion: reduce) {
   .hero-wordmark, .hero-cue { animation: none; }
 }
@@ -882,10 +897,12 @@ html[data-menu-open] .hero-wordmark, html[data-menu-open] .hero-tagline { opacit
 @keyframes hero-video-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes hero-rise { from { transform: translateY(115%); } to { transform: none; } }
 @keyframes hero-opacity { from { opacity: 0; } to { opacity: 1; } }
-.hero-video { animation: hero-video-in 1.6s ease-out backwards; }
-.hero-line > span { animation: hero-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 1.5s) backwards; }
-.hero-chrome { animation: hero-opacity 1.1s ease-out 2.4s backwards; }
-.hero-cue { animation-delay: 2.6s; }
+.hero-poster { animation: hero-video-in 0.7s ease-out backwards; }
+.hero-video { opacity: 0; transition: opacity 1.1s ease-out; }
+.hero-video[data-ready='true'] { opacity: 1; }
+.hero-line > span { animation: hero-rise 1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0.9s) backwards; }
+.hero-chrome { animation: hero-opacity 0.9s ease-out 1.5s backwards; }
 @media (prefers-reduced-motion: reduce) {
-  .hero-video, .hero-line > span, .hero-chrome { animation: none; }
+  .hero-poster, .hero-line > span, .hero-chrome { animation: none; }
+  .hero-video { transition: none; }
 }
