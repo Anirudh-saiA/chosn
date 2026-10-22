@@ -4,6 +4,10 @@ Owner: the security team. Main assigns; the team updates this file and reports e
 First assigned 2026-10-21.
 
 ## Open
+4. **Verify SEC-1** once Back end applies the patch: same request must return two different ids.
+5. **Inputs and abuse.** CSV price importer, Playwright PDF renderer, magazine PDF route, community posts, chat, comments (injection, size, rate limits). Localhost only.
+6. **Web accounts.** Password reset, 2FA, account enumeration, rate limits; needs a test admin session from the founder.
+7. **Privacy (technical).** What personal data we store, retention, deletion path, PostHog consent.
 
 ## Doing
 
