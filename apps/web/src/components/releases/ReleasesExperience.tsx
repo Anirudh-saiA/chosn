@@ -26,8 +26,8 @@ function Title({ kind }: { kind: Kind }) {
   const l = LOOK[kind];
   return (
     <span className="pointer-events-none flex flex-col items-center px-4 text-center" style={{ color: l.fg }}>
-      <span className="font-display text-[clamp(4.5rem,15vw,14rem)] uppercase leading-[0.85] tracking-[0.01em]">{l.title}</span>
-      <span className="mt-4 max-w-[22rem] font-mono text-[0.72rem] font-bold uppercase tracking-[0.2em] opacity-70">{l.sub}</span>
+      <span className="font-display text-[clamp(4.5rem,15vw,14rem)] uppercase leading-[0.85] tracking-[0.01em] [text-shadow:0_4px_40px_rgba(0,0,0,0.55)]">{l.title}</span>
+      <span className="mt-4 max-w-[22rem] font-mono text-[0.72rem] font-bold uppercase tracking-[0.2em] opacity-90 [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">{l.sub}</span>
     </span>
   );
 }
@@ -38,7 +38,7 @@ function Face({ kind }: { kind: Kind }) {
   return (
     <span className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ background: l.bg }}>
       <img src={l.img} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-      <span className={`absolute inset-0 ${kind === 'news' ? 'bg-[#0A0A0A]/70' : 'bg-[#14213D]/75'}`} />
+      <span className={`absolute inset-0 ${kind === 'news' ? 'bg-[#0A0A0A]/30' : 'bg-[#14213D]/25'}`} />
       <span className="relative flex w-full items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">
         <Title kind={kind} />
       </span>
