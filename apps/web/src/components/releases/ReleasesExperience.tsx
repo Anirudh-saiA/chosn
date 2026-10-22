@@ -13,8 +13,8 @@ const EASE = [0.76, 0, 0.24, 1] as const;
 const GATE_H = 'calc(100svh - 4rem)'; // the whole window under the 4rem header
 
 const LOOK: Record<Kind, { bg: string; fg: string; title: string; sub: string; hover: string; img: string }> = {
-  drops: { bg: '#14213D', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1B2C52', img: '/images/hero-dunk-low.png' },
-  news: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'News', sub: 'Stories, reports and what just went live', hover: '#1A1A1A', img: '/images/hero-skatepark.png' },
+  drops: { bg: '#14213D', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1B2C52', img: '/images/drops-shelf.jpg' },
+  news: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'News', sub: 'Stories, reports and what just went live', hover: '#1A1A1A', img: '/images/news-stack.jpg' },
 };
 
 const fromUrl = (): View => {
@@ -37,14 +37,8 @@ function Face({ kind }: { kind: Kind }) {
   const l = LOOK[kind];
   return (
     <span className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ background: l.bg }}>
-      {kind === 'news' ? (
-        <>
-          <img src={l.img} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          <span className="absolute inset-0 bg-[#0A0A0A]/70" />
-        </>
-      ) : (
-        <img src={l.img} alt="" draggable={false} className="absolute -bottom-[6%] left-1/2 w-[135%] max-w-none -translate-x-1/2 opacity-30 transition-opacity duration-500 group-hover:opacity-45" />
-      )}
+      <img src={l.img} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      <span className={`absolute inset-0 ${kind === 'news' ? 'bg-[#0A0A0A]/70' : 'bg-[#14213D]/75'}`} />
       <span className="relative flex w-full items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">
         <Title kind={kind} />
       </span>
