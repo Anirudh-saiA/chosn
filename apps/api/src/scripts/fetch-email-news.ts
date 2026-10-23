@@ -8,7 +8,8 @@
  *
  * Rules that keep this safe and permitted:
  *   - Only senders on the allow-list below are read. Everything else is ignored, so spam and strangers cannot put text on the site.
- *   - A message is only used when the receiving mail server recorded an SPF or DKIM pass for the sender, so a forged From line is ignored.
+ *   - A message is only used when the receiving mail server recorded a DMARC pass, or an SPF or DKIM pass for the same domain as the From
+ *     address (not just any domain), so a forged From line is ignored.
  *   - Mail is untrusted input: only plain text is kept, cut to a 180 character excerpt, with the subject as the headline.
  *   - A newsletter's own "view in browser" link is NEVER stored: those links usually carry a token that identifies the subscribed mailbox.
  *     The "Read at" link goes to the brand's public site instead, with a harmless #mail-<hash> fragment so each email stays unique.
@@ -72,12 +73,39 @@ export function matchSender(address: string): Sender | null {
   return SENDERS.find((s) => s.domains.some((x) => d === x || d.endsWith(`.${x}`))) ?? null;
 }
 
+/** Same domain, or one is a subdomain of the other (relaxed alignment, as DMARC does). */
+export function aligned(a: string, b: string): boolean {
+  const x = a.toLowerCase().replace(/\.$/, '');
+  const y = b.toLowerCase().replace(/\.$/, '');
+  if (!x || !y) return false;
+  return x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`);
+}
+
+/** The domain inside a header value such as "alice@news.nike.com" or "nike.com". */
+const domainOf = (v: string) => (v.includes('@') ? v.split('@').pop()! : v).replace(/^<|>$/g, '').toLowerCase();
+
 /**
- * The mailbox provider records whether the sender's domain passed SPF or DKIM in the Authentication-Results header it adds on receipt. Without
- * a pass, the From line could be forged, so the mail is ignored.
+ * The mailbox provider records what it verified in the Authentication-Results header it adds on receipt. A pass only counts when it vouches for
+ * the domain in the From line, otherwise anyone could pass SPF or DKIM for their own domain and put a brand's address in From. Accepted:
+ *   - dmarc=pass whose header.from is the From domain, or
+ *   - dkim=pass whose signing domain (header.d) is aligned with the From domain, or
+ *   - spf=pass whose envelope sender (smtp.mailfrom) is aligned with the From domain.
+ * Pass the first (top-most) Authentication-Results header only: the provider's own, added last, is on top; lower ones came with the mail.
  */
-export function authenticated(authResults: string): boolean {
-  return /(?:^|[\s;])(?:dkim|spf)=pass(?:[\s;]|$)/i.test(authResults);
+export function authenticated(authResults: string, fromAddress: string): boolean {
+  const from = senderDomain(fromAddress);
+  if (!from) return false;
+  for (const part of authResults.split(';')) {
+    const m = /^\s*(dkim|spf|dmarc)\s*=\s*pass\b/i.exec(part);
+    if (!m) continue;
+    const prop = (name: string) => new RegExp(`\\b${name}\\s*=\\s*"?([^\\s";]+)`, 'i').exec(part)?.[1];
+    const method = m[1]!.toLowerCase();
+    const claimed = method === 'dkim' ? (prop('header\\.d') ?? prop('header\\.i')) : method === 'spf' ? prop('smtp\\.mailfrom') : prop('header\\.from');
+    if (!claimed) continue;
+    const d = domainOf(claimed);
+    if (method === 'dmarc' ? d === from : aligned(d, from)) return true;
+  }
+  return false;
 }
 
 export const isGoogleAlert = (address: string) => ALERT_FROM.test(address.trim());
@@ -192,8 +220,9 @@ async function main() {
         const mail = await simpleParser(msg.source as Buffer);
         const from = mail.from?.value?.[0]?.address ?? '';
         const when = mail.date ?? new Date();
-        const auth = mail.headers.get('authentication-results');
-        if (!authenticated(typeof auth === 'string' ? auth : '')) {
+        const raw = mail.headers.get('authentication-results');
+        const auth = Array.isArray(raw) ? raw[0] : raw;
+        if (!authenticated(typeof auth === 'string' ? auth : '', from)) {
           forged++;
           continue;
         }
