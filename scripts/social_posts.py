@@ -336,7 +336,7 @@ def k_bank(kind):
                 cur["text"] = ln.split(":", 1)[1].strip()
             elif cur is not None and ln.startswith("sources:"):
                 cur["sources"] = [s.strip() for s in ln.split(":", 1)[1].split(" ; ") if s.strip()]
-        start = datetime.date.fromisoformat(day).toordinal() % max(len(items), 1)
+        start = 0 if kind == "legit" else datetime.date.fromisoformat(day).toordinal() % max(len(items), 1)  # the checks go in order, 1 to 5
         for i in range(len(items)):
             it = items[(start + i) % len(items)]
             if it["id"] not in ctx["used"] and it["text"] and x_len(it["text"]) <= LIMIT:
