@@ -268,7 +268,7 @@ def k_sale(day, ctx):
 
 
 def k_drops(day, ctx):
-    rows = q(f"""select s.brand||' '||s.model||' '||s.colorway, d.release_date, d.confirmation, d.india_status, coalesce(d.retail_price::int::text,'')
+    rows = q(f"""select s.brand||' '||s.model||' '||s.colorway, d.release_date, d.confirmation, d.india_status, coalesce(d.retail_price::int::text,''), d.currency
       from drop_events d join sneakers s on s.id=d.sneaker_id
       where not d.hidden and not d.is_demo and d.release_date between '{day}' and '{day}'::date+7
       order by (d.release_date='{day}') desc, (d.confirmation='confirmed') desc, (d.confirmation='reported') desc,
@@ -280,11 +280,17 @@ def k_drops(day, ctx):
         return None
     head = f"Drops today, {d.strftime('%a %d %b')}" if today else "Coming up this week"
     lines = []
-    for name, rd, conf, india, price in pick:
+    usd = False
+    for name, rd, conf, india, price, cur in pick:
         when = "" if rd == day else f" ({datetime.date.fromisoformat(rd).strftime('%a %d %b')})"
-        pr = f" ₹{int(price):,}" if price.isdigit() and int(price) >= 1000 else ""  # tiny values are dollar prices stored as rupees: leave out
-        lines.append(f"• {clip(name, 60)}{when}{pr}, {FIRM.get(conf, conf)}")
-    foot = "Dates marked rumoured are not final. We update as they firm up."
+        pr = ""
+        if price.isdigit() and cur == "INR" and int(price) >= 1000:
+            pr = f" {rupees(price)}"
+        elif price.isdigit() and cur == "USD":  # a US price, not an Indian one: always labelled, never shown as rupees
+            pr = f", about US${int(price)}"
+            usd = True
+        lines.append(f"• {clip(name, 60)}{when}, {FIRM.get(conf, conf)}{pr}")
+    foot = ("Prices are US, India prices not announced. " if usd else "") + "Dates can still move."
     tail = f"\n{SITE}/releases" if SITE else ""
     text = f"{head}\n\n" + "\n".join(lines) + f"\n\n{foot}{tail}"
     while x_len(text) > LIMIT and len(lines) > 1:
@@ -330,7 +336,7 @@ def k_bank(kind):
                 cur["text"] = ln.split(":", 1)[1].strip()
             elif cur is not None and ln.startswith("sources:"):
                 cur["sources"] = [s.strip() for s in ln.split(":", 1)[1].split(" ; ") if s.strip()]
-        start = datetime.date.fromisoformat(day).toordinal() % max(len(items), 1)
+        start = 0 if kind == "legit" else datetime.date.fromisoformat(day).toordinal() % max(len(items), 1)  # the checks go in order, 1 to 5
         for i in range(len(items)):
             it = items[(start + i) % len(items)]
             if it["id"] not in ctx["used"] and it["text"] and x_len(it["text"]) <= LIMIT:
