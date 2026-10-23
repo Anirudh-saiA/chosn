@@ -1,6 +1,6 @@
 # Content calendar: Sat 24 to Fri 30 October 2026
 
-Updated 2026-10-23 (from Main's request). The kind of post is set by weekday in `scripts/social_posts.py` (no repeat within 30 days). A day with a release in our drop calendar (confirmed or reported) leads with the new-release post. Posts marked "pack" are evergreen and already written in `week-2026-10-24.md` for X's Schedule; the rest are built from the day's data when you run `python scripts/social_posts.py`. Morning about 09:00 IST, evening about 19:00. All claims stay "Reported" until R&D's files arrive in `office/research/`.
+Updated 2026-10-23 (from Main's request). The kind of post is set by weekday in `scripts/social_posts.py` (no repeat within 30 days). A day with a release in our drop calendar (confirmed or reported) leads with the new-release post. Posts marked "pack" are evergreen and already written in `week-2026-10-24.md` for X's Schedule; the rest are built from the day's data when you run `python scripts/social_posts.py`. Morning about 09:00 IST, evening about 19:00. Claims are Confirmed only where R&D confirmed them from a brand page (see the last line); everything else is Reported.
 
 | Day | Morning (about 09:00) | Evening (about 19:00) |
 |---|---|---|
