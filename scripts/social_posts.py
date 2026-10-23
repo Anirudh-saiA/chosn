@@ -404,12 +404,26 @@ KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale
          "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
 
 
+TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory",
+        "news": "#SneakerNews", "collab": "#SneakerCollab", "wearing": "#SneakerCommunity", "random": "#SneakerCulture", "question": "#SneakerCommunity"}
+
+
+def hashtags(kind, p):
+    """At most two relevant tags, shown beside the post, not inside it: #SneakersIndia plus one for the kind (a reality post uses its shoe)."""
+    if kind == "reality":
+        words = re.sub(r"[^A-Za-z0-9 ]", "", p["title"]).split()
+        second = "#" + "".join(w.capitalize() for w in words[:3]) if words else "#Sneakers"
+    else:
+        second = TAGS.get(kind, "#Sneakers")
+    return ["#SneakersIndia", second]
+
+
 def make_post(slot, kind, day, ctx):
     for k in (kind,) + tuple(x for x in FALLBACK[slot] if x != kind):
         p = KINDS[k](day, ctx)
         if p:
             ctx["used"].update(p["ids"])
-            return dict(p, kind=k, wanted_kind=kind)
+            return dict(p, kind=k, wanted_kind=kind, tags=hashtags(k, p))
     return None
 
 
@@ -439,6 +453,9 @@ def build(day):
             out += ["(nothing usable today: post a question of your own)", ""]
             continue
         out += [f"Type: **{p['label']}**" + (" (a new shoe releases today)" if new_today and slot == "morning" and p["kind"] == "drops" else "") + (f" (planned: {p['wanted_kind']}, nothing usable)" if p["kind"] != p["wanted_kind"] else ""), ""] + block(p["text"])
+        tagged = x_len(p["text"] + "\n\n" + " ".join(p["tags"]))
+        out += [f"Optional hashtags (at most two; add at the end if you want them): {' '.join(p['tags'])}  ->  with tags {tagged}/{LIMIT}"
+                + ("   <-- too long with tags: leave them out or use one" if tagged > LIMIT else ""), ""]
         out += [f"Confidence: **{p['conf']}**  |  {p['note']}"]
         if p["sources"]:
             out += ["Sources (paste as a reply if you like):"] + [f"- {s}" for s in p["sources"]]

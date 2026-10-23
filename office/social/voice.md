@@ -22,6 +22,7 @@ We are the critic. We say what the shoe is made of, how it is built, where it is
 - No copying publisher text. Headline and credit only.
 - No claim without a source or the "my take" marker. If a claim cannot be supported, cut it.
 - No posting links to stores we cannot vouch for. No price promises: prices are "listed at", with the date.
+- Hashtags: at most two, relevant, at the end (the draft suggests them). No trending tags that have nothing to do with the post; the choice is the founder's.
 - No emoji walls. At most one, only if it adds meaning.
 
 ## Formats (rotate; never the same take within 30 days)
