@@ -1,0 +1,10 @@
+# X (Twitter) posts
+
+The voice is the critic: `voice.md`. Facts live in `facts/` (one file per shoe, with sources and the date checked). Every day `scripts/social_posts.py` writes `posts/<date>.md`: a morning "reality" post (materials, construction, price in rupees from our own scrape), an evening community question about the same shoe, and optional extras (today's drops with how firm each date is, the day's sneaker story as headline and credit only). Each post lists its sources and a confidence line, and shows its length as X counts it (₹ counts as 2).
+
+Nothing is posted automatically. The founder copies the text and attaches a picture. The 10-minute news cycle runs the script once after 07:00 and refreshes it once after 17:00.
+
+- `calendar.md`: the next 7 days and the formats. `engage.md`: accounts to reply to and collab ideas (nobody is contacted). `weekly.md`: the Sunday review (the founder pastes impressions and replies).
+- Pictures: drop them in `images/` (naming in `images/README.md`). `python scripts/social_images.py --date YYYY-MM-DD` (or `--all`) lists which post has a picture and which needs one.
+- To add a shoe: copy a file in `facts/`, keep the format in `facts/README.md`, source every claim. A post is not reused within 30 days.
+- Set `SOCIAL_SITE_URL` (for example `https://chosn.in`) once the domain exists and the drops note gets a link.
