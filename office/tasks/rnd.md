@@ -4,6 +4,9 @@ Owner: the rnd team. Main assigns; the team updates this file and reports each e
 First assigned 2026-10-21.
 
 ## Open
+1. Re-check the Unconfirmed rows: New Balance 550 and ASICS Gel-1130 official pages, Puma Speedcat materials and origin, the official DPDP Rules text (72-hour breach step, log retention, languages, startup exemption).
+2. Use Snatchfy and KicksWorthy on a few style codes and compare with our data; read Snatchfy's Pass page.
+3. Deeper pass on public authentication guides (GOAT, eBay Authenticity Guarantee, Entrupy), with dates.
 
 ## Doing
 
