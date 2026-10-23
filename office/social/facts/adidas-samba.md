@@ -8,7 +8,7 @@ checked: 2026-10-23
 - B75807: "soft leather upper, suede overlays and gum sole". Confirmed (adidas India). Origin not shown on the page text read.
 - DATA NOTE: our database stores Rs 9,350 as the retail price of B75807; adidas India shows Rs 10,999. The Data team should check how `sneakers.retail_price` is filled. Do not quote the database field.
 - Standard pairs: a reseller lists some women's Sambas as made in Vietnam and others in China. Unverified, single source.
-- Our scrape 2026-10-21/22: about Rs 6,049 (Myntra) to Rs 13,999; Flipkart median about Rs 7,174; Superkicks and VegNonVeg mostly Rs 10,999.
+- Our scrape 2026-10-21/22: about Rs 6,049 (Myntra) to Rs 13,999; Superkicks and VegNonVeg mostly Rs 10,999.
 
 ## Sources
 - https://www.adidas.co.in/samba-og-shoes/B75807.html (MRP, materials)

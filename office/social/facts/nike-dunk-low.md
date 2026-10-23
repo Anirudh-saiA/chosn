@@ -9,7 +9,7 @@ checked: 2026-10-23
 - Origin, HF5441-105: Vietnam (Ching Luh, Ben Luc), importer Nike India Pvt Ltd. Confirmed, for this style code only.
 - Materials: the India page says "premium materials and plush padding", with no breakdown. Confirmed that this is all it says.
 - The earlier cupsole / foam midsole / rubber outsole wording came from a Nike page for older kids, not the adult India page. Reported only; do not present it as the India spec.
-- Our data 2026-10-21/22 (Myntra, Ajio, Flipkart, Superkicks, VegNonVeg): about Rs 6,449 to Rs 11,895, median about Rs 8,295 to Rs 9,695 depending on the day.
+- Our data 2026-10-21/22 (Superkicks, VegNonVeg; test rows excluded): about Rs 7,465 to Rs 11,895, median about Rs 9,695. The earlier Rs 6,449 low came from non-live retailers.
 
 ## Sources
 - https://www.nike.in/dunk/c/94027 (Nike India, MRPs)
