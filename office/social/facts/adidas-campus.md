@@ -1,25 +1,26 @@
-# adidas Campus (00s, OSS)
+# adidas Campus 00s
 slug: adidas-campus
-db: adidas|CAMPUS OSS, adidas|Campus (W)
-checked: 2026-10-22
+db:
+checked: 2026-10-23
 
-## What it is made of (checked 2026-10-22)
-- Campus 00s: the adidas listing says suede upper, textile lining, rubber outsole; one listing says 25% of the upper components use recycled content. Reported (adidas page, read via search summary).
-- A US warehouse-club listing calls the upper premium leather, which conflicts. Treated as unreliable.
-- Cupsole claim: not confirmed by any source found.
-- Our data 2026-10-22: Campus OSS about Rs 4,400 to Rs 6,049 (Superkicks); Campus (W) Rs 7,699 (Myntra); Campus ST Rs 10,399 to Rs 12,999. The 00s did not show in our retail set today (name to check).
+## What the brand says (R&D, read 2026-10-23)
+- CORRECTION: it is not "suede" for every pair. adidas India says HQ8708 has a premium leather upper with a terry textile lining and an off-white midsole; JR8163 is suede. Confirmed per style code. Posts must name the style code.
+- India MRP on adidas.co.in: men Rs 10,999, with sale prices from Rs 7,699.50 down to Rs 4,950 on some colourways; kids Rs 5,999 to Rs 9,999. Confirmed.
+- Origin: not shown. Cupsole: not confirmed.
+- Our own data: the 00s did not show in our retail set under that name; no live price is used in the post.
 
 ## Sources
-- https://www.adidas.be/en/sport_shoes-regular-campus (adidas)
-- https://www.samsclub.com/ip/adidas-campus-00s-shoe/20298113316 (conflicting)
+- https://www.adidas.co.in/campus-00s-shoes/HQ8708.html (leather)
+- https://www.adidas.co.in/campus-00s-shoes/JR8163.html (suede)
+- https://www.adidas.co.in/campus (MRP and sale prices)
 
 ## Not verified
-Construction; origin; MRP in India; the Campus 00s price (not found in our set today). The post's prices cover OSS and the women's Campus, not the 00s.
+Construction; origin; other style codes.
 
 ## Posts
-@post campus-spec | Reported
-text: Campus 00s, per adidas: suede upper, textile lining, rubber outsole. Not leather, whatever some listings say. Campus models we track in India run ₹{min} to ₹{max}. My take: suede at the low end is fair; at the high end it needs a reason. Agree?
-sources: https://www.adidas.be/en/sport_shoes-regular-campus
+@post campus-spec | Confirmed
+text: Campus 00s is not one material. adidas India: HQ8708 has a premium leather upper, JR8163 is suede. Men's MRP ₹10,999; some colourways are marked down to as low as ₹4,950. My take: read the style code before you read the price.
+sources: https://www.adidas.co.in/campus-00s-shoes/HQ8708.html ; https://www.adidas.co.in/campus-00s-shoes/JR8163.html ; https://www.adidas.co.in/campus
 
 @question campus-q
 text: Suede or leather for a daily shoe through an Indian monsoon? Pick one and tell us why.

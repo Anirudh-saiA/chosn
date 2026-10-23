@@ -11,7 +11,7 @@ Two posts a day (about 09:00 and 19:00 IST), each within 280 characters as X cou
   collab   the latest collab story (headline + credit only) with a question
   news     the latest unexpected story (headline + credit only) with a question
   random   a culture or retail prompt from office/social/random.md
-  controversy, fact   sourced items from office/social/controversies.md and trivia.md
+  controversy, fact, legit   sourced items from office/social/controversies.md, trivia.md and authenticity.md (real-versus-fake basics)
   market   our own market numbers: the same pair at two prices, new listings, markdowns by store
   wearing  what Indian stores stock most (not what people wear) and a question to the readers
 If a new shoe releases today (our drop calendar), the morning post is the drops post.
@@ -35,7 +35,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FACTS = ROOT / "office" / "social" / "facts"
 POSTS = ROOT / "office" / "social" / "posts"
 RANDOM = ROOT / "office" / "social" / "random.md"
-BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md"}
+BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md", "legit": ROOT / "office" / "social" / "authenticity.md"}
 PG = ["docker", "exec", "chosn-postgres-1", "psql", "-U", "postgres", "-d", "chosn_dev", "-At", "-F", "|", "-c"]
 SITE = os.environ.get("SOCIAL_SITE_URL", "").rstrip("/")
 LIMIT = 280
@@ -43,10 +43,11 @@ REPEAT_DAYS = 30
 FIRM = {"confirmed": "confirmed", "reported": "reported", "unconfirmed": "rumoured"}
 CONF = {"confirmed": "Confirmed", "reported": "Reported", "unconfirmed": "Unconfirmed"}
 # listing prices come from these stores only: resale stores would mix a different kind of price into the range
-STORES = ("Myntra", "Ajio", "Flipkart", "Superkicks", "Puma India", "VegNonVeg")
+STORES = ("Myntra", "Superkicks", "Puma India", "VegNonVeg")  # active retail stores only; Ajio, Flipkart and END. Clothing are pending_integration and hold test rows
+NOFIX = "ps.listing_url not like '%FIXTURE%'"  # the price tables contain test rows whose listing_url says FIXTURE
 SLOTS = {0: ("market", "fact"), 1: ("drops", "sale"), 2: ("controversy", "wearing"), 3: ("collab", "reality"),
-         4: ("sale", "market"), 5: ("news", "fact"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
-FALLBACK = {"morning": ("fact", "market", "reality", "random", "drops"), "evening": ("fact", "market", "random", "question", "reality")}
+         4: ("sale", "market"), 5: ("news", "legit"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
+FALLBACK = {"morning": ("fact", "legit", "market", "reality", "random", "drops"), "evening": ("fact", "legit", "market", "random", "question", "reality")}
 NEWS_ASK = "What would you want to know about the materials and the price before buying? Reply and we will check the spec."
 CULTURE_ASK = "Does this change how you buy or wear sneakers, or is it noise? Tell us why."
 COLLAB_ASK = "Beyond the logo, what would this collab have to change in the shoe for you to pay more?"
@@ -131,15 +132,15 @@ def prices(db):
         return None
     pairs = " or ".join(f"(lower(s.brand)=lower('{esc(b)}') and lower(s.model)=lower('{esc(m)}'))" for b, m in db)
     stores = ",".join(f"'{s}'" for s in STORES)
-    rows = q(f"""select count(*), min(ps.price)::int, percentile_cont(.5) within group (order by ps.price)::int, max(ps.price)::int
+    rows = q(f"""select count(*), min(ps.price)::int, percentile_cont(.5) within group (order by ps.price)::int, max(ps.price)::int, string_agg(distinct r.name, ', ' order by r.name)
       from sneakers s join sneaker_variants v on v.sneaker_id=s.id
-      join price_snapshots ps on ps.sneaker_variant_id=v.id and ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000
-      join retailers r on r.id=ps.retailer_id and r.name in ({stores})
+      join price_snapshots ps on ps.sneaker_variant_id=v.id and ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 and {NOFIX}
+      join retailers r on r.id=ps.retailer_id and r.status='active' and r.name in ({stores})
       where s.gender in ('men','women','unisex') and ({pairs})""")
     if not rows or not rows[0][0] or rows[0][0] == "0":
         return None
-    n, lo, med, hi = rows[0]
-    return {"n": int(n), "min": int(lo), "med": int(med), "max": int(hi)}
+    n, lo, med, hi, stores_found = rows[0]
+    return {"n": int(n), "min": int(lo), "med": int(med), "max": int(hi), "stores": stores_found}
 
 
 def fill(text, pr):
@@ -209,7 +210,7 @@ def k_reality(day, ctx):
                 continue
             src = list(p["sources"])
             if pr:
-                src.append(f"Our own data: {pr['n']} in-stock new listings at {', '.join(STORES)}, read {day}; listing prices, not MRP, mixed colourways")
+                src.append(f"Our own data: {pr['n']} in-stock new listings at {pr['stores']}, read {day}; listing prices, not MRP, mixed colourways; test rows excluded")
             ctx["fact"] = fct
             return {"label": "reality: a specific shoe", "text": text, "conf": p["conf"], "ids": [p["id"]], "sources": src,
                     "note": f"fact file `office/social/facts/{fct['file']}` (checked {fct['checked']})", "slug": fct["slug"], "title": fct["title"]}
@@ -248,8 +249,8 @@ def k_sale(day, ctx):
     rows = q(f"""select distinct on (s.id, r.id) s.brand||' '||s.model||' '||s.colorway, r.name, ps.price::int, ps.compare_at_price::int,
         round(100*(1-ps.price/ps.compare_at_price))::int, ps.listing_url, ps.fetched_at::date
       from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id join sneakers s on s.id=v.sneaker_id
-      join retailers r on r.id=ps.retailer_id and r.name in ({stores})
-      where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 and ps.compare_at_price>ps.price
+      join retailers r on r.id=ps.retailer_id and r.status='active' and r.name in ({stores})
+      where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 and ps.compare_at_price>ps.price and {NOFIX}
         and s.gender in ('men','women','unisex') and ps.fetched_at>='{day}'::date - 3 order by s.id, r.id, ps.fetched_at desc""")
     rows = sorted(rows, key=lambda r: -int(r[4]))[:15]
     start = datetime.date.fromisoformat(day).toordinal() % max(len(rows), 1)
@@ -334,7 +335,7 @@ def k_bank(kind):
             it = items[(start + i) % len(items)]
             if it["id"] not in ctx["used"] and it["text"] and x_len(it["text"]) <= LIMIT:
                 note = "criticises the product, price or company decision, not a person; skim a source before posting" if kind == "controversy" else "skim a source before posting"
-                return {"label": "controversy" if kind == "controversy" else "interesting fact", "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
+                return {"label": {"controversy": "controversy", "fact": "interesting fact", "legit": "real-versus-fake basics"}[kind], "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
                         "sources": it["sources"], "note": note, "slug": "", "title": it["text"].split(":")[0]}
         return None
     return run
@@ -353,8 +354,8 @@ def k_market(day, ctx):
               select s.brand||' '||s.model||' '||s.colorway name, (array_agg(r.name order by x.p))[1] lo_store, min(x.p)::int lo,
                 (array_agg(r.name order by x.p desc))[1] hi_store, max(x.p)::int hi, count(*) n
               from (select v.sneaker_id sid, ps.retailer_id rid, min(ps.price) p from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id
-                where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 group by 1,2) x
-              join sneakers s on s.id=x.sid join retailers r on r.id=x.rid and r.name in ({stores}) where s.gender in ('men','women','unisex') group by s.id) t
+                where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 and {NOFIX} group by 1,2) x
+              join sneakers s on s.id=x.sid join retailers r on r.id=x.rid and r.status='active' and r.name in ({stores}) where s.gender in ('men','women','unisex') group by s.id) t
               where n>=2 and hi>lo order by (hi-lo)::numeric/lo desc limit 10""")
             for name, lo_s, lo, hi_s, hi, pct in rows:
                 key = "market:spread:" + re.sub(r"[^a-z0-9]", "", name.lower())[:40]
@@ -371,8 +372,8 @@ def k_market(day, ctx):
                 continue
             rows = q(f"""select r.name, count(*), count(*) filter (where ps.compare_at_price>ps.price),
                 round(percentile_cont(.5) within group (order by 100*(1-ps.price/ps.compare_at_price)) filter (where ps.compare_at_price>ps.price))::int
-              from price_snapshots ps join retailers r on r.id=ps.retailer_id and r.name in ({stores})
-              where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' group by 1 order by 3 desc""")
+              from price_snapshots ps join retailers r on r.id=ps.retailer_id and r.status='active' and r.name in ({stores})
+              where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and {NOFIX} group by 1 order by 3 desc""")
             marked = [r for r in rows if int(r[2]) > 0]
             if not marked:
                 continue
@@ -386,9 +387,11 @@ def k_market(day, ctx):
             key = f"market:new:{week[0]}-w{week[1]}"
             if key in ctx["used"]:
                 continue
-            rows = q(f"""select s.brand, count(*) from listing_first_seen l join sneakers s on s.id=l.sneaker_id
-              where not l.is_baseline and l.first_seen>='{day}'::date-2 group by 1 order by 2 desc limit 5""")
-            tot = q(f"select count(*) from listing_first_seen where not is_baseline and first_seen>='{day}'::date-2")
+            real = f"""join retailers r on r.id=l.retailer_id and r.status='active' and r.name in ({stores})
+              where not l.is_baseline and l.first_seen>='{day}'::date-2 and exists (select 1 from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id
+                where v.sneaker_id=l.sneaker_id and ps.retailer_id=l.retailer_id and {NOFIX})"""
+            rows = q(f"select s.brand, count(*) from listing_first_seen l join sneakers s on s.id=l.sneaker_id {real} group by 1 order by 2 desc limit 5")
+            tot = q(f"select count(*) from listing_first_seen l {real}")
             if not rows or not tot or int(tot[0][0]) == 0:
                 continue
             by = ", ".join(f"{b} {n}" for b, n in rows[:4])
@@ -412,8 +415,8 @@ def k_wearing(day, ctx):
     if key in ctx["used"]:
         return None
     rows = q(f"""select s.brand||' '||s.model, count(distinct s.id) from sneakers s join sneaker_variants v on v.sneaker_id=s.id
-      join price_snapshots ps on ps.sneaker_variant_id=v.id and ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR'
-      join retailers r on r.id=ps.retailer_id and r.name in ({stores}) where s.gender in ('men','women','unisex') group by 1 order by 2 desc limit 5""")
+      join price_snapshots ps on ps.sneaker_variant_id=v.id and ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and {NOFIX}
+      join retailers r on r.id=ps.retailer_id and r.status='active' and r.name in ({stores}) where s.gender in ('men','women','unisex') group by 1 order by 2 desc limit 5""")
     if len(rows) < 3:
         return None
     for n in range(len(rows), 2, -1):
@@ -427,10 +430,10 @@ def k_wearing(day, ctx):
 
 
 KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
-         "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
+         "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "legit": k_bank("legit"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
 
 
-TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory",
+TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory", "legit": "#LegitCheck",
         "news": "#SneakerNews", "collab": "#SneakerCollab", "wearing": "#SneakerCommunity", "random": "#SneakerCulture", "question": "#SneakerCommunity"}
 
 
