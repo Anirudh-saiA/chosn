@@ -10,7 +10,7 @@ Last updated 2026-10-23.
 | deadline not stated | Startup India National Startup Awards 5.0, DPIIT-recognised startups, applications "now open" | https://www.startupindia.gov.in/content/sih/en/nsa2025.html | not eligible until DPIIT-recognised |
 | none (rolling, status unknown) | Venture Catalysts founder form | https://www.venturecatalysts.in/Form | drafted |
 | none | Sauce.vc and Stellaris intro emails | https://sauce.vc/contact/ , https://www.stellarisvp.com/approach | drafted |
-| unverified (watch) | Peak XV Surge, Accel Atoms next cohorts ("expected" late 2026 / early 2027, third-party) | no official link verified | watch |
+| none stated (watch) | Peak XV Surge: seed from $500k, open status and cohort dates not stated; Accel Atoms "expected" late 2026 / early 2027 is third-party and unverified | https://surge.peakxv.com/ | watch |
 
 Deadlines in the next 14 days (to 2026-11-06): none confirmed.
 Closed or not open: Google for Startups Accelerator India (closed 2026-04-19); Lakme Fashion Week x FDCI (ended 2026-10-18); Antler India residency (next cohort not announced).

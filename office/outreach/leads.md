@@ -98,9 +98,9 @@ Why it matters: public visibility and credibility if CHOSN is DPIIT-recognised (
 Link: https://www.startupindia.gov.in/content/sih/en/nsa2025.html (listing page last updated 2026-09-14)      Verified: banner seen 2026-10-23; deadline and categories not read. Fit unverified.      Draft: none
 
 ### Fireside Ventures  ·  founder  ·  deadline none
-What: consumer-focused early-stage fund, per search-result summaries (no official page was readable: the fetch failed).
-Why it matters: widely named as an early consumer / D2C investor; the reported $500K-$5M cheque range and a footwear-brand seed round are secondary-source claims only.      Ask: intro call, via warm introduction if possible.
-Link: https://fireside.vc/ (official page not read)      Verified: no. Unverified: all details are from third-party directories seen 2026-10-23. Read the official site before any outreach.      Draft: none yet
+What: consumer-focused early-stage fund. Entrepreneur India reports it closed Fund IV at ₹2,265 crore (about $253 million) in December 2025; focus across food, beauty, personal care, health and lifestyle; named portfolio includes boAt, Honasa (Mamaearth), Pilgrim and The Sleep Company.
+Why it matters: the most consumer-specific fund found, but the portfolio named is mostly beauty, food and health, not footwear or fashion, and CHOSN is pre-launch.      Ask: none yet; revisit with users and traction, ideally by warm introduction.
+Link: https://india.entrepreneur.com/en-in/news-and-trends/fireside-ventures-closes-fund-iv-at-rs2265-crore/500312 (news). Official site https://fireside.vc/ could not be loaded on 2026-10-23 (fetch failed, then the browser pane refused it).      Verified: partly. Fund size and focus from a news article (2025-12 per search result); cheque size and how to pitch are unverified (the $500K-$5M range is from third-party directories only). Read the official site in your own browser before outreach.      Draft: none yet
 
 ### Kalaari Capital  ·  founder  ·  deadline none
 What: VC with a public pitch page "What's Your Pitch"; Myntra, Bluestone and Zivame logos appear on the home page.
@@ -128,14 +128,14 @@ Why it matters: low barrier, but the home page states no apply route, sector or 
 Link: https://100x.vc/      Verified: partly, seen 2026-10-23. Sector claims in search summaries are unverified.      Draft: none
 
 ### Inflection Point Ventures (IPV)  ·  founder  ·  deadline none
-What: angel network (per search summaries).
-Why it matters: could not be assessed: the official page returned empty content.      Ask: none yet.
-Link: https://www.ipv.vc/      Verified: no. Unverified: sector and stage come from third-party summaries only.      Draft: none
+What: Gurugram angel investing platform ("Investor focused, founder friendly"); the home page has "I'M A STARTUP" and "I'M AN INVESTOR" routes. Correction: ipv.vc is a parked GoDaddy page, not IPV; the real site is ipventures.in.
+Why it matters: takes pre-seed to Series B per a third-party directory, with sectors listed as fintech, edtech, healthcare and SaaS: consumer is not among them, so fit is unclear.      Ask: none until fit is confirmed; founders pitch through the site's startup route / contact page.
+Link: https://ipventures.in/ (pitch route per a directory: https://ipventures.in/contact/, not opened)      Verified: partly. Home page read 2026-10-23, but it states no sectors, stage or cheque size; those come from a third-party directory.      Draft: none
 
 ### Indian Angel Network  ·  founder  ·  deadline none
-What: angel network; the old address redirects to https://iangroup.vc/, which was not read.
-Why it matters: third-party lists say its focus excludes consumer and fashion, so probably low fit.      Ask: none.
-Link: https://iangroup.vc/      Verified: no. Unverified.      Draft: none
+What: angel network (IAN Group); page says it backs "innovative companies solving real world problems, driven by technology" across "multiple stages of Early Stage Investments"; funds listed IAN Fund 1, IAN Alpha Fund, Bioangels, IAN Angel Fund; portfolio names include Wooden Street, Wow Momos and Phool, with no sector labels on the page.
+Why it matters: technology-led focus, so likely a weak fit for a pre-launch comparison site; consumer is not stated as a sector.      Ask: none for now.
+Link: https://iangroup.vc/ (footer "Submit Plan": https://iangroup.vc/submit-plan/, not confirmed as the founder route)      Verified: yes, page read 2026-10-23 (copyright 2006-2026; newest news item 2026-10-13); cheque size and sectors not stated.      Draft: none
 
 ### T-Hub  ·  founder  ·  deadline none stated
 What: Hyderabad incubator; listed programmes are corporate or sector challenges (e.g. Kotak BizLabs grants "up to ₹30 lakh") and none is consumer / fashion.
@@ -160,12 +160,12 @@ Link: https://www.axilor.com/      Verified: yes, seen 2026-10-23.      Draft: n
 ### A Square Capital  ·  founder  ·  deadline none  ·  LOW FIT
 What: per the founder, its post was an internship ad in deep tech and healthcare.
 Why it matters: poor fit; deep-tech / semiconductor focus, not consumer.      Ask: none.
-Link: none retrieved      Verified: no. Unverified, from the founder's account only; no source link was read in this pass.      Draft: none
+Link: none confirmed. https://www.asquarecapital.in/ is the only site that loaded and is an insurance and finance distribution business with no mention of venture investing, deep tech or internships; we could not confirm it is the same organisation.      Verified: no. Unverified: the deep-tech focus and the internship post come from the founder's account only; no independent evidence found 2026-10-23. Keep as low fit.      Draft: none
 
 ### Peak XV Surge / Accel Atoms  ·  founder  ·  deadline unverified
-What: third-party search summaries say the next cohorts are "expected" late 2026 / early 2027. The Peak XV address we tried (www.surge.peakxv.com) did not resolve.
-Why it matters: well-known programmes; the dates are guesses.      Ask: watch the official sites.
-Link: none verified      Verified: no. Unverified.      Draft: none
+What: Peak XV Surge page says "Seed Funding for Day-Zero Founders" and "We invest from $500k up to $5M in seed capital"; apply buttons go to https://surge.peakxv.com/reach-out. It does not say whether applications are open and gives no cohort name or dates. (Accel Atoms was not checked; third-party summaries say next cohorts are "expected" late 2026 / early 2027, unverified.)
+Why it matters: well-known seed programme, but the page states no consumer focus and CHOSN has no company registered yet.      Ask: none now; check the page again after registration.
+Link: https://surge.peakxv.com/      Verified: yes for the quoted lines, read 2026-10-23 (footer "© 2026 Peak XV"); open status and dates not stated.      Draft: none
 
 ### Lakme Fashion Week x FDCI  ·  fashion  ·  deadline none (already ended)
 What: ran 2026-10-13 to 2026-10-18; no FDCI event dated 2026-10-23 to 2027-01-31 on its list.
