@@ -11,3 +11,4 @@ First assigned 2026-10-21.
 ## Doing
 
 ## Done
+- 2026-10-23: Investor / angel / accelerator / event sweep (consumer, fashion, sneaker focus). 20 entries in `office/outreach/leads.md` (11 verified on official pages, 4 partly, 5 unverified), deadlines in `calendar.md`, one draft in `drafts/`. Gaps: no sneaker-culture events or non-contacted store partners (Comet, Limited Edt) researched yet; Fireside and IPV official pages not readable.
