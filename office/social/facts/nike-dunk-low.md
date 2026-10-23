@@ -5,7 +5,7 @@ checked: 2026-10-22
 
 ## What it is made of (checked 2026-10-22)
 - Upper: leather on most colourways; some mix suede or nubuck. Reported (Nike and retailer listings).
-- Construction: Nike's product details list a cupsole, a foam midsole and a rubber outsole with a pivot-circle pattern. Confirmed (Nike).
+- Construction: Nike's product details list a cupsole, a foam midsole and a rubber outsole with a pivot-circle pattern. Reported (Nike page, read via search summary; R&D to confirm).
 - Country of origin: not verified for India stock. Check the tag.
 - Nike India MRP seen via search: Rs 8,695 (DV0831-111) and Rs 11,895 (IB2263-100). Re-verify on the page before quoting; Nike changes these.
 - Our data 2026-10-21/22 (Myntra, Ajio, Flipkart, Superkicks, VegNonVeg): about Rs 6,449 to Rs 11,895, median about Rs 9,695.

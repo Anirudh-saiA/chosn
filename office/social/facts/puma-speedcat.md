@@ -5,7 +5,7 @@ checked: 2026-10-22
 
 ## What it is made of (checked 2026-10-22)
 - RunRepeat lab review (score 85): quality suede, reliable wet grip, impressive abrasion resistance, very flexible and light; downsides: no cushioning for long walks, snug fit, not breathable; suited to short outings and driving. Reported (lab test).
-- Puma Moldova listing: suede upper (97.82% cow leather, 2.18% textile), rubber heel insert, OrthoLite insole, IMEVA midsole. Confirmed for that listing (brand site).
+- Puma Moldova listing: suede upper (97.82% cow leather, 2.18% textile), rubber heel insert, OrthoLite insole, IMEVA midsole. Reported for that listing (Puma Moldova site via search summary).
 - The upper is described as suede or leather by different retailers; colourway dependent.
 - Our data 2026-10-18/22: Speedcat OG Rs 9,999 at Puma India, Rs 6,499 to Rs 9,999 at Superkicks, Rs 9,999 at VegNonVeg. Ballet variants Rs 6,299 to Rs 6,999.
 

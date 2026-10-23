@@ -22,6 +22,7 @@ We are the critic. We say what the shoe is made of, how it is built, where it is
 - No copying publisher text. Headline and credit only.
 - No claim without a source or the "my take" marker. If a claim cannot be supported, cut it.
 - No posting links to stores we cannot vouch for. No price promises: prices are "listed at", with the date.
+- Hashtags: at most two, relevant, at the end (the draft suggests them). No trending tags that have nothing to do with the post; the choice is the founder's.
 - No emoji walls. At most one, only if it adds meaning.
 
 ## Formats (rotate; never the same take within 30 days)
@@ -33,6 +34,14 @@ We are the critic. We say what the shoe is made of, how it is built, where it is
 6. Real versus fake basics: how to check, with no accusations against any seller.
 7. Collab spotlight: what a collab changes in the shoe, and what it does not.
 8. Community question: one clear question people can answer in a line.
+9. Sale: a listing at a date, store price against the MRP the store shows. Never "steal" or "must buy"; say what to check (style code, sizes, returns).
+10. New releases and collabs: the release, the price in rupees, how firm the date is, and what a collab changes in the shoe beyond the logo.
+11. Unexpected news: headline and credit only, then a question or our take marked as an opinion.
+12. Controversy: a sourced dispute or marketing claim, said plainly; the product, price or company decision is criticised, never a person; a court's finding is attributed to the court.
+13. Interesting fact: history or construction with a source, and where sources differ, say so.
+14. Market: our own numbers (the same pair at two prices, markdowns by store, new listings); say how we measured.
+15. Wearing: what stores stock, honestly labelled as stock, plus a question; the replies are the wear data.
+16. Random: culture and retail prompts with a point of view (`random.md`).
 
 ## Ten posts we write (good)
 Prices are shown as placeholders; the script fills them from our own data on the day. Each one is built from a file in `office/social/facts/`, where the sources are.
