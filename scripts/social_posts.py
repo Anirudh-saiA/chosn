@@ -181,6 +181,18 @@ def pack_entries(day):
     return found
 
 
+def pack_text(day, slot):
+    """The text of a packed post (the weekly pack file holds it under '## ... (day)' / '### HH:MM slot')."""
+    for f in POSTS.parent.glob("week-*.md"):
+        body = f.read_text(encoding="utf-8")
+        sec = re.search(r"## [^\n]*\(" + day + r"\)\n(.*?)(?=\n## |\Z)", body, re.S)
+        if sec:
+            m = re.search(r"### \d\d:\d\d " + slot + r":[^\n]*\n\n```\n(.*?)\n```", sec.group(1), re.S)
+            if m:
+                return m.group(1)
+    return None
+
+
 # ---- post kinds: each returns a dict or None ------------------------------------------------------------------
 
 def k_reality(day, ctx):
@@ -464,7 +476,10 @@ def build(day):
     for slot, kind, when in (("morning", morning_kind, "about 09:00 IST"), ("evening", evening_kind, "about 19:00 IST")):
         out += [f"## {slot.capitalize()} post ({when})", ""]
         if slot in packed and not (new_today and slot == "morning"):
-            out += [f"Already scheduled from the weekly pack: **{packed[slot][0]}** (`{packed[slot][1]}`). Nothing to post from this draft; the text is in the `week-*.md` file.", ""]
+            out += [f"Already scheduled from the weekly pack: **{packed[slot][0]}** (`{packed[slot][1]}`). If you have not scheduled it yet, here is the text:", ""]
+            txt = pack_text(day, slot)
+            if txt:
+                out += block(txt)
             continue
         p = make_post(slot, kind, day, ctx)
         if not p:

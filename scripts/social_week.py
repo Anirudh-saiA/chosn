@@ -35,6 +35,12 @@ def main():
         d = start + datetime.timedelta(days=n)
         out += [f"## {d.strftime('%A %d %b')} ({day})", ""]
         for slot, kind in zip(("morning", "evening"), sp.SLOTS[d.weekday()]):
+            if slot == "morning":
+                rel = sp.q(f"select count(*) from drop_events where not hidden and not is_demo and release_date='{day}' and confirmation in ('confirmed','reported')")
+                if rel and int(rel[0][0]) > 0:
+                    out += [f"- {TIMES[slot]} {slot}: **new releases** (a shoe releases this day): use the daily draft; no evergreen post here.", ""]
+                    live.append((day, slot, "drops"))
+                    continue
             if kind not in EVERGREEN:
                 out += [f"- {TIMES[slot]} {slot}: **{kind}**, a live post: use the daily draft that day.", ""]
                 live.append((day, slot, kind))
