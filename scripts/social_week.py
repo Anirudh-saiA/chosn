@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import social_posts as sp  # noqa: E402
 
-EVERGREEN = ("fact", "controversy", "random", "reality")
+EVERGREEN = ("fact", "legit", "controversy", "random", "reality")
 TIMES = {"morning": "09:00", "evening": "19:00"}
 
 

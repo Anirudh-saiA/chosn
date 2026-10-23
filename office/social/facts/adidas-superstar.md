@@ -1,12 +1,14 @@
 # adidas Superstar II
 slug: adidas-superstar
 db: adidas|SUPERSTAR II
-checked: 2026-10-22
+checked: 2026-10-23
 
 ## What it is made of (checked 2026-10-22)
 - adidas UK page (JH9977): leather and synthetic upper, moulded sockliner, rubber outsole. The page copy also says full leather, so it contradicts itself. Reported, and inconsistent.
 - Retailers (Boozt, Galaxus) list a leather upper, rubber sole, fabric lining; a rubber shell toe and cupsole are described by retailers. Reported.
 - Our data 2026-10-21/22: Superstar II about Rs 3,999 to Rs 7,149 (Superkicks), Rs 5,099 to Rs 5,299 (Myntra).
+
+- R&D (2026-10-23): adidas India lists no plain Superstar II (only a Pokemon edition at Rs 11,999); the plain address returned an empty page, and adidas UK pages returned 403 to R&D's tools. So the spec stays Reported and no India MRP is quoted.
 
 ## Sources
 - https://www.adidas.co.uk/superstar-ii-shoes/JH9977.html

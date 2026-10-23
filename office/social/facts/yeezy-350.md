@@ -1,7 +1,7 @@
 # adidas Yeezy Boost 350 V2
 slug: yeezy-350
 db: adidas|Yeezy Boost 350 V2
-checked: 2026-10-22
+checked: 2026-10-23
 
 ## What it is made of (checked 2026-10-22)
 - Upper: Primeknit, a knit textile. Reported (reseller and resale listings).
@@ -9,6 +9,8 @@ checked: 2026-10-22
 - Outsole: rubber. Reported.
 - Origin: not found. Not verified.
 - Our data 2026-10-22: Ajio lists the V2 at Rs 15,599 to Rs 16,449. This is one retailer; resale stores are left out.
+
+- R&D (2026-10-23): adidas India does not appear to sell the Yeezy Boost 350 V2 (its /yeezy page redirects to Originals; absence only, Unconfirmed). No MRP quoted.
 
 ## Sources
 - https://captaincreps.com/brands/adidas/yeezy-boost-350-v2/ (reseller description)

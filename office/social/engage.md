@@ -2,13 +2,13 @@
 
 Written 2026-10-22. Nobody is contacted by the Social team; the founder decides and does everything.
 
-**What I could and could not check.** I searched the web, which does not show X profiles reliably. Only one X handle is confirmed (Crepdog Crew, from a link on x.com). For the others I found the person or business and where they are public, but **not their X handle**: the founder should look each up on X and confirm it is the official one before following. I did not guess handles.
+**What is confirmed (R&D, `office/research/2026-10-23-store-social-handles.md`, 2026-10-23).** Only one store links an X account from its own website: Culture Circle, spelled `culturecircIe` with a capital I at the end, exactly as its site links it. Look-alike spellings may belong to someone else, so the founder should click the link from the Culture Circle site, not type the name. Instagram handles are confirmed from the stores' own sites for Superkicks (superkicksindia), VegNonVeg (vegnonveg), Crepdog Crew (crepdogcrew), Limited Edt (limitededt_in) and Culture Circle (culturecircle_). No other X handle is confirmed. My earlier note that @crepdogcrew was confirmed came from a search result, not from the store's own site: treat it as unconfirmed. **No handle goes into any draft until the founder confirms it.**
 
 ## Ten accounts and communities worth following and replying to
 
 | # | Who | Type | Where I found them | Why reply to them |
 |---|---|---|---|---|
-| 1 | Crepdog Crew (@crepdogcrew) | Store and resale platform; Delhi, Mumbai, Hyderabad | https://x.com/crepdogcrew (X handle confirmed). Beware copycat `.shop` sites in search results that do not match this handle. | The biggest Indian sneaker account on X. Reply to their drop posts with a spec or price fact, not to sell. |
+| 1 | Crepdog Crew (X handle unconfirmed; Instagram crepdogcrew is confirmed) | Store and resale platform; Delhi, Mumbai, Hyderabad | https://www.instagram.com/crepdogcrew/ (linked from their site). Beware copycat `.shop` sites in search results. | The biggest Indian sneaker account on X. Reply to their drop posts with a spec or price fact, not to sell. |
 | 2 | Superkicks | Multi-brand sneaker store; Mumbai, Delhi, Guwahati, Bengaluru | https://yourstory.com/companies/superkicks (company page; X handle not found) | Launch posts of new brands in India. We list their prices; a factual reply about what a launch pair is made of fits. |
 | 3 | VegNonVeg | Sneaker and streetwear boutique, founded 2016 | https://yourstory.com/companies/vegnonveg (X handle not found) | Collab drops (for example with Fila India). A spec-and-price reply on each drop. |
 | 4 | Mainstreet Marketplace and Vedant Lamba | Resale platform that began as a YouTube channel in 2017 | https://www.entrepreneur.com/article/444257 (X handle not found) | Resale versus retail conversations; our price comparison is directly relevant. |

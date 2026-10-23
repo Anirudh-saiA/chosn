@@ -11,7 +11,7 @@ Two posts a day (about 09:00 and 19:00 IST), each within 280 characters as X cou
   collab   the latest collab story (headline + credit only) with a question
   news     the latest unexpected story (headline + credit only) with a question
   random   a culture or retail prompt from office/social/random.md
-  controversy, fact   sourced items from office/social/controversies.md and trivia.md
+  controversy, fact, legit   sourced items from office/social/controversies.md, trivia.md and authenticity.md (real-versus-fake basics)
   market   our own market numbers: the same pair at two prices, new listings, markdowns by store
   wearing  what Indian stores stock most (not what people wear) and a question to the readers
 If a new shoe releases today (our drop calendar), the morning post is the drops post.
@@ -35,7 +35,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FACTS = ROOT / "office" / "social" / "facts"
 POSTS = ROOT / "office" / "social" / "posts"
 RANDOM = ROOT / "office" / "social" / "random.md"
-BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md"}
+BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md", "legit": ROOT / "office" / "social" / "authenticity.md"}
 PG = ["docker", "exec", "chosn-postgres-1", "psql", "-U", "postgres", "-d", "chosn_dev", "-At", "-F", "|", "-c"]
 SITE = os.environ.get("SOCIAL_SITE_URL", "").rstrip("/")
 LIMIT = 280
@@ -45,8 +45,8 @@ CONF = {"confirmed": "Confirmed", "reported": "Reported", "unconfirmed": "Unconf
 # listing prices come from these stores only: resale stores would mix a different kind of price into the range
 STORES = ("Myntra", "Ajio", "Flipkart", "Superkicks", "Puma India", "VegNonVeg")
 SLOTS = {0: ("market", "fact"), 1: ("drops", "sale"), 2: ("controversy", "wearing"), 3: ("collab", "reality"),
-         4: ("sale", "market"), 5: ("news", "fact"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
-FALLBACK = {"morning": ("fact", "market", "reality", "random", "drops"), "evening": ("fact", "market", "random", "question", "reality")}
+         4: ("sale", "market"), 5: ("news", "legit"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
+FALLBACK = {"morning": ("fact", "legit", "market", "reality", "random", "drops"), "evening": ("fact", "legit", "market", "random", "question", "reality")}
 NEWS_ASK = "What would you want to know about the materials and the price before buying? Reply and we will check the spec."
 CULTURE_ASK = "Does this change how you buy or wear sneakers, or is it noise? Tell us why."
 COLLAB_ASK = "Beyond the logo, what would this collab have to change in the shoe for you to pay more?"
@@ -334,7 +334,7 @@ def k_bank(kind):
             it = items[(start + i) % len(items)]
             if it["id"] not in ctx["used"] and it["text"] and x_len(it["text"]) <= LIMIT:
                 note = "criticises the product, price or company decision, not a person; skim a source before posting" if kind == "controversy" else "skim a source before posting"
-                return {"label": "controversy" if kind == "controversy" else "interesting fact", "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
+                return {"label": {"controversy": "controversy", "fact": "interesting fact", "legit": "real-versus-fake basics"}[kind], "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
                         "sources": it["sources"], "note": note, "slug": "", "title": it["text"].split(":")[0]}
         return None
     return run
@@ -427,10 +427,10 @@ def k_wearing(day, ctx):
 
 
 KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
-         "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
+         "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "legit": k_bank("legit"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
 
 
-TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory",
+TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory", "legit": "#LegitCheck",
         "news": "#SneakerNews", "collab": "#SneakerCollab", "wearing": "#SneakerCommunity", "random": "#SneakerCulture", "question": "#SneakerCommunity"}
 
 
