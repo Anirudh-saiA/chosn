@@ -164,7 +164,21 @@ def recent_ids(day):
             m = re.search(r"<!-- ids: ([^>]*?) -->", f.read_text(encoding="utf-8"))
             if m:
                 used.update(x.strip() for x in m.group(1).split(","))
+    for f in POSTS.parent.glob("week-*.md"):
+        for m in re.finditer(r"<!-- slot (\S+) \w+ \| \w+ \| ([^>]*?) -->", f.read_text(encoding="utf-8")):
+            if m.group(1) != day:
+                used.add(m.group(2).strip())
     return used
+
+
+def pack_entries(day):
+    """Evergreen slots already scheduled from a weekly pack (scripts/social_week.py): {slot: (kind, id)}."""
+    found = {}
+    for f in POSTS.parent.glob("week-*.md"):
+        for m in re.finditer(r"<!-- slot (\S+) (\w+) \| (\w+) \| ([^>]*?) -->", f.read_text(encoding="utf-8")):
+            if m.group(1) == day:
+                found[m.group(2)] = (m.group(3), m.group(4).strip())
+    return found
 
 
 # ---- post kinds: each returns a dict or None ------------------------------------------------------------------
@@ -445,10 +459,14 @@ def build(day):
         morning_kind = "drops"  # a new shoe releases today: it leads the day
     out = [f"# X posts for {day} ({d.strftime('%A')})", "",
            "Copy, paste, post yourself. Nothing here is posted automatically. The voice guide is `office/social/voice.md`. Re-check a price or date if it may have changed since this was written.", ""]
+    packed = pack_entries(day)
     ids, pics = [], []
     for slot, kind, when in (("morning", morning_kind, "about 09:00 IST"), ("evening", evening_kind, "about 19:00 IST")):
-        p = make_post(slot, kind, day, ctx)
         out += [f"## {slot.capitalize()} post ({when})", ""]
+        if slot in packed and not (new_today and slot == "morning"):
+            out += [f"Already scheduled from the weekly pack: **{packed[slot][0]}** (`{packed[slot][1]}`). Nothing to post from this draft; the text is in the `week-*.md` file.", ""]
+            continue
+        p = make_post(slot, kind, day, ctx)
         if not p:
             out += ["(nothing usable today: post a question of your own)", ""]
             continue

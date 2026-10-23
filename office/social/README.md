@@ -8,3 +8,4 @@ Nothing is posted automatically. The founder copies the text and attaches a pict
 - Pictures: drop them in `images/` (naming in `images/README.md`). `python scripts/social_images.py --date YYYY-MM-DD` (or `--all`) lists which post has a picture and which needs one.
 - To add a shoe: copy a file in `facts/`, keep the format in `facts/README.md`, source every claim. A post is not reused within 30 days.
 - Set `SOCIAL_SITE_URL` (for example `https://chosn.in`) once the domain exists and the drops note gets a link.
+- Weekly pack for X's free Schedule box: `python scripts/social_week.py` writes `week-<start>.md` with the evergreen posts (facts, controversies, random, reality) for 7 days; the daily draft then says "already scheduled" for those slots and covers the live ones.
