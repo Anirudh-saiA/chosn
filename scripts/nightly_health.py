@@ -148,9 +148,9 @@ def daily_section(date, now, summary):
         amber.append("Best-effort step skipped: " + s[:200])
     if skipped:
         lines += ["", "Steps that were skipped (the import still happened): "] + [f"- {s[:200]}" for s in skipped]
-    blocked = [l.split("] ", 1)[-1] for l in text if re.search(r"blocked|paused for 24|robots", l, re.I)]
+    blocked = [l.strip() for l in text if re.search(r"HTTP 4(29|03)|pause lasts 24|challenge|login wall", l, re.I)]
     if blocked:
-        amber.append("A store may have blocked or paused: " + blocked[0][:200])
+        red.append("A store refused us (rate limit or block) and is paused for 24 h; we do not retry or bypass: " + blocked[0][:160])
         lines += ["", "Block or pause notices: "] + [f"- {b[:200]}" for b in blocked[:5]]
     return lines
 
@@ -204,6 +204,25 @@ def freshness_section(now):
     return lines
 
 
+def backup_line():
+    b = read_json(DATA / "data" / "daily" / "backup_last_run.json")
+    r = read_json(DATA / "data" / "daily" / "restore_test_last_run.json")
+    if not b:
+        amber.append("No database backup has run yet (data/daily/backup_last_run.json missing).")
+        return "none yet"
+    fin = parse_ts(b.get("finished"))
+    if b.get("status") != "ok":
+        red.append(f"The last database backup FAILED: {str(b.get('error', b.get('status')))[:150]}")
+    elif fin and (datetime.datetime.now() - fin).total_seconds() > 30 * 3600:
+        red.append(f"The last good database backup is {ago(fin, datetime.datetime.now())}.")
+    out = f"last {b.get('status')} {str(b.get('finished', '?'))[:16]}, {b.get('size_mb')} MB, {b.get('dailies')} daily / {b.get('weeklies')} weekly kept"
+    if r:
+        out += f"; restore test {r.get('status')} ({r.get('match')}/{r.get('tables')} tables identical) on {str(r.get('dump', ''))[-15:-5]}"
+    else:
+        amber.append("No restore test recorded.")
+    return out
+
+
 def system_section():
     lines = ["## System"]
     code, out = sh(["docker", "ps", "--format", "{{.Names}} {{.Status}}"])
@@ -237,8 +256,7 @@ def system_section():
     else:
         amber.append("Could not read the Windows scheduled tasks.")
         lines.append("- Scheduled tasks: could not be read")
-    backups = DATA.parent / "chosn-backups"
-    lines.append("- Database backups: " + (f"{len(list(backups.glob('*.dump')))} dump files in {backups}" if backups.exists() else "none yet (no backup job built; plan awaiting approval)"))
+    lines.append("- Database backup: " + backup_line())
     return lines
 
 
