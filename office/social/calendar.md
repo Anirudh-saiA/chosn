@@ -4,15 +4,18 @@ Written 2026-10-22. The kind of post is set by weekday in `scripts/social_posts.
 
 | Day | Morning (about 09:00) | Evening (about 19:00) |
 |---|---|---|
-| Fri 23 | **Sale:** the biggest listed discount in our data (store price against the MRP it shows) | **Reality:** adidas Superstar II, the brand page contradicts itself on leather |
-| Sat 24 | **Reality:** Air Jordan 1 Low, two spec sheets under one name | **News:** the latest unexpected sneaker story, headline and credit, with a question |
-| Sun 25 | **Random:** a culture or retail prompt | **Drops:** new releases of the week with retail price and how firm each date is |
-| Mon 26 | **Reality:** New Balance 550, leather or synthetic by colourway | **Question** about the 550 |
-| Tue 27 | **Drops:** new releases with prices | **Sale:** the day's biggest listed discount |
-| Wed 28 | **Reality:** Dunk Low, the spec list against the price | **News:** an unexpected story |
-| Thu 29 | **Collab:** the latest collab story with a question | **Random:** a culture or retail prompt |
+| Mon | **Market:** our own numbers (same pair at two prices, markdowns by store, new listings) | **Interesting fact** (sourced history) |
+| Tue | **New releases** with prices and how firm each date is | **Sale:** biggest listed discount |
+| Wed | **Controversy** (sourced; criticises products and decisions, not people) | **Wearing:** what stores stock most, and a question to you |
+| Thu | **Collab** story with a question | **Reality:** a specific shoe, materials, build, price |
+| Fri | **Sale** | **Market** |
+| Sat | **Unexpected news** | **Interesting fact** |
+| Sun | **Controversy** | **Random:** culture and retail prompt |
 
-Sale, news, collab and drops posts are built from the live data on the day, so only the kind is fixed here, not the shoe or story. A kind with nothing usable falls back to a reality post, a shoe question or a random prompt, and the draft says so. Reality posts rotate through the fact bank (10 shoes now); the founder can ask for a specific shoe to be reviewed next and I add it to the bank with sources.
+Override: when a new shoe releases today (our drop calendar, confirmed or reported), the morning post is the new-release post, whatever the day.
+Specific shoes are only one slot a week now; the rest is market, controversy, facts, news and community.
+
+Only the kind is fixed. The shoe, story, sale or number is chosen from live data on the day, so run the script each morning. A kind with nothing usable falls back to another and the draft says so. The banks (`controversies.md`, `trivia.md`, `random.md`, `facts/`) are small, so tell me what to add: each item needs a source before it goes in.
 
 The pictures are the founder's own. If a day has none, post the text alone rather than use an unlicensed image.
 

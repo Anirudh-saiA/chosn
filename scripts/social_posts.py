@@ -11,6 +11,10 @@ Two posts a day (about 09:00 and 19:00 IST), each within 280 characters as X cou
   collab   the latest collab story (headline + credit only) with a question
   news     the latest unexpected story (headline + credit only) with a question
   random   a culture or retail prompt from office/social/random.md
+  controversy, fact   sourced items from office/social/controversies.md and trivia.md
+  market   our own market numbers: the same pair at two prices, new listings, markdowns by store
+  wearing  what Indian stores stock most (not what people wear) and a question to the readers
+If a new shoe releases today (our drop calendar), the morning post is the drops post.
 Every post lists its sources and a confidence line (Confirmed / Reported / Opinion). Nothing repeats within 30 days.
 
 Usage: python scripts/social_posts.py [--date YYYY-MM-DD] [--stdout]
@@ -31,6 +35,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FACTS = ROOT / "office" / "social" / "facts"
 POSTS = ROOT / "office" / "social" / "posts"
 RANDOM = ROOT / "office" / "social" / "random.md"
+BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md"}
 PG = ["docker", "exec", "chosn-postgres-1", "psql", "-U", "postgres", "-d", "chosn_dev", "-At", "-F", "|", "-c"]
 SITE = os.environ.get("SOCIAL_SITE_URL", "").rstrip("/")
 LIMIT = 280
@@ -39,9 +44,9 @@ FIRM = {"confirmed": "confirmed", "reported": "reported", "unconfirmed": "rumour
 CONF = {"confirmed": "Confirmed", "reported": "Reported", "unconfirmed": "Unconfirmed"}
 # listing prices come from these stores only: resale stores would mix a different kind of price into the range
 STORES = ("Myntra", "Ajio", "Flipkart", "Superkicks", "Puma India", "VegNonVeg")
-SLOTS = {0: ("reality", "question"), 1: ("drops", "sale"), 2: ("reality", "news"), 3: ("collab", "random"),
-         4: ("sale", "reality"), 5: ("reality", "news"), 6: ("random", "drops")}  # weekday (Monday = 0) -> (morning, evening)
-FALLBACK = {"morning": ("reality", "random", "drops"), "evening": ("question", "random", "reality")}
+SLOTS = {0: ("market", "fact"), 1: ("drops", "sale"), 2: ("controversy", "wearing"), 3: ("collab", "reality"),
+         4: ("sale", "market"), 5: ("news", "fact"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
+FALLBACK = {"morning": ("fact", "market", "reality", "random", "drops"), "evening": ("fact", "market", "random", "question", "reality")}
 NEWS_ASK = "What would you want to know about the materials and the price before buying? Reply and we will check the spec."
 CULTURE_ASK = "Does this change how you buy or wear sneakers, or is it noise? Tell us why."
 COLLAB_ASK = "Beyond the logo, what would this collab have to change in the shoe for you to pay more?"
@@ -282,8 +287,121 @@ def k_news(day, ctx, collab=False):
     return None
 
 
+def k_bank(kind):
+    """Sourced items from controversies.md / trivia.md, rotated by date, not repeated within 30 days."""
+    def run(day, ctx):
+        path = BANKS[kind]
+        if not path.exists():
+            return None
+        items, cur = [], None
+        for ln in path.read_text(encoding="utf-8").splitlines():
+            if ln.startswith("@item "):
+                iid, _, conf = ln[6:].partition("|")
+                cur = {"id": f"{kind}:{iid.strip()}", "conf": conf.strip() or "Reported", "text": "", "sources": []}
+                items.append(cur)
+            elif cur is not None and ln.startswith("text:"):
+                cur["text"] = ln.split(":", 1)[1].strip()
+            elif cur is not None and ln.startswith("sources:"):
+                cur["sources"] = [s.strip() for s in ln.split(":", 1)[1].split(" ; ") if s.strip()]
+        start = datetime.date.fromisoformat(day).toordinal() % max(len(items), 1)
+        for i in range(len(items)):
+            it = items[(start + i) % len(items)]
+            if it["id"] not in ctx["used"] and it["text"] and x_len(it["text"]) <= LIMIT:
+                note = "criticises the product, price or company decision, not a person; skim a source before posting" if kind == "controversy" else "skim a source before posting"
+                return {"label": "controversy" if kind == "controversy" else "interesting fact", "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
+                        "sources": it["sources"], "note": note, "slug": "", "title": it["text"].split(":")[0]}
+        return None
+    return run
+
+
+def k_market(day, ctx):
+    """Our own market numbers; the kind of stat rotates, each at most once a week (spread: once per pair)."""
+    stores = ",".join(f"'{s}'" for s in STORES)
+    week = datetime.date.fromisoformat(day).isocalendar()
+    order = ["spread", "markdown", "newlist"]
+    start = datetime.date.fromisoformat(day).toordinal() % 3
+    for i in range(3):
+        sub = order[(start + i) % 3]
+        if sub == "spread":
+            rows = q(f"""select name, lo_store, lo, hi_store, hi, round(100.0*(hi-lo)/lo)::int from (
+              select s.brand||' '||s.model||' '||s.colorway name, (array_agg(r.name order by x.p))[1] lo_store, min(x.p)::int lo,
+                (array_agg(r.name order by x.p desc))[1] hi_store, max(x.p)::int hi, count(*) n
+              from (select v.sneaker_id sid, ps.retailer_id rid, min(ps.price) p from price_snapshots ps join sneaker_variants v on v.id=ps.sneaker_variant_id
+                where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' and ps.price>=2000 group by 1,2) x
+              join sneakers s on s.id=x.sid join retailers r on r.id=x.rid and r.name in ({stores}) where s.gender in ('men','women','unisex') group by s.id) t
+              where n>=2 and hi>lo order by (hi-lo)::numeric/lo desc limit 10""")
+            for name, lo_s, lo, hi_s, hi, pct in rows:
+                key = "market:spread:" + re.sub(r"[^a-z0-9]", "", name.lower())[:40]
+                if key in ctx["used"]:
+                    continue
+                make = lambda n: (f"Same pair, two prices. {n}: {rupees(lo)} at {lo_s}, {rupees(hi)} at {hi_s}, {pct}% more. Both new and in stock, same style code. "
+                                  "My take: check a second store before you pay the higher price.")
+                return {"label": "market: the same pair at two prices", "text": fit(make, name), "conf": "Reported", "ids": [key],
+                        "sources": [f"Our own data: lowest in-stock new listing per store, read {day}; the lower price can be a markdown, the higher the full MRP"],
+                        "note": "re-check both listings before posting", "slug": "", "title": name}
+        elif sub == "markdown":
+            key = f"market:markdown:{week[0]}-w{week[1]}"
+            if key in ctx["used"]:
+                continue
+            rows = q(f"""select r.name, count(*), count(*) filter (where ps.compare_at_price>ps.price),
+                round(percentile_cont(.5) within group (order by 100*(1-ps.price/ps.compare_at_price)) filter (where ps.compare_at_price>ps.price))::int
+              from price_snapshots ps join retailers r on r.id=ps.retailer_id and r.name in ({stores})
+              where ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR' group by 1 order by 3 desc""")
+            marked = [r for r in rows if int(r[2]) > 0]
+            if not marked:
+                continue
+            parts = "; ".join(f"{n}: {int(m):,} of {int(a):,} listings show a markdown, median {p}% off" for n, a, m, p in marked[:2])
+            rest = "" if len(marked) == len(rows) else f" The other {len(rows) - len(marked)} stores show no struck-through price in our data."
+            text = f"Markdown watch ({day[5:]}). {parts}.{rest} My take: a % off a high list price is not a bargain by itself. Check the style code and the size run."
+            return {"label": "market: markdowns by store", "text": clip(text, 275), "conf": "Reported", "ids": [key],
+                    "sources": [f"Our own data: in-stock new listings at {', '.join(STORES)}, read {day}; a markdown is a price below the MRP the store shows"],
+                    "note": "a store that shows no list price is not necessarily not discounting", "slug": "", "title": "markdowns"}
+        else:
+            key = f"market:new:{week[0]}-w{week[1]}"
+            if key in ctx["used"]:
+                continue
+            rows = q(f"""select s.brand, count(*) from listing_first_seen l join sneakers s on s.id=l.sneaker_id
+              where not l.is_baseline and l.first_seen>='{day}'::date-2 group by 1 order by 2 desc limit 5""")
+            tot = q(f"select count(*) from listing_first_seen where not is_baseline and first_seen>='{day}'::date-2")
+            if not rows or not tot or int(tot[0][0]) == 0:
+                continue
+            by = ", ".join(f"{b} {n}" for b, n in rows[:4])
+            text = (f"New to our tracker in 2 days: {int(tot[0][0]):,} listings across Indian stores. Top brands: {by}. 'New' means first seen by us at that store, "
+                    "not a launch date. Which brand should we track more of? Reply.")
+            return {"label": "market: new listings", "text": clip(text, 275), "conf": "Reported", "ids": [key],
+                    "sources": [f"Our own data (listing_first_seen), {day}; counts a pair once per store"],
+                    "note": "not the same as new releases", "slug": "", "title": "new listings"}
+    return None
+
+
+def title_case(name):
+    """'Nike AIR FORCE 1 '07' -> 'Nike Air Force 1 '07': brand as written, an all-capitals model in title case."""
+    brand, _, model = name.partition(" ")
+    return f"{brand} {model.title() if model.isupper() else model}".replace("'S", "'s").replace(" Og", " OG")
+
+
+def k_wearing(day, ctx):
+    stores = ",".join(f"'{s}'" for s in STORES)
+    key = f"wearing:{datetime.date.fromisoformat(day).isocalendar()[1]}"
+    if key in ctx["used"]:
+        return None
+    rows = q(f"""select s.brand||' '||s.model, count(distinct s.id) from sneakers s join sneaker_variants v on v.sneaker_id=s.id
+      join price_snapshots ps on ps.sneaker_variant_id=v.id and ps.is_latest and ps.in_stock and ps.condition='new' and ps.currency='INR'
+      join retailers r on r.id=ps.retailer_id and r.name in ({stores}) where s.gender in ('men','women','unisex') group by 1 order by 2 desc limit 5""")
+    if len(rows) < 3:
+        return None
+    for n in range(len(rows), 2, -1):
+        lst = ", ".join(f"{i + 1}. {clip(title_case(m), 28)} ({c})" for i, (m, c) in enumerate(rows[:n]))
+        text = f"Stocked, not worn: the models Indian stores list in the most colourways today. {lst}. We have no data on what people wear. What is on your feet today? Reply with the pair."
+        if x_len(text) <= LIMIT:
+            return {"label": "wearing: what stores stock, and a question", "text": text, "conf": "Reported", "ids": [key],
+                    "sources": [f"Our own data: pairs in stock at {', '.join(STORES)}, read {day}; counts colourways, not sales"],
+                    "note": "stock is not wear; the replies are the real data, paste them into weekly.md", "slug": "", "title": "what you wear today"}
+    return None
+
+
 KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
-         "news": k_news, "collab": lambda day, ctx: k_news(day, ctx, True)}
+         "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
 
 
 def make_post(slot, kind, day, ctx):
@@ -307,6 +425,10 @@ def build(day):
     d = datetime.date.fromisoformat(day)
     ctx = {"facts": load_facts(), "used": recent_ids(day)}
     morning_kind, evening_kind = SLOTS[d.weekday()]
+    today_drops = q(f"""select count(*) from drop_events where not hidden and not is_demo and release_date='{day}' and confirmation in ('confirmed','reported')""")
+    new_today = bool(today_drops and int(today_drops[0][0]) > 0)
+    if new_today and morning_kind != "drops":
+        morning_kind = "drops"  # a new shoe releases today: it leads the day
     out = [f"# X posts for {day} ({d.strftime('%A')})", "",
            "Copy, paste, post yourself. Nothing here is posted automatically. The voice guide is `office/social/voice.md`. Re-check a price or date if it may have changed since this was written.", ""]
     ids, pics = [], []
@@ -316,7 +438,7 @@ def build(day):
         if not p:
             out += ["(nothing usable today: post a question of your own)", ""]
             continue
-        out += [f"Type: **{p['label']}**" + (f" (planned: {p['wanted_kind']}, nothing usable)" if p["kind"] != p["wanted_kind"] else ""), ""] + block(p["text"])
+        out += [f"Type: **{p['label']}**" + (" (a new shoe releases today)" if new_today and slot == "morning" and p["kind"] == "drops" else "") + (f" (planned: {p['wanted_kind']}, nothing usable)" if p["kind"] != p["wanted_kind"] else ""), ""] + block(p["text"])
         out += [f"Confidence: **{p['conf']}**  |  {p['note']}"]
         if p["sources"]:
             out += ["Sources (paste as a reply if you like):"] + [f"- {s}" for s in p["sources"]]
