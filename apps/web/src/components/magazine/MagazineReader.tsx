@@ -21,6 +21,7 @@ export function MagazineReader({ issue }: { issue: Issue }) {
   const [page, setPage] = useState(0);
   const [spread, setSpread] = useState(false);
   const [full, setFull] = useState(false);
+  const [ready, setReady] = useState(false);
   const shell = useRef<HTMLDivElement>(null);
   const total = issue.pages.length;
 
@@ -75,6 +76,7 @@ export function MagazineReader({ issue }: { issue: Issue }) {
     setSpread(pf.getOrientation() === 'landscape');
     const settle = window.setTimeout(() => setSpread(pf.getOrientation() === 'landscape'), 150); // the engine knows its layout only after it has measured
     flip.current = pf;
+    const shown = window.setTimeout(() => setReady(true), 60);
 
     const key = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') pf.flipNext();
@@ -98,6 +100,7 @@ export function MagazineReader({ issue }: { issue: Issue }) {
     window.addEventListener('keydown', key);
     return () => {
       window.clearTimeout(settle);
+      window.clearTimeout(shown);
       window.removeEventListener('keydown', key);
       holder.removeEventListener('click', play);
       pf.destroy();
@@ -148,10 +151,17 @@ export function MagazineReader({ issue }: { issue: Issue }) {
           transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="h-full w-full" style={{ transform: `translateX(${shift})`, transition: reduce ? 'none' : 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)' }}>
-            <div ref={stage} className="h-full w-full" style={{ filter: 'drop-shadow(0 30px 40px rgba(0,0,0,0.55))' }} aria-label={`${issue.title}, page-turning reader`} />
+            <div aria-hidden className="pointer-events-none absolute inset-x-[6%] bottom-[2%] h-[8%] rounded-[50%]" style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.55), transparent)' }} />
+            <div ref={stage} className="relative h-full w-full" aria-label={`${issue.title}, page-turning reader`} />
           </div>
         </motion.div>
       </div>
+
+      {!ready && (
+        <p className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center font-mono text-[0.72rem] uppercase tracking-[0.22em] text-white/70" role="status">
+          Opening the magazine…
+        </p>
+      )}
 
       <footer className="flex shrink-0 items-center justify-center gap-4 px-4 py-3">
         <button type="button" className={btn} aria-label="Previous page" onClick={() => flip.current?.flipPrev()}>

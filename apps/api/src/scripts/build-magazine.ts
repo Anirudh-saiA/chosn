@@ -93,7 +93,8 @@ async function drops(pool: Pool, kind: IssueKind): Promise<DropRef[]> {
     const [y, m, dd] = when.date.split('-').map(Number);
     return {
       id: String(r.id),
-      title: `${r.brand} ${r.model}${r.colorway && r.colorway !== 'Default' ? ` ${r.colorway}` : ''}`.trim(),
+      // "Nike Ja 4" under brand Nike must not print as "Nike Nike Ja 4".
+      title: `${String(r.model).toLowerCase().startsWith(`${String(r.brand).toLowerCase()} `) ? '' : `${r.brand} `}${r.model}${r.colorway && r.colorway !== 'Default' ? ` ${r.colorway}` : ''}`.trim(),
       brand: String(r.brand),
       dateLabel: new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, dd ?? 1)).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }),
       timeLabel: r.time ? inIndiaTime(when).split(', ').slice(-1)[0] ?? null : null,

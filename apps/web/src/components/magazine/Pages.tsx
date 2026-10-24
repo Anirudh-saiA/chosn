@@ -87,6 +87,7 @@ function Art({ src, kind, tint = TINTS[0]!, box, alt = '', pos = 'center' }: { s
           src={src}
           alt={alt}
           referrerPolicy="no-referrer"
+          decoding="async"
           style={product ? { position: 'absolute', inset: '7%', width: '86%', height: '86%', objectFit: 'contain', mixBlendMode: 'multiply' } : { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: pos }}
         />
       ) : (

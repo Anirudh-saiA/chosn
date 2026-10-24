@@ -151,7 +151,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
               }}
               className={`inline-flex transition-colors duration-500 ${menuOpen || !pastHero ? 'text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]' : 'text-[#0A0A0A]'}`}
             >
-              <Logo markOnly asLink={false} className="!text-inherit" />
+              <Logo asLink={false} className="!text-inherit" />
             </Link>
           </span>
         </header>
@@ -210,7 +210,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8">
-          <Logo markOnly />
+          <Logo />
 
           <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
             {NAV.map((item) => {
