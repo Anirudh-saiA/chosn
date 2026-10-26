@@ -223,6 +223,52 @@ def backup_line():
     return out
 
 
+CORE_STORES = ["Superkicks", "Crepdog Crew", "Mainstreet Marketplace", "Limited Edt", "Gully Labs", "Culture Circle"]  # every nightly, quick or full
+FULL_STORES = ["VegNonVeg", "Myntra", "Puma India"]  # only in a full run: expected on Sundays' weekly run, not flagged on other days
+HISTORY_DAYS = 8
+
+
+def history_section(now):
+    """Price-history coverage per IST day. A day with no rows, or without a core store, is a gap in the history: the forecast model
+    must treat it as missing, not as 'price unchanged'. Gaps go RED so they show the next morning, not weeks later."""
+    lines = ["## Price history coverage (rows and stores per IST day)"]
+    r = sql("select to_char(s.fetched_at at time zone 'Asia/Kolkata','YYYY-MM-DD'), r.name, count(*) from price_snapshots s "
+            "join retailers r on r.id = s.retailer_id where s.fetched_at > now() - interval '%d days' group by 1, 2" % (HISTORY_DAYS + 2))
+    if r is None:
+        red.append("Price history coverage could not be checked (database unreadable).")
+        return lines + ["- database could not be read"]
+    per = {}
+    for day, store, n in r:
+        per.setdefault(day, {})[store] = int(n)
+    today = now.date()
+    days = [(today - datetime.timedelta(days=i)) for i in range(HISTORY_DAYS - 1, -1, -1)]
+    # today counts only once the nightly window is over (the job starts at 02:00 and takes up to 3 hours)
+    if now.hour < 6:
+        days = days[:-1]
+    lines += ["", "| Day | Rows | Stores | Core stores missing | Verdict |", "|---|---|---|---|---|"]
+    gaps = []
+    for d in days:
+        key = d.isoformat()
+        stores = per.get(key, {})
+        missing = [c for c in CORE_STORES if c not in stores]
+        rows = sum(stores.values())
+        if not stores:
+            verdict = "**NO DATA**"
+            gaps.append(f"{key}: no price rows at all (a missing day, not 'unchanged')")
+        elif missing:
+            verdict = "**PARTIAL**"
+            gaps.append(f"{key}: missing {', '.join(missing)}")
+        else:
+            verdict = "ok"
+        lines.append(f"| {key} | {rows:,} | {len(stores)} | {', '.join(missing) or '-'} | {verdict} |")
+    for g in gaps:
+        red.append("History gap: " + g)
+    if not gaps:
+        ok.append("No gaps in the price history.")
+    lines += ["", f"Core stores expected every night: {', '.join(CORE_STORES)}. A full run (weekly) also adds {', '.join(FULL_STORES)}. Other retailers in the data (Ajio, Flipkart, END.) come from outside the nightly job."]
+    return lines
+
+
 def system_section():
     lines = ["## System"]
     code, out = sh(["docker", "ps", "--format", "{{.Names}} {{.Status}}"])
@@ -264,6 +310,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", default=datetime.date.today().isoformat())
     ap.add_argument("--stdout", action="store_true")
+    ap.add_argument("--strict", action="store_true", help="exit 1 when anything is RED (for a scheduled check)")
     ap.add_argument("--data-root", help="checkout whose logs/ and data/ to read (default: this one)")
     args = ap.parse_args()
     global DATA
@@ -272,7 +319,7 @@ def main():
     now = datetime.datetime.now()
     summary = read_json(DATA / "data" / "daily" / "last_run_summary.json")
 
-    body = daily_section(args.date, now, summary) + [""] + news_section(now) + [""] + freshness_section(now) + [""] + system_section()
+    body = daily_section(args.date, now, summary) + [""] + news_section(now) + [""] + freshness_section(now) + [""] + history_section(now) + [""] + system_section()
     head = [f"# Nightly health report {args.date}", f"Generated {now:%Y-%m-%d %H:%M} by scripts/nightly_health.py (read-only).", ""]
     if red:
         head += ["## RED (needs action)"] + [f"- {r}" for r in red] + [""]
@@ -284,11 +331,12 @@ def main():
     out = "\n".join(head + body) + "\n"
     if args.stdout:
         sys.stdout.buffer.write(out.encode("utf-8"))
-        return
+        sys.exit(1 if (args.strict and red) else 0)
     path = ROOT / "office" / "nightly" / "health" / f"{args.date}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(out, encoding="utf-8")
-    print(f"wrote {path}")
+    print(f"wrote {path}" + (f" ({len(red)} RED)" if red else ""))
+    sys.exit(1 if (args.strict and red) else 0)
 
 
 if __name__ == "__main__":
