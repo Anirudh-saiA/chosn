@@ -48,11 +48,20 @@ if (-not $Go) { 'Dry run only. Add -Go to copy.'; return }
 $names = ($tables | ForEach-Object { $_.t }) -join ', '
 Remote "truncate $names restart identity cascade" | Out-Null
 
+$colSql = "select column_name from information_schema.columns where table_schema='public' and is_generated='NEVER' and table_name='{0}' order by ordinal_position"
 foreach ($x in $tables) {
   "copying $($x.t) ..."
+  # only columns that exist on both sides and are not generated (e.g. sneakers.search_vector)
+  $lc = @(docker exec $local psql -U postgres -d $ldb -At -c ($colSql -f $x.t))
+  $rc = @(Remote ($colSql -f $x.t))
+  $cols = @($rc | Where-Object { $lc -contains $_ })
+  $skipLocal = @($lc | Where-Object { $rc -notcontains $_ })
+  if ($skipLocal.Count) { "  not copied (hosted table lacks them): $($skipLocal -join ', ')" }
+  $list = $cols -join ','
+  $from = $x.q -replace '^select \* from', "select $list from"
   # byte-safe pipe through cmd so text is not re-encoded
-  $copy = "\copy $($x.t) from stdin"
-  cmd /c "docker exec $local psql -U postgres -d $ldb -c ""\copy ($($x.q)) to stdout"" | docker exec -i $local psql ""$url"" -v ON_ERROR_STOP=1 -c ""SET session_replication_role = replica"" -c ""$copy"""
+  $copy = "\copy $($x.t) ($list) from stdin"
+  cmd /c "docker exec $local psql -U postgres -d $ldb -c ""\copy ($from) to stdout"" | docker exec -i $local psql ""$url"" -v ON_ERROR_STOP=1 -c ""SET session_replication_role = replica"" -c ""$copy"""
   if ($LASTEXITCODE -ne 0) { throw "copy of $($x.t) failed" }
 }
 
