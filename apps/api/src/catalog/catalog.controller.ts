@@ -12,6 +12,8 @@ import {
   type StoreSummary,
   type SearchResultItem,
 } from './catalog.service';
+import type { BudgetItem } from './budget';
+import { BudgetQueryDto } from './dto/budget-query.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
 
 /**
@@ -50,6 +52,13 @@ export class CatalogController {
     const l = Math.min(Math.max(Number(limit) || 24, 1), 100);
     const m = Math.min(Math.max(Number(minPct) || 20, 10), 70);
     return this.catalog.discounts(l, m);
+  }
+
+  /** The budget shelf: /catalog/budget?max=5000&limit=12. Each shoe's cheapest eligible offer at or under `max` rupees, with that store's offers. */
+  @Get('budget')
+  async budget(@Query() q: BudgetQueryDto): Promise<{ max: number; items: BudgetItem[] }> {
+    const items = await this.catalog.budget(q.max, q.limit);
+    return { max: q.max ?? 5000, items };
   }
 
   /** "Crazy falls": the biggest recorded price falls since the previous recorded day. */

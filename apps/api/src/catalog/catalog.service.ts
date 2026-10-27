@@ -8,6 +8,7 @@ import {
   type MarketIntelligenceSummary,
   type Signal,
 } from '../pricing/market-intelligence.service';
+import { BUDGET_LIMITS, clampBudgetParams, toBudgetItem, type BudgetItem } from './budget';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
 /** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. See scripts/offers/curated_offers.json. */
@@ -699,6 +700,45 @@ export class CatalogService {
       store: String(r.store),
     }));
     this.discountsCache.set(key, { at: Date.now(), value });
+    return value;
+  }
+
+  private budgetCache = new Map<string, { at: number; value: BudgetItem[] }>();
+
+  /**
+   * The budget shelf: for each shoe, its cheapest eligible offer at or under `max` rupees, cheapest shoes first, with the offers that store runs.
+   * Eligible = the price page's own rules: latest snapshot, in stock, not placeholder data (a FIXTURE listing), not stale (fetched within twice the
+   * store's own cadence), and a known rupee price (price plus shipping, via effective_price_inr). Prices under Rs 500 are ignored as junk, as in discounts().
+   * Offers are the store's own, with their source and date; none are made up.
+   */
+  async budget(maxIn?: number, limitIn?: number): Promise<BudgetItem[]> {
+    const { max, limit } = clampBudgetParams(maxIn, limitIn);
+    const key = `${max}|${limit}`;
+    const hit = this.budgetCache.get(key);
+    if (hit && Date.now() - hit.at < 300_000) return hit.value;
+    const { rows } = await this.db.execute(sql`
+      SELECT * FROM (
+        SELECT DISTINCT ON (s.id) s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size,
+               r.slug, r.name AS store_name, r.offers, r.offers_updated_at,
+               ps.shipping_cost, ps.listing_url, ps.fetched_at,
+               effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS eff
+        FROM price_snapshots ps
+        JOIN retailers r ON r.id = ps.retailer_id
+        JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
+        JOIN sneakers s ON s.id = v.sneaker_id
+        WHERE ps.is_latest = true AND ps.in_stock = true
+          AND ps.listing_url NOT LIKE '%FIXTURE%'
+          AND ps.fetched_at >= now() - (r.fetch_frequency_minutes * 2) * interval '1 minute'
+          AND ps.price >= ${BUDGET_LIMITS.minMax}
+          AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
+          AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) <= ${max}
+        ORDER BY s.id, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC, ps.fetched_at DESC
+      ) cheapest
+      ORDER BY eff ASC, brand, model, style_code
+      LIMIT ${limit}
+    `);
+    const value = (rows as Array<Record<string, unknown>>).map(toBudgetItem);
+    this.budgetCache.set(key, { at: Date.now(), value });
     return value;
   }
 
