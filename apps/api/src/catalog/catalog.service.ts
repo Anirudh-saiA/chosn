@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '../pricing/market-intelligence.service';
 import { REAL_LISTING } from '../pricing/real-listing';
-import { BUDGET_LIMITS, clampBudgetParams, toBudgetItem, type BudgetItem } from './budget';
+import { BUDGET_LIMITS, POPULAR_MIN_STORES, clampBudgetParams, toBudgetItem, type BudgetItem, type BudgetSort } from './budget';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
 /** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. See scripts/offers/curated_offers.json. */
@@ -712,30 +712,47 @@ export class CatalogService {
    * store's own cadence), and a known rupee price (price plus shipping, via effective_price_inr). Prices under Rs 500 are ignored as junk, as in discounts().
    * Offers are the store's own, with their source and date; none are made up.
    */
-  async budget(maxIn?: number, limitIn?: number): Promise<BudgetItem[]> {
+  async budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest'): Promise<BudgetItem[]> {
     const { max, limit } = clampBudgetParams(maxIn, limitIn);
-    const key = `${max}|${limit}`;
+    const key = `${max}|${limit}|${sort}`;
     const hit = this.budgetCache.get(key);
     if (hit && Date.now() - hit.at < 300_000) return hit.value;
+    const popular = sort === 'popular';
+    // Shortlist from catalog_stats_mv (one row per shoe: store count and lowest real price, refreshed hourly), then apply the full
+    // eligibility rules to only those shoes. Scanning every latest snapshot instead took 30 to 50 seconds and held a pool connection
+    // the whole time. The shortlist is a superset (the view has no staleness test), so it is over-fetched and the exact rules decide.
+    const candidates = Math.min(limit * 8, 400);
     const { rows } = await this.db.execute(sql`
-      SELECT * FROM (
-        SELECT DISTINCT ON (s.id) s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size,
+      WITH cand AS (
+        SELECT sneaker_id FROM catalog_stats_mv
+        WHERE min_price <= ${max} AND ${popular ? sql`store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+        ORDER BY ${popular ? sql`store_count DESC, min_price ASC` : sql`min_price ASC`}
+        LIMIT ${candidates}
+      ),
+      elig AS (
+        SELECT s.id AS sid, s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size, r.id AS rid,
                r.slug, r.name AS store_name, r.offers, r.offers_updated_at,
                ps.shipping_cost, ps.listing_url, ps.fetched_at,
                effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS eff
-        FROM price_snapshots ps
+        FROM cand
+        JOIN sneakers s ON s.id = cand.sneaker_id
+        JOIN sneaker_variants v ON v.sneaker_id = s.id
+        JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id
         JOIN retailers r ON r.id = ps.retailer_id
-        JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
-        JOIN sneakers s ON s.id = v.sneaker_id
         WHERE ps.is_latest = true AND ps.in_stock = true
           AND ${REAL_LISTING}
           AND ps.fetched_at >= now() - (r.fetch_frequency_minutes * 2) * interval '1 minute'
           AND ps.price >= ${BUDGET_LIMITS.minMax}
           AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
-          AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) <= ${max}
-        ORDER BY s.id, effective_price_inr(ps.price, ps.shipping_cost, ps.currency) ASC, ps.fetched_at DESC
-      ) cheapest
-      ORDER BY eff ASC, brand, model, style_code
+      ),
+      stores AS (SELECT sid, count(DISTINCT rid)::int AS store_count FROM elig GROUP BY sid),
+      cheapest AS (
+        SELECT DISTINCT ON (sid) * FROM elig WHERE eff <= ${max}
+        ORDER BY sid, eff ASC, fetched_at DESC
+      )
+      SELECT c.*, st.store_count FROM cheapest c JOIN stores st USING (sid)
+      WHERE ${popular ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+      ORDER BY ${popular ? sql`st.store_count DESC, c.eff ASC` : sql`c.eff ASC`}, c.brand, c.model, c.style_code
       LIMIT ${limit}
     `);
     const value = (rows as Array<Record<string, unknown>>).map(toBudgetItem);

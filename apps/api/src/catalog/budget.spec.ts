@@ -46,6 +46,12 @@ describe('BudgetQueryDto', () => {
     expect((await check({ limit: '0' })).length).toBeGreaterThan(0);
     expect((await check({ limit: '500' })).length).toBeGreaterThan(0);
   });
+  it('accepts sort=cheapest and sort=popular only', async () => {
+    expect(await check({ sort: 'popular' })).toHaveLength(0);
+    expect(await check({ sort: 'cheapest' })).toHaveLength(0);
+    expect((await check({ sort: 'random' })).length).toBeGreaterThan(0);
+    expect((await check({ sort: "popular'; drop table" })).length).toBeGreaterThan(0);
+  });
 });
 
 describe('toBudgetItem', () => {
@@ -53,9 +59,9 @@ describe('toBudgetItem', () => {
     const item = toBudgetItem({
       style_code: 'DD1391-100', brand: 'Nike', model: 'Dunk Low', colorway: 'White/Black', primary_image_url: null, size: '9',
       eff: '4499.4', shipping_cost: '0', slug: 'superkicks', store_name: 'Superkicks', listing_url: 'https://superkicks.in/p',
-      fetched_at: new Date('2026-10-27T01:00:00Z'), offers: [{ text: 'Free shipping', kind: 'shipping' }], offers_updated_at: '2026-10-26T00:00:00Z',
+      fetched_at: new Date('2026-10-27T01:00:00Z'), offers: [{ text: 'Free shipping', kind: 'shipping' }], offers_updated_at: '2026-10-26T00:00:00Z', store_count: 4,
     });
-    expect(item).toMatchObject({ styleCode: 'DD1391-100', size: 9, priceInr: 4499, shippingCost: 0, store: { slug: 'superkicks', name: 'Superkicks' }, fetchedAt: '2026-10-27T01:00:00.000Z', offersUpdatedAt: '2026-10-26T00:00:00.000Z' });
+    expect(item).toMatchObject({ styleCode: 'DD1391-100', size: 9, priceInr: 4499, shippingCost: 0, store: { slug: 'superkicks', name: 'Superkicks' }, fetchedAt: '2026-10-27T01:00:00.000Z', offersUpdatedAt: '2026-10-26T00:00:00.000Z', storeCount: 4 });
     expect(item.offers).toHaveLength(1);
     expect(item.primaryImageUrl).toBeNull();
   });

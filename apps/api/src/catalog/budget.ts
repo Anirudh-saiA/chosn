@@ -24,8 +24,13 @@ export interface BudgetItem {
   fetchedAt: string;
   offers: BudgetOffer[];
   offersUpdatedAt: string | null;
+  /** How many different stores have this shoe eligible right now (any size, any price), the "popular" measure. */
+  storeCount: number;
 }
 
+export type BudgetSort = 'cheapest' | 'popular';
+export const BUDGET_SORTS: readonly BudgetSort[] = ['cheapest', 'popular'];
+export const POPULAR_MIN_STORES = 2;
 export const BUDGET_LIMITS = { defaultMax: 5000, minMax: 500, maxMax: 1_000_000, defaultLimit: 12, maxLimit: 48 };
 const MAX_OFFERS = 8;
 const str = (v: unknown, cap: number): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim().slice(0, cap) : null);
@@ -72,5 +77,6 @@ export function toBudgetItem(r: Record<string, unknown>): BudgetItem {
     fetchedAt: iso(r.fetched_at) as string,
     offers: budgetOffers(r.offers),
     offersUpdatedAt: iso(r.offers_updated_at),
+    storeCount: Number(r.store_count ?? 1),
   };
 }
