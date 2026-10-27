@@ -94,6 +94,44 @@ def run(name, cmd, cwd=ROOT):
     return tail
 
 
+# A site that says no (HTTP 429/403) is paused for 24 h by scripts/webscraper/core.py (data/webscraper/state.json). The pause runs
+# 24 h from the moment of the refusal, which is always minutes AFTER the job started, so a job that starts at the same time the next
+# day finds the pause still on for a few minutes and skips the store: one 429 cost two days of that store. At the end of the scrape
+# stage the job asks once more for a store whose pause has ended by then. A pause that is still on, or a fresh refusal, is left alone:
+# the pause is never cleared, shortened or bypassed here, and a store is retried at most once per run.
+PAUSE_STATE = ROOT / "data" / "webscraper" / "state.json"
+DOMAINS_OF = {"Superkicks + Crepdog Crew": ["www.superkicks.in", "crepdogcrew.com"], "Mainstreet Marketplace": ["marketplace.mainstreet.co.in"],
+              "Limited Edt": ["limitededt.in"], "Gully Labs": ["gullylabs.com"], "Culture Circle": ["www.culture-circle.com"]}
+BLOCKED_EXIT = "exit 3"  # the scrapers exit 3 when the site refused or is paused
+
+
+def pause_ended(label, now=None):
+    """True if every site this store reads has an earlier pause that has now run out (so a retry is allowed). False when a pause is
+    still on, when the store was never paused, or when the pause file cannot be read."""
+    domains = DOMAINS_OF.get(label)
+    if not domains:
+        return False
+    try:
+        state = json.loads(PAUSE_STATE.read_text(encoding="utf-8")).get("domains", {})
+    except (OSError, ValueError):
+        return False
+    now = time.time() if now is None else now
+    untils = [state.get(d, {}).get("until", 0) for d in domains]
+    return all(u <= now for u in untils) and any(u > 0 for u in untils)
+
+
+def keep_awake(on=True):
+    """Ask Windows not to sleep while the job runs (the screen may still turn off). Without this a laptop in Modern Standby froze
+    the Puma scrape on 21 Oct. It changes no system setting: the request ends with this process."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000001 if on else 0x80000000)  # ES_CONTINUOUS (| ES_SYSTEM_REQUIRED)
+    except (OSError, AttributeError):
+        pass
+
+
 def read_rows(path):
     with open(path, encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -125,6 +163,7 @@ def main():
     log(f"CHOSN daily update {TODAY} (dry-run={args.dry_run}, only={args.only}, force={args.force})")
     started = time.time()
     mode = "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
+    keep_awake(True)
     _summary.clear()
     write_summary(status="running", mode=mode, dry_run=args.dry_run, started_at=datetime.datetime.now().isoformat(timespec="seconds"))
 
@@ -190,7 +229,20 @@ def main():
 
         with ThreadPoolExecutor(max_workers=len(selected)) as pool:
             results = list(pool.map(scrape, selected))
-        write_summary(scrape=[{"store": n, "minutes": round(t / 60, 1), "error": err} for n, err, t in results], not_scraped=sorted(skipped))
+        retried = []
+        for i, (n, err, t) in enumerate(results):
+            if err and BLOCKED_EXIT in err and pause_ended(n):
+                item = next(it for it in selected if it[1] == n)
+                log(f"{n}: its pause has ended since this run started; asking once more (never retried again, pause rules unchanged)")
+                t1 = time.time()
+                try:
+                    run(n + " (retry after pause)", item[2], cwd=item[3])
+                    results[i] = (n, None, t + time.time() - t1)
+                    retried.append(n + ": ok")
+                except RuntimeError as e:
+                    results[i] = (n, str(e), t + time.time() - t1)
+                    retried.append(n + ": still failed")
+        write_summary(scrape=[{"store": n, "minutes": round(t / 60, 1), "error": err} for n, err, t in results], not_scraped=sorted(skipped), retried_after_pause=retried)
         log("scrape timings: " + ", ".join(f"{n} {t / 60:.1f} min{' (FAILED)' if err else ''}" for n, err, t in results))
         for n, err, _ in results:
             if err:
@@ -393,4 +445,5 @@ if __name__ == "__main__":
         write_summary(status="failed", error=str(e)[:500])
         sys.exit(1)
     finally:
+        keep_awake(False)
         LOCK.unlink(missing_ok=True)
