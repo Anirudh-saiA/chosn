@@ -4,7 +4,7 @@
 const digits = (t) => (t || '').replace(/[^\d]/g, '');
 
 export function extractPrice($) {
-  const block = $('h1.p-name').parent().find('p').filter((_, e) => /₹|&#8377;/.test($(e).html() || '') && $(e).find('span').length > 0).first();
+  const block = $('h1.p-name').parent().find('p').filter((_, e) => /₹|&#8377;|&#x20b9;/i.test($(e).html() || '') && $(e).find('span').length > 0).first();
   const was = digits(block.find('del').first().text());
   const spans = block.find('span').filter((_, e) => $(e).find('del').length === 0);
   const now = digits(spans.last().text());
