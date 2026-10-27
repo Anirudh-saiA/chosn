@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { Check } from 'lucide-react';
+import { LazyVideo } from '@/components/fx/LazyVideo';
 import { Reveal } from '@/components/fx/Reveal';
 import { capture } from '@/lib/analytics';
 import { shoeById } from './shoes';
@@ -61,20 +62,15 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
       <Reveal>
         <div className="glass-card glass-card-lg relative overflow-hidden bg-black text-white">
           {/* background video (walk banner) with a dark wash so the text stays readable */}
-          <video
+          <LazyVideo
             className="!absolute inset-0 h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
             poster="/hero/waitlist-poster.jpg"
-            aria-hidden
-          >
-            <source src="/hero/waitlist-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
-            <source src="/hero/waitlist.webm" type="video/webm" />
-            <source src="/hero/waitlist.mp4" type="video/mp4" />
-          </video>
+            sources={[
+              { src: '/hero/waitlist-mobile.mp4', type: 'video/mp4', media: '(max-width: 767px)' },
+              { src: '/hero/waitlist.webm', type: 'video/webm' },
+              { src: '/hero/waitlist.mp4', type: 'video/mp4' },
+            ]}
+          />
           <div aria-hidden className="!absolute inset-0 bg-gradient-to-b from-black/45 via-black/35 to-black/65" />
 
           <div className="relative z-10 mx-auto flex min-h-[30rem] max-w-2xl flex-col justify-center p-8 text-center lg:p-14">
