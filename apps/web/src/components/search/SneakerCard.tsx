@@ -254,7 +254,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             disabled={known !== undefined && photos.length <= 1}
             aria-label={dir === 'next' ? 'Next photo' : 'Previous photo'}
             title={known !== undefined && photos.length <= 1 ? 'No more photos of this colour yet' : dir === 'next' ? 'Next photo' : 'Previous photo'}
-            className={`absolute top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
+            className={`absolute top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center before:absolute before:-inset-2 before:content-['']  justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
           >
             {dir === 'next' ? <ChevronRight className="h-4 w-4" strokeWidth={2.25} aria-hidden /> : <ChevronLeft className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
           </button>
@@ -292,13 +292,15 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                     onMouseEnter={() => pickColour(i)}
                     onFocus={() => pickColour(i)}
                     onClick={() => pickColour(i)}
-                    className={`relative h-6 w-6 overflow-hidden rounded-md bg-[#F3F5F8] transition-shadow ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
+                    className={`relative h-6 w-6 rounded-md bg-[#F3F5F8] transition-shadow before:absolute before:-inset-x-[3px] before:-inset-y-2.5 before:content-[''] ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
                   >
+                    <span className="block h-full w-full overflow-hidden rounded-md">
                     {c.primaryImageUrl ? (
                       <ShoePhoto key={c.primaryImageUrl} src={c.primaryImageUrl} alt="" className="h-full w-full object-contain p-0.5" fallback={<span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />} />
                     ) : (
                       <span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />
                     )}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -318,7 +320,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             </span>
           </div>
           {sizeList.length > 0 ? (
-            <ul ref={sizesRef} className="relative z-10 mt-1 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
+            <ul ref={sizesRef} className="relative z-10 -mb-2.5 mt-[-0.375rem] flex gap-1 overflow-x-auto pb-3 pt-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
               {sizeList.map((s, idx) => {
                 const active = s.size === size;
                 return (
@@ -329,7 +331,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                       aria-pressed={active}
                       aria-label={`UK ${formatSize(s.size)}${s.available ? '' : ', sold out everywhere'}`}
                       title={s.available ? undefined : 'Sold out at every store we compare'}
-                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-md border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors ${
+                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-md border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors before:absolute before:-inset-x-0.5 before:-inset-y-2.5 before:content-[''] ${
                         active
                           ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
                           : s.available

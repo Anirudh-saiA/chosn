@@ -108,7 +108,7 @@ export function PriceHistory({ styleCode, size }: { styleCode: string; size: num
               type="button"
               aria-pressed={range === r.days}
               onClick={() => setRange(r.days)}
-              className={`min-h-[28px] min-w-[40px] px-2.5 font-mono text-[0.68rem] transition-colors ${range === r.days ? 'bg-text font-semibold text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
+              className={`min-h-[44px] min-w-[44px] px-2.5 font-mono text-[0.68rem] transition-colors ${range === r.days ? 'bg-text font-semibold text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
             >
               {r.label}
             </button>

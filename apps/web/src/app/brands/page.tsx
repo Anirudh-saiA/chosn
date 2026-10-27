@@ -60,7 +60,7 @@ export default async function BrandsPage() {
         <>
           <nav aria-label="Jump to letter" className="sticky top-16 z-10 mb-6 flex flex-wrap gap-1 rounded-2xl border border-text/10 bg-white/90 p-2 backdrop-blur">
             {letters.map((l) => (
-              <a key={l} href={`#letter-${l === '#' ? 'num' : l}`} className="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-mono text-[0.8rem] font-bold text-text-soft hover:bg-text/5 hover:text-text">
+              <a key={l} href={`#letter-${l === '#' ? 'num' : l}`} className="flex h-11 min-w-11 items-center justify-center rounded-lg px-2 font-mono text-[0.8rem] font-bold text-text-soft hover:bg-text/5 hover:text-text">
                 {l}
               </a>
             ))}

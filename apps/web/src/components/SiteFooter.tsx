@@ -4,7 +4,7 @@ import { AFFILIATE_DISCLOSURE_SHORT, NOT_A_MARKETPLACE } from '@/lib/legal-copy'
 /** Feedback opens the visitor's mail app, addressed to the community inbox. */
 const FEEDBACK_MAILTO = 'mailto:join.sneakercommunity@gmail.com?subject=CHOSN%20feedback';
 
-const LINK = 'font-display text-[1.15rem] uppercase tracking-[0.12em] text-[#0A0A0A] transition-opacity duration-200 hover:opacity-50';
+const LINK = 'inline-flex min-h-11 items-center font-display text-[1.15rem] uppercase tracking-[0.12em] text-[#0A0A0A] transition-opacity duration-200 hover:opacity-50';
 
 const COLUMNS = [
   [
@@ -48,7 +48,7 @@ export function SiteFooter() {
 
           <nav aria-label="Footer" className="relative z-10 grid w-full max-w-3xl grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3">
             {COLUMNS.map((links, n) => (
-              <ul key={n} className="space-y-3 text-center">
+              <ul key={n} className="space-y-1 text-center">
                 {links.map(([href, label]) => (
                   <li key={href}>
                     {href.startsWith('mailto:') ? (

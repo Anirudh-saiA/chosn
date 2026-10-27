@@ -60,7 +60,7 @@ export async function BrandGrid({ className = '' }: { className?: string }) {
   return (
     <div className={className}>
       <BrandWall tiles={tiles.map((t) => ({ ...t, file: brandLogoFile(t.name) }))} />
-      <Link href="/brands" className="mt-3 inline-block font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
+      <Link href="/brands" className="mt-1 inline-flex min-h-11 items-center font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
         Browse brands A to Z
       </Link>
     </div>

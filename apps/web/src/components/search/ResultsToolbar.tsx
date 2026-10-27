@@ -48,7 +48,7 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
           <select
             value={get('sort') ?? ''}
             onChange={(e) => set({ sort: e.target.value || null })}
-            className="h-10 cursor-pointer rounded-full border border-text/20 bg-white px-4 font-mono text-[0.78rem] normal-case tracking-normal text-text outline-none focus:border-text"
+            className="h-11 cursor-pointer rounded-full border border-text/20 bg-white px-4 font-mono text-[0.78rem] normal-case tracking-normal text-text outline-none focus:border-text"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>

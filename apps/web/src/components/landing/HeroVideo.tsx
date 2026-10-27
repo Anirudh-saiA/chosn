@@ -52,7 +52,7 @@ export function HeroVideo() {
 
         <a
           href="#after-hero"
-          className="hero-cue absolute inset-x-0 bottom-6 z-10 flex flex-col items-center gap-1 font-sans text-[0.72rem] font-bold uppercase tracking-[0.3em] text-white/90 transition-opacity hover:text-white"
+          className="hero-cue absolute inset-x-0 bottom-3 z-10 flex min-h-11 flex-col items-center justify-center gap-1 font-sans text-[0.72rem] font-bold uppercase tracking-[0.3em] text-white/90 transition-opacity hover:text-white"
         >
           Scroll down
           <ChevronDown className="h-5 w-5 animate-bounce" aria-hidden />

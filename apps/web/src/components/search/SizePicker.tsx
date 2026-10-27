@@ -66,7 +66,7 @@ export function SizePicker() {
           data-any
           onClick={() => pick(null)}
           aria-pressed={!current}
-          className={`h-9 shrink-0 rounded-full border px-4 font-mono text-[0.78rem] font-bold ${!current ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
+          className={`h-11 shrink-0 rounded-full border px-4 font-mono text-[0.78rem] font-bold ${!current ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
         >
           Any
         </button>
@@ -79,7 +79,7 @@ export function SizePicker() {
               type="button"
               onClick={() => pick(fmt(s))}
               aria-pressed={on}
-              className={`h-9 min-w-[2.6rem] shrink-0 rounded-full border px-3 font-mono text-[0.78rem] font-bold ${on ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
+              className={`h-11 min-w-[2.75rem] shrink-0 rounded-full border px-3 font-mono text-[0.78rem] font-bold ${on ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
             >
               {fmt(s)}
             </button>

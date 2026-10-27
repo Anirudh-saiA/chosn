@@ -277,7 +277,7 @@ export async function CompareExample() {
                 <img src={image} alt={`${name} ${data.sneaker.colorway}`} loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full scale-[2.4] select-none object-contain" />
               </div>
             )}
-            <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="mt-2 text-center font-display text-[1.25rem] uppercase tracking-[0.02em] text-[#0A0A0A] hover:underline">
+            <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="mt-2 inline-flex min-h-11 items-center text-center font-display text-[1.25rem] uppercase tracking-[0.02em] text-[#0A0A0A] hover:underline">
               {name} · UK {size}
             </Link>
             <p className="mt-1 font-mono text-[0.6rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/45">Real prices from our data · read {day(readOn)}</p>
@@ -327,7 +327,7 @@ export async function CompareExample() {
                 <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[#0A0A0A]/50">Buy now or wait</p>
                 <span className={`rounded-full px-5 py-1.5 font-display text-[1.4rem] uppercase tracking-[0.04em] ${VERDICT[outlook.verdict].pill}`}>{VERDICT[outlook.verdict].label}</span>
                 <p className="min-w-0 flex-1 text-[1rem] font-bold text-[#0A0A0A]">{outlook.headline}</p>
-                <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
+                <Link href={`/sneakers/${encodeURIComponent(data.sneaker.styleCode)}/${size}`} className="inline-flex min-h-11 items-center font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/70 underline underline-offset-4 hover:text-[#0A0A0A]">
                   See why
                 </Link>
               </div>
