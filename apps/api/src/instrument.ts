@@ -13,9 +13,21 @@ import * as Sentry from '@sentry/node';
  * .env.example. Falls back to NODE_ENV, then a plain "development" for
  * a local run.
  */
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   enabled: Boolean(process.env.SENTRY_DSN),
   environment: process.env.RAILWAY_ENVIRONMENT_NAME ?? process.env.NODE_ENV ?? 'development',
   tracesSampleRate: 0.1,
+  // SEC-7: watch ids sit in URL paths and e-mail addresses in request bodies; keep both out of error reports.
+  sendDefaultPii: false,
+  beforeSend(event) {
+    if (event.request) {
+      delete event.request.data;
+      delete event.request.cookies;
+      if (event.request.url) event.request.url = event.request.url.replace(UUID_RE, ':id');
+    }
+    return event;
+  },
 });
