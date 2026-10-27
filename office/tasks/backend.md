@@ -5,8 +5,7 @@ First assigned 2026-10-21.
 
 ## Open
 7. Waiting for Main/founder: card for the `footwear_type` migration (draft ready); Data to stop FIXTURE rows becoming `is_latest` in the nightly import; decision on the pool recommendations (refresh changed variants only, separate background pool, Postgres memory).
-4. **Deployment readiness plan.** Written up in `office/reports/backend/2026-10-21.md`; waiting for the founder's approval before anything is built.
-5. (Proposed, needs the founder's yes) Limiter fails closed on `POST /waitlist` and `POST /watch/:id/email`; dev-safe defaults (`DROP_REMINDERS=off`, `WAITLIST_DRIP=off`) in `.env.example`.
+4. Deployment plan: built as far as approved (Dockerfile, compose, Caddyfile, `/health/live`). Still to do: Redis lock for the in-API loops, media to object storage, job workflows, heartbeat.
 6. Review the Data team's and the Desk's switch to `scripts/dbconn.py` when handed over.
 
 Not yours: auditing admin routes and logging is the Security team's job; fix what they find.
