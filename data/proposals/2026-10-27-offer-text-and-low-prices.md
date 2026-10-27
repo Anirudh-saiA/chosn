@@ -14,7 +14,7 @@ List: `data/proposals/rows-under-1500-2026-10-27.csv` (store, style code, brand,
 | Store | Shoes | What they are |
 |---|---|---|
 | Myntra | 132 | **Real**: budget brands (Roadster, Layasa, JQR, yoho and similar), prices Rs 475 to 1,499. Real listings, but not sneaker-brand pairs; whether the budget shelf should show them is a product decision. Myntra has no manufacturer style code, so these rows carry our own N- codes |
-| Superkicks | 45 | 31 slides / flip-flops (Jordan Break Slide, Victori One Slide, Bella Kai...), 3 likely slides by name, 7 real low-price pairs (Vans Authentic and Classic Slip-On, Nike Revolution 8, Reebok kids Club C), 1 to check by hand (Vila Drifter). **All of them are out of stock**, so their price is the last price seen |
+| Superkicks | 45 | 31 slides / flip-flops (Jordan Break Slide, Victori One Slide, Bella Kai...), 4 likely slides by name, 6 real low-price pairs (Vans Authentic and Classic Slip-On, Nike Revolution 8, Reebok kids Club C), 4 to check by hand (Vila Drifter and similar). **All of them are out of stock**, so their price is the last price seen |
 | Puma India | 25 | All slides, flip-flops or sandals (Flame Women's Flip-Flops, Stellar V6 Slides, Wave Sandals...) |
 | Mainstreet Marketplace | 11 | All flip-flops and slides (adidas Hurtle, Mistico, Stabile, Aquo) |
 **The trainer at Rs 569 with 1 store** is Puma "Flame Women's Flip-Flops" (style 39715401, Puma India, in stock, https://in.puma.com/in/en/pd/flame-womens-flip-flops/397154): a real price for a real product, but it is a flip-flop, not a sneaker. It is a scraper-scope mistake, not a price error.
