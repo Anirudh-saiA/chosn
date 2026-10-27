@@ -1,0 +1,5 @@
+style_code,model,size_scope,store_price_inr_median,marketplace_price_inr_median,recorded_retail_price_inr,as_of,label,note,source_file
+DD1391-103,Nike Dunk Low,"median across sizes, in stock",6999,15199,9350,2026-10-23,Unconfirmed,store side may include a test (fixture) row; not re-checked,office/research/2026-10-23-resale-vs-retail-prices.md
+B75807,adidas Samba OG,"median across sizes, in stock",6999,9299,9350,2026-10-23,Unconfirmed,"store price 6,999 is not a real store price: real stores list 10,999 (Superkicks, VegNonVeg, Limited Edt) and the 6,999 matches test rows; recorded 9,350 is stale (adidas India: 10,999)",office/research/2026-10-23-resale-vs-retail-prices.md
+DZ5485-612,Air Jordan 1,"median across sizes, in stock",11574,38799,15300,2026-10-23,Unconfirmed,store side may include a test (fixture) row; not re-checked,office/research/2026-10-23-resale-vs-retail-prices.md
+B75806,adidas Samba,"median across sizes, in stock",9574,9299,,2026-10-23,Unconfirmed,store side may include a test (fixture) row; not re-checked,office/research/2026-10-23-resale-vs-retail-prices.md
