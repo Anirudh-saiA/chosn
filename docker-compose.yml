@@ -3,6 +3,9 @@ services:
     image: postgres:16-alpine
     # Docker's default 64 MB /dev/shm runs out when many parallel queries run at once ("could not resize shared memory segment")
     shm_size: 512mb
+    # Local PC has 16 GB shared with Docker and the dev servers: cap the container so Postgres's file cache cannot take 4 GB (page renders stalled)
+    mem_limit: 2g
+    command: ['postgres', '-c', 'shared_buffers=512MB']
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres

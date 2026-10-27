@@ -18,3 +18,16 @@ First assigned 2026-10-22.
 - Open question for the founder: they asked the Social team to post to their account via Chrome. The role brief says the Social team posts nothing, so this waits on the founder confirming to Main as well as here.
 - 2026-10-23 (from Main, data quality): all price queries now require retailers.status='active' and listing_url NOT LIKE '%FIXTURE%'; Ajio, Flipkart and END. Clothing are never named; sources name only stores that returned rows. Yeezy 350 V2 and NB 550 prices were 100% test rows and are removed from the posts. Markdown post: 'other 5 stores' became 'other 3'; new-listings count 4,222 became 499. Drafts and the weekly pack regenerated.
 - 2026-10-23 (from Main, CHANGE): team/social fast-forwarded to develop (8c36bde, it already contained my branch); correction reply for the 23 Oct markdown post saved as `office/social/correction-2026-10-23.md` (needs-founder-to-post; the only difference from the posted text is 5 -> 3); drop prices from the calendar are US prices (currency USD): drops posts now say "about US$170" with "Prices are US, India prices not announced" and never show them as rupees; price queries re-run after the test rows were hidden: no draft number changed.
+
+## FOUNDER DECISION 2026-10-27 on approval-form-2026-10-25 (card social-form-2026-10-25, approved)
+- A1 evening "Box or no box" question: APPROVED.
+- A2 7-Eleven v Nike Air Max 95: APPROVED (Reported, one outlet, source linked, no person criticised).
+- A3 "banned" Air Jordan 1, scheduled Wed 28 Oct: APPROVED.
+- A4 Nike v StockX and Yeezy leftover stock: HOLD. Read the full source pages first, then send again.
+- A5 new-releases post: not written; write it when Docker and data are up.
+- B1 founder is the only poster, using X free Schedule and the weekly pack: YES.
+- B2 automated X API posting job: NO for now. Revisit after a few weeks.
+- B3 posting through Claude in Chrome: NO.
+- B4 hashtags: at most two, at the end, optional (#SneakersIndia plus one): YES.
+- C1 Docker: now on D:. Docker must be running for the daily draft. C2 pictures, C3 X handles, C4 Samba price: still open (founder, founder, Data).
+Nothing is posted by anyone but the founder.

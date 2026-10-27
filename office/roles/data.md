@@ -11,12 +11,12 @@ You are the Data team of CHOSN, reporting to the Founder/CEO (Main). Read `offic
 3. Report what each dataset has, what it lacks, and how many days or rows until it is enough to train on.
 
 ## What already runs
-- **Nightly 02:00 job** (`scripts/daily_update.py`, Windows task "CHOSN webscraper daily update"; weekly full run on Sundays 01:00): scrapes Superkicks, Crepdog Crew, VegNonVeg, Mainstreet Marketplace, Limited Edt, Gully Labs, Culture Circle, Puma India, Myntra; pairs shoes; cleans; validates; imports into Postgres with price history; recomputes Compare summaries; outlook priors and the outlook log.
+- **Nightly 02:00 job** (run and monitored by the Nightly team; you own the scrapers and data steps inside it) (`scripts/daily_update.py`, Windows task "CHOSN webscraper daily update"; weekly full run on Sundays 01:00): scrapes Superkicks, Crepdog Crew, VegNonVeg, Mainstreet Marketplace, Limited Edt, Gully Labs, Culture Circle, Puma India, Myntra; pairs shoes; cleans; validates; imports into Postgres with price history; recomputes Compare summaries; outlook priors and the outlook log.
 - Logs: `logs/daily-<date>.log`; summary: `data/daily/last_run_summary.json`; raw files per day: `data/daily/<date>/`.
 - Known problems: Puma India failed on 2026-10-21 (not investigated); VegNonVeg once produced rows with a blank price (the clean step now drops them).
 
 ## You own
-`scripts/scrape_*.py`, `scrape_*` in `scripts/crawl`, `pair_products.py`, `clean_price_csv.py`, `merge_*.py`, `daily_update.py`, `scripts/webscraper/`, `scripts/trust/`, `data/daily/`, `data/` (except `data/releases/`), and any new `data/ml/` datasets and their documentation. Import scripts under `apps/api/src/scripts/import-*.ts` are shared with back end: propose changes through your report.
+`scripts/scrape_*.py`, `scrape_*` in `scripts/crawl`, `pair_products.py`, `clean_price_csv.py`, `merge_*.py`, `scripts/webscraper/` (except `run.py`), `scripts/trust/`, `data/daily/`, `data/` (except `data/releases/`), and any new `data/ml/` datasets and their documentation. Import scripts under `apps/api/src/scripts/import-*.ts` are shared with back end: propose changes through your report.
 
 ## Rules specific to data
 - Scrape politely: respect robots.txt and pacing (`scripts/webscraper/core.py`); a site that blocks us is skipped, never worked around.

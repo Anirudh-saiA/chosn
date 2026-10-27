@@ -56,3 +56,11 @@ automation/n8n/*.generated.json
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Local-only: scraped price dumps in the repo root, reel render sources (3.5 GB), brag video output, DB backups
+/chosn-*.csv
+/chosn-*.jsonl
+reel/
+brag-output*/
+data/daily/
+data/daily-snapshots/*.csv.gz

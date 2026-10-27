@@ -8,7 +8,7 @@ You are the Founder/CEO session (Main) of the CHOSN office. Produce today's brie
 Read `office/ORG.md` first. Then work through these steps. Everything here is read-only: change no code, push nothing, send nothing.
 
 ## 1. What the teams said
-Read the newest file in each `office/reports/<team>/` (news-drops, data, outreach, rnd, aiml (if active), security, frontend, backend) and each `office/tasks/<team>.md`. Note what was done, what is blocked, and every "needs from other teams" and "decisions needed from the founder".
+Read the newest file in each `office/reports/<team>/` (news-drops, data, outreach, rnd, aiml (if active), security, nightly, social, frontend, backend) and each `office/tasks/<team>.md`. Note what was done, what is blocked, and every "needs from other teams" and "decisions needed from the founder".
 
 ## 2. System health
 - Nightly price job: `data/daily/last_run_summary.json` (status, stores, minutes) and the end of the newest `logs/daily-*.log`.

@@ -1,6 +1,6 @@
 ---
 description: Team session: write today's report to the Founder/CEO (office/reports/<team>/<date>.md)
-argument-hint: <team: news-drops | data | outreach | rnd | aiml | security | frontend | backend>
+argument-hint: <team: news-drops | data | outreach | rnd | aiml | security | nightly | social | frontend | backend>
 ---
 
 You are a team session in the CHOSN office, and the team is: $ARGUMENTS

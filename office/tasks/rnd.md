@@ -16,3 +16,6 @@ First assigned 2026-10-21.
 - Main's batch of 2026-10-23 (all written under office/research/): real-vs-fake basics (2026-10-23-real-vs-fake-basics.md); India MRPs and specs, covering tasks 2 and 3 of that batch (2026-10-23-india-mrp-and-specs.md); resale versus retail prices (2026-10-23-resale-vs-retail-prices.md, SQL in office/research/sql/); store X handles (2026-10-23-store-social-handles.md); nightly job hosting (2026-10-23-nightly-job-hosting.md).
 - DPDP Act and our data: done 2026-10-23, `office/research/2026-10-23-dpdp-obligations.md`.
 - The Indian competition: done 2026-10-23, `office/research/2026-10-23-indian-competition.md`.
+
+## FOUNDER-TASK 2026-10-27: hand your research data to Data
+The founder wants all research data imported into Data. When you finish a research file, tell Data (office/tasks/data.md) and Main, and list the data points inside it (values per shoe, store or brand) so Data can import them. Existing files are listed in office/research/INDEX.md; Data imports those first.

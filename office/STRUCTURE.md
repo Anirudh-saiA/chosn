@@ -16,7 +16,9 @@ Status: **Active** = a session exists now. **Later** = start when the trigger ha
 | **Back end** | Back end team | `apps/api`: endpoints, database, auth, e-mail, tests, deployment | Active |
 | **Security** | Security team | Finds and proves weaknesses in our own app, API, database, jobs, dependencies and secrets; privacy controls; checks fixes. Findings go to the owners | Active |
 | **QA (testing)** | Back end and front end for now | Tests, breaking things on purpose | Later: a QA team when the site has real users |
-| **DevOps / infrastructure** | Back end for now | Hosting, scheduled jobs, monitoring, backups | Later: when deployed to a host |
+| **Social (X / Twitter)** | Social team | Daily critic-voice posts, fact bank, calendar, picture matching, engagement ideas | Active |
+| **Operations (scheduled jobs)** | Nightly team | Runs and watches the nightly, weekly and 10-minute jobs, catches up missed runs, triages failures, backs up the database | Active |
+| **DevOps / infrastructure** | Back end and Nightly for now | Hosting, deployment, monitoring | Later: when deployed to a host |
 
 ## Data and intelligence
 | Role | Team | What they do | Status |
@@ -44,7 +46,7 @@ Status: **Active** = a session exists now. **Later** = start when the trigger ha
 ```
                        Founder / CEO (Main)
    ┌────────────┬──────────┼───────────┬─────────────┬───────────┐
-Front end   Back end     Data       R&D      Drops & News     Outreach     Security        (AI/ML later, under Data and Back end)
+Front end   Back end     Data       R&D      Drops & News     Outreach     Security     Nightly     Social        (AI/ML later, under Data and Back end)
 ```
 - R&D feeds everyone: any team can add a question to `office/research/requests.md`.
 - Data feeds AI/ML (later) and the product (prices, outlook).
