@@ -259,7 +259,8 @@ def k_sale(day, ctx):
         key = "sale:" + re.sub(r"[^a-z0-9-]", "", url.rstrip("/").rsplit("/", 1)[-1].lower())[:40]
         if key in ctx["used"] or int(pct) < 20:
             continue
-        make = lambda n: (f"Listed today: {n} at {store}, {rupees(price)}. The same listing shows an MRP of {rupees(mrp)}, {pct}% off. "
+        when = datetime.date.fromisoformat(str(seen)).strftime("%d %b").lstrip("0")  # the day our scraper read it, which may not be today
+        make = lambda n: (f"Listed on {when}: {n} at {store}, {rupees(price)}. The same listing shows an MRP of {rupees(mrp)}, {pct}% off. "
                           "My take: a discount from a high list price is not a bargain by itself. Check the style code, the sizes left and the return policy.")
         return {"label": "sale: biggest listed discount in our data", "text": fit(make, name), "conf": "Reported", "ids": [key],
                 "sources": [url, f"Our own data: store listing read {seen}; the MRP is the one the store shows, not checked against the brand's"],
