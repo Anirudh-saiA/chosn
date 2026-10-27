@@ -13,6 +13,11 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' });
 const BANDS = [5000, 10000, 15000, 20000] as const;
 type Band = (typeof BANDS)[number];
 const PAGE = 12;
+type Order = 'price' | 'compared';
+const ORDERS: Array<[Order, string, string]> = [
+  ['price', 'Cheapest', 'price_asc'],
+  ['compared', 'Most compared', 'stores'],
+];
 
 const KIND_LABEL: Record<string, string> = {
   sale: 'Sale',
@@ -208,6 +213,7 @@ function Row({ item, best }: { item: SearchResultItem; best: BestState | undefin
 export function BudgetShelf() {
   const [band, setBand] = useState<Band>(5000);
   const [limit, setLimit] = useState(PAGE);
+  const [order, setOrder] = useState<Order>('price');
   const [items, setItems] = useState<SearchResultItem[] | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
@@ -232,7 +238,7 @@ export function BudgetShelf() {
   useEffect(() => {
     let live = true;
     setFailed(false);
-    fetchSearch({ maxPrice: String(band), sort: 'price_asc', limit: String(limit) })
+    fetchSearch({ maxPrice: String(band), sort: ORDERS.find((o) => o[0] === order)![2], limit: String(limit) })
       .then((r) => {
         if (!live) return;
         setItems(r.results);
@@ -242,7 +248,7 @@ export function BudgetShelf() {
     return () => {
       live = false;
     };
-  }, [band, limit]);
+  }, [band, limit, order]);
 
   // Each shoe's cheapest store and its offers: a few at a time so the API is not hit with a burst.
   useEffect(() => {
@@ -282,9 +288,9 @@ export function BudgetShelf() {
 
   return (
     <section aria-labelledby="budget-h" className={`${inter.className} mx-auto w-full max-w-3xl rounded-2xl border border-black bg-white p-5 text-black sm:p-7`}>
-      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-black/65">Shop by budget</p>
+      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-black/65">Coupons and offers included</p>
       <h2 id="budget-h" className="mt-1 text-[clamp(1.6rem,4vw,2.2rem)] font-extrabold leading-tight tracking-tight">
-        Sneakers under your budget
+        Shop by budget
       </h2>
       <p className="mt-2 max-w-xl text-[0.92rem] leading-relaxed text-black/80">
         The cheapest in-stock store for each pair, with the coupons and offers that store lists. Prices are in rupees and come from the stores&apos; own pages.
@@ -318,13 +324,33 @@ export function BudgetShelf() {
         })}
       </div>
 
+      <div role="group" aria-label="Order the list" className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="text-[0.72rem] font-semibold uppercase tracking-wider text-black/65">Order</span>
+        {ORDERS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={order === id}
+            onClick={() => {
+              setOrder(id);
+              setLimit(PAGE);
+              setItems(null);
+              setTotal(null);
+            }}
+            className={`min-h-[44px] rounded-full border border-black px-4 text-[0.8rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${order === id ? 'bg-black text-white' : 'bg-white text-black hover:bg-black/5'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div id="budget-panel" role="tabpanel" aria-labelledby={`budget-tab-${band}`} className="mt-3" aria-busy={items === null && !failed}>
         {failed ? (
           <p className="py-8 text-center text-[0.92rem] text-black/80">Could not load this budget right now. Please try again in a moment.</p>
         ) : items === null ? (
-          <p className="py-8 text-center text-[0.92rem] text-black/65">Loading sneakers under {formatInr(band)}…</p>
+          <p className="py-8 text-center text-[0.92rem] text-black/65">Loading pairs under {formatInr(band)}…</p>
         ) : items.length === 0 ? (
-          <p className="py-8 text-center text-[0.92rem] text-black/80">No sneaker is in stock under {formatInr(band)} right now.</p>
+          <p className="py-8 text-center text-[0.92rem] text-black/80">No pair is in stock under {formatInr(band)} right now.</p>
         ) : (
           <>
             <ul>
@@ -342,7 +368,7 @@ export function BudgetShelf() {
                   Show {Math.min(PAGE, total - items.length)} more
                 </button>
                 <p className="mt-2 text-[0.74rem] text-black/65">
-                  Showing {items.length} of {total.toLocaleString('en-IN')}, cheapest first
+                  Showing {items.length} of {total.toLocaleString('en-IN')}, {order === 'price' ? 'cheapest first' : 'most compared first'}
                 </p>
               </div>
             )}
