@@ -1,0 +1,49 @@
+-- DRAFT for founder card data-scope-slides. NOT in apps/api/drizzle on purpose: files there run at API boot.
+-- Additive and safe to re-run. Nothing is deleted. Rollback at the bottom.
+-- Why not reuse sneakers.category? It is a sport enum (basketball/lifestyle/running/skate) and 42,608 of 42,636 rows are NULL.
+
+DO $$ BEGIN
+  CREATE TYPE footwear_type AS ENUM ('sneaker', 'slide', 'sandal', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- One definition of the rule, in the database, so the API, the importers and the backfill cannot disagree.
+-- Word boundaries (\m \M) so "Landslide" is not a slide. Anything that says "sneaker" stays a sneaker ("Slide Sneaker", "Sneaker Mule").
+-- Anything unsure stays 'sneaker': hiding a real sneaker is worse than showing one odd sandal.
+CREATE OR REPLACE FUNCTION classify_footwear(p_model text, p_silhouette text) RETURNS footwear_type
+LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $f$
+  SELECT CASE
+    WHEN t ~* '\msneakers?\M' THEN 'sneaker'::footwear_type
+    WHEN t ~* '\m(sandals?|sandalen|gladiators?)\M' THEN 'sandal'::footwear_type
+    WHEN t ~* '\m(flip[ -]?flops?|slides?|sliders?|slippers?|thongs?|floaters?|mules?|clogs?|adilette)\M' THEN 'slide'::footwear_type
+    WHEN t ~* '\m(boots?|loafers?|derby|chukkas?|heels?|socks?|bags?|backpacks?|hats?|shirts?|hoodies?|jackets?|shorts)\M' THEN 'other'::footwear_type
+    ELSE 'sneaker'::footwear_type
+  END
+  FROM (SELECT coalesce(p_model, '') || ' ' || coalesce(p_silhouette, '') AS t) x
+$f$;
+
+ALTER TABLE sneakers ADD COLUMN IF NOT EXISTS footwear_type footwear_type;
+ALTER TABLE sneakers ADD COLUMN IF NOT EXISTS footwear_type_manual boolean NOT NULL DEFAULT false; -- true = a person set it; the rule never overrides
+
+-- New rows and renamed rows classify themselves, so the importers need no change.
+CREATE OR REPLACE FUNCTION sneakers_set_footwear_type() RETURNS trigger LANGUAGE plpgsql AS $f$
+BEGIN
+  IF NEW.footwear_type IS NULL OR (NOT NEW.footwear_type_manual AND (TG_OP = 'INSERT' OR NEW.model IS DISTINCT FROM OLD.model OR NEW.silhouette IS DISTINCT FROM OLD.silhouette)) THEN
+    NEW.footwear_type := classify_footwear(NEW.model, NEW.silhouette);
+  END IF;
+  RETURN NEW;
+END $f$;
+DROP TRIGGER IF EXISTS sneakers_footwear_type_trg ON sneakers;
+CREATE TRIGGER sneakers_footwear_type_trg BEFORE INSERT OR UPDATE OF model, silhouette, footwear_type ON sneakers
+  FOR EACH ROW EXECUTE FUNCTION sneakers_set_footwear_type();
+
+-- Old rows. ~42.6k rows, one pass.
+UPDATE sneakers SET footwear_type = classify_footwear(model, silhouette) WHERE footwear_type IS NULL;
+
+ALTER TABLE sneakers ALTER COLUMN footwear_type SET DEFAULT 'sneaker';
+ALTER TABLE sneakers ALTER COLUMN footwear_type SET NOT NULL;
+CREATE INDEX IF NOT EXISTS sneakers_footwear_type_idx ON sneakers (footwear_type) WHERE footwear_type <> 'sneaker';
+
+-- ROLLBACK (loses only the new column):
+--   DROP TRIGGER sneakers_footwear_type_trg ON sneakers; DROP FUNCTION sneakers_set_footwear_type();
+--   DROP INDEX sneakers_footwear_type_idx; ALTER TABLE sneakers DROP COLUMN footwear_type, DROP COLUMN footwear_type_manual;
+--   DROP FUNCTION classify_footwear(text, text); DROP TYPE footwear_type;

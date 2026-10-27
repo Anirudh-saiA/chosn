@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
+import { RateLimitGuard } from '../common/rate-limit.guard';
 import { pgPoolProvider } from '../db/db.provider';
 import { PricingModule } from '../pricing/pricing.module';
 import { AdminImageController } from './admin-image.controller';
@@ -24,6 +25,6 @@ import { WatchController } from './watch.controller';
 @Module({
   imports: [PricingModule],
   controllers: [CatalogController, AdminImageController, EventsController, OrderFeedbackController, WatchController],
-  providers: [CatalogService, EmailService, pgPoolProvider, AdminGuard],
+  providers: [CatalogService, EmailService, pgPoolProvider, AdminGuard, RateLimitGuard],
 })
 export class CatalogModule {}

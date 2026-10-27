@@ -10,6 +10,7 @@ import { Queue, Worker } from 'bullmq';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { marketSummaries } from '../db/schema';
 import { bullConnection } from '../queue/queue.config';
+import { REAL_LISTING } from './real-listing';
 import { MarketIntelligenceCacheService } from './market-intelligence-cache.service';
 
 /**
@@ -218,8 +219,10 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
    *
    * - "Best Available" (Day 9 task 2): the cheapest in-stock effective price across retailers, using only each
    *   retailer's current row (is_latest) and excluding anything older than twice that retailer's own fetch cadence.
-   * - "Current Price" (Day 9 task 1/5): the freshest valid snapshot regardless of stock, so a variant out of stock
+   * - "Current Price" (Day 9 task 1/5): the freshest valid snapshot, in-stock offers first, so a variant out of stock
    *   everywhere still shows what it costs. Deliberately not the same as best_available_price.
+   * - Every figure uses real listings only: a placeholder (FIXTURE) row never counts, however fresh or cheap.
+   *   Before this, an unapproved store's placeholder could be "current" and sit 140% above the best real price.
    * - Today's best goes into daily_best_prices; no row when nothing is in stock and fresh (a day with no valid offer
    *   is absent from the average, not counted as free).
    * - Trend is a fraction classified against SIGNAL_THRESHOLDS, stored as percentage points in numeric(6,2).
@@ -227,7 +230,7 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
   private async refreshBatch(variantIds: string[]): Promise<void> {
     const idList = sql`SELECT unnest(ARRAY[${sql.join(variantIds.map((v) => sql`${v}`), sql`, `)}]::uuid[]) AS id`;
     const offers = (inStockOnly: boolean) => sql`
-      SELECT ps.sneaker_variant_id, ps.retailer_id, r.slug AS retailer_slug, ps.fetched_at,
+      SELECT ps.sneaker_variant_id, ps.retailer_id, r.slug AS retailer_slug, ps.fetched_at, ps.in_stock,
              effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS price_inr
       FROM price_snapshots ps
       JOIN ids ON ids.id = ps.sneaker_variant_id
@@ -236,9 +239,19 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
         ${inStockOnly ? sql`AND ps.in_stock = true` : sql``}
         AND ps.fetched_at > now() - (r.fetch_frequency_minutes * 2 || ' minutes')::interval
         AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
+        AND ${REAL_LISTING}
     `;
 
     await this.db.transaction(async (tx) => {
+      // Today's row only: a variant whose "best" was a placeholder (or went out of stock) has no real best now, so a row written by an
+      // earlier run today must not linger and feed the 30-day average.
+      await tx.execute(sql`
+        WITH ids AS (${idList}),
+        best AS (SELECT DISTINCT sneaker_variant_id FROM (${offers(true)}) o)
+        DELETE FROM daily_best_prices d USING ids
+        WHERE d.sneaker_variant_id = ids.id AND d.day = CURRENT_DATE
+          AND NOT EXISTS (SELECT 1 FROM best b WHERE b.sneaker_variant_id = d.sneaker_variant_id)
+      `);
       await tx.execute(sql`
         WITH ids AS (${idList}),
         best AS (
@@ -264,7 +277,7 @@ export class MarketIntelligenceService implements OnModuleInit, OnModuleDestroy 
         cur AS (
           SELECT DISTINCT ON (sneaker_variant_id) sneaker_variant_id, retailer_id, retailer_slug, price_inr
           FROM (${offers(false)}) o
-          ORDER BY sneaker_variant_id, fetched_at DESC, retailer_id
+          ORDER BY sneaker_variant_id, in_stock DESC, fetched_at DESC, retailer_id
         ),
         agg AS (
           SELECT d.sneaker_variant_id,

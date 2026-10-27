@@ -1,0 +1,20 @@
+# Keeps the build context small and keeps secrets out of images.
+.git
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+data
+logs
+tools
+office
+handoff
+docs
+security
+load-tests
+automation
+*.csv
+*.zip
+**/__pycache__

@@ -1,5 +1,6 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Inject, NotFoundException, Param, Put } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Inject, NotFoundException, Param, Put, UseGuards } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { DropsService, type DropListItem } from './drops.service';
 
@@ -47,6 +48,8 @@ export class DropWatchController {
   }
 
   /** Follow or unfollow a drop, a brand or a collab. A followed drop can carry the shopper's size, for the "your size just landed" alert. */
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 120, windowSeconds: 3600 })
   @Put('follow')
   @HttpCode(204)
   async follow(@Param('id') id: string, @Body() b: Payload): Promise<void> {
@@ -68,6 +71,8 @@ export class DropWatchController {
   }
 
   /** "Notify me": set which lead times (1 day, 1 hour, 15 minutes) this shopper wants for a drop. An empty list turns reminders off. */
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 120, windowSeconds: 3600 })
   @Put('reminders')
   @HttpCode(204)
   async reminders(@Param('id') id: string, @Body() b: Payload): Promise<void> {

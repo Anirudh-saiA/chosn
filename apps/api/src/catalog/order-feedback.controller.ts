@@ -1,6 +1,6 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
-import type { Request } from 'express';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 
 /**
@@ -12,7 +12,6 @@ const REASONS = new Set(['price_changed', 'out_of_stock', 'found_elsewhere', 'ch
 const STYLE = /^[A-Za-z0-9._-]{3,40}$/;
 const SLUG = /^[a-z0-9-]{2,40}$/;
 const VISITOR = /^[A-Za-z0-9-]{8,64}$/;
-const hits = new Map<string, { n: number; reset: number }>();
 
 interface FeedbackBody {
   styleCode?: unknown;
@@ -40,16 +39,11 @@ export class OrderFeedbackController {
   constructor(@Inject(DRIZZLE) private readonly db: Db) {}
 
   @Post()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 12, windowSeconds: 3600 })
   @HttpCode(204)
-  async submit(@Body() b: FeedbackBody, @Req() req: Request): Promise<void> {
+  async submit(@Body() b: FeedbackBody): Promise<void> {
     if (typeof b.website === 'string' && b.website.length > 0) return; // honeypot filled: a bot, quietly ignored
-    const ip = String(req.ip ?? req.socket.remoteAddress ?? 'x');
-    const now = Date.now();
-    const h = hits.get(ip);
-    if (!h || now > h.reset) hits.set(ip, { n: 1, reset: now + 3_600_000 });
-    else if (++h.n > 12) throw new BadRequestException('Too many answers from this address for now. Please try again later.');
-    if (hits.size > 5000) for (const [k, v] of hits) if (now > v.reset) hits.delete(k);
-
     const style = typeof b.styleCode === 'string' && STYLE.test(b.styleCode) ? b.styleCode : null;
     const store = typeof b.store === 'string' && SLUG.test(b.store) ? b.store : null;
     const bought = oneOf(b.bought, ['yes', 'no', 'later'] as const);

@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Inject, NotFoundException, Param, Patch, Post, Put, Query, Redirect, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Inject, NotFoundException, Param, Patch, Post, Put, Query, Redirect, UseGuards } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import type { Request } from 'express';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { EmailService } from '../email/email.service';
 
@@ -15,7 +15,6 @@ const STYLE = /^[A-Za-z0-9._-]{3,40}$/;
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const web = () => (process.env.WEB_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const api = () => (process.env.API_PUBLIC_URL ?? 'http://localhost:4000').replace(/\/$/, '');
-const mailHits = new Map<string, { n: number; reset: number }>();
 
 interface ItemIn {
   styleCode?: unknown;
@@ -35,6 +34,8 @@ export class WatchController {
     private readonly email: EmailService,
   ) {}
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 20, windowSeconds: 3600 })
   @Post()
   async create() {
     const { rows } = await this.db.execute(sql`INSERT INTO watches DEFAULT VALUES RETURNING id`);
@@ -42,6 +43,8 @@ export class WatchController {
   }
 
   /** Replace the watch's shoe list with the one on the device (max 60). Keeps the last-seen state of shoes that stay. */
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 120, windowSeconds: 3600 })
   @Put(':id/items')
   @HttpCode(204)
   async items(@Param('id') id: string, @Body() body: { items?: ItemIn[] }): Promise<void> {
@@ -66,6 +69,8 @@ export class WatchController {
     }
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 60, windowSeconds: 3600 })
   @Get('confirm')
   @Redirect()
   async confirm(@Query('token') token: string) {
@@ -75,6 +80,8 @@ export class WatchController {
     return { url: `${web()}/notifications?alerts=confirmed` };
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 60, windowSeconds: 3600 })
   @Get('unsubscribe')
   @Redirect()
   async unsubscribe(@Query('token') token: string) {
@@ -97,17 +104,15 @@ export class WatchController {
     return { email: masked, confirmed: r.email_confirmed, instant: r.email_instant, weekly: r.email_weekly, unread: Number(r.unread) };
   }
 
+  // Per address as well as per IP: many addresses must not be able to mail one inbox. A repeat of the same address is a resend.
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 5, windowSeconds: 3600, also: { bodyField: 'email', limit: 3 }, failClosed: true })
   @Post(':id/email')
   @HttpCode(204)
-  async setEmail(@Param('id') id: string, @Body() body: { email?: unknown }, @Req() req: Request): Promise<void> {
+  async setEmail(@Param('id') id: string, @Body() body: { email?: unknown }): Promise<void> {
     checkId(id);
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!EMAIL.test(email)) throw new BadRequestException('Please enter a valid e-mail address.');
-    const ip = String(req.ip ?? 'x');
-    const now = Date.now();
-    const h = mailHits.get(ip);
-    if (!h || now > h.reset) mailHits.set(ip, { n: 1, reset: now + 3_600_000 });
-    else if (++h.n > 5) throw new BadRequestException('Too many requests. Please try again later.');
     const token = randomBytes(18).toString('hex');
     const { rows } = await this.db.execute(sql`
       UPDATE watches SET email = ${email}, email_confirmed = false, confirm_token = ${token} WHERE id = ${id} RETURNING unsubscribe_token`);
@@ -123,6 +128,8 @@ export class WatchController {
     );
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 60, windowSeconds: 3600 })
   @Patch(':id/prefs')
   @HttpCode(204)
   async prefs(@Param('id') id: string, @Body() body: { instant?: unknown; weekly?: unknown }): Promise<void> {
@@ -143,6 +150,8 @@ export class WatchController {
     return { alerts: rows };
   }
 
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ limit: 120, windowSeconds: 3600 })
   @Post(':id/alerts/read')
   @HttpCode(204)
   async read(@Param('id') id: string): Promise<void> {
