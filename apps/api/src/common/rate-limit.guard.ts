@@ -42,12 +42,11 @@ export class RateLimitGuard implements CanActivate {
     if (!options) return true;
 
     const req = context.switchToHttp().getRequest<Request>();
-    const forwarded = req.headers['x-forwarded-for'];
-    const ip =
-      (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : undefined) ||
-      req.ip ||
-      'unknown';
-    const key = `ratelimit:${context.getHandler().name}:${ip}`;
+    // req.ip, not the X-Forwarded-For header: main.ts sets `trust proxy` to 1, so Express already takes the address the platform's proxy saw.
+    // The header's first value is whatever the caller typed, so keying on it let anyone dodge every limit by changing it (SEC-14).
+    const ip = req.ip || 'unknown';
+    // Class name too: handlers called `create` in several controllers used to share one counter.
+    const key = `ratelimit:${context.getClass().name}.${context.getHandler().name}:${ip}`;
 
     try {
       const count = await this.redis.incr(key);
