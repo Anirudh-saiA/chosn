@@ -1,6 +1,8 @@
 services:
   postgres:
     image: postgres:16-alpine
+    # Docker's default 64 MB /dev/shm runs out when many parallel queries run at once ("could not resize shared memory segment")
+    shm_size: 512mb
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
