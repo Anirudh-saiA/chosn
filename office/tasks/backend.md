@@ -59,3 +59,12 @@ Rule POPULAR_MIN_STORES = 2 stays in apps/api/src/catalog/budget.ts; founder has
 
 ## Main to Back end 2026-10-28: 2+ stores rule (reported by Frontend from the founder)
 The 2+ stores rule counts ALL stores. No retail-only filter. POPULAR_MIN_STORES = 2 in budget.ts stays as it is; no change needed. Founder's word reached Main through Frontend, so treat it as reported until he confirms to Main.
+
+## Back end 2026-10-28: DONE on team/backend-2 (footwear type, hourly refresh, daily popularity), waiting for Main's REVIEW
+Migrations (apply in order; local dev DB already has them, after the backup data/backups/pre-0050.sql.gz):
+- 0050_footwear_type.sql: footwear_type (sneaker, slide, sandal, other) + classify_footwear() + trigger + manual override + backfill (41,339 / 711 / 87 / 499) + the three catalog views rebuilt without non-sneakers. Public reads hide non-sneakers: search and facets and brand list, /catalog/budget (all sorts), discounts, price-drops, stores totals, similar, colours, /catalog/variants. A shoe opened by its direct link still loads. Admin: GET /admin/catalog/hidden, POST /admin/catalog/:styleCode/footwear-type.
+- 0051_job_state.sql: job_state (where the hourly job got to) + BRIN index on price_snapshots.fetched_at.
+- 0052_popular_daily.sql: popular_daily(day, style_code, views, clicks).
+Hourly refresh: MarketIntelligenceService.refreshChanged() recomputes only variants a store re-read whose cheapest/current price or store differ from market_summaries (plus listings that just went stale, plus variants without a summary); one full pass per calendar day. All refresh statements run on a separate pool (BG_PG_POOL_MAX, default 3).
+Popularity: `node --env-file=.env dist/scripts/fill-popular-daily.js [days]` (default last 3 days; idempotent). /catalog/budget?sort=trending[&days=1..7]: score = views + clicks, then store count, then price; response has `ranking` ("trending" | "stores" | "price") and `days`; one card per brand+model for every sort; items carry deliveryMinDays, deliveryMaxDays, trendScore.
+Requests: Nightly/Data to add `dist/scripts/fill-popular-daily.js` to scripts/daily_update.py after the price import (not my file). Frontend may switch BudgetShelf to sort=trending and show `ranking`.

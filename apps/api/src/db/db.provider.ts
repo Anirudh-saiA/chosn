@@ -3,6 +3,8 @@ import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
 
 export const PG_POOL = 'PG_POOL';
+/** A second, small pool for background jobs (the hourly market-intelligence refresh), so a long job can never take connections from page requests. */
+export const PG_BG_POOL = 'PG_BG_POOL';
 
 const logger = new Logger('PgPool');
 
@@ -54,6 +56,27 @@ export const pgPoolProvider = {
       Sentry.captureException(err, { tags: { component: 'pg-pool' } });
     });
 
+    return pool;
+  },
+};
+
+/**
+ * The background pool: a few connections (BG_PG_POOL_MAX, default 3: one for the refresh transaction, one for the view refresh, one spare),
+ * separate from the request pool above. pg opens connections lazily, so a process that never runs a job holds none.
+ */
+export const pgBgPoolProvider = {
+  provide: PG_BG_POOL,
+  useFactory: () => {
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: Number(process.env.BG_PG_POOL_MAX || 3),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 15_000),
+    });
+    pool.on('error', (err) => {
+      logger.error(`background pool idle client error: ${err.message}`, err.stack);
+      Sentry.captureException(err, { tags: { component: 'pg-bg-pool' } });
+    });
     return pool;
   },
 };

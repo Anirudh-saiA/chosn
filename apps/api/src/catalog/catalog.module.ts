@@ -3,6 +3,7 @@ import { AdminGuard } from '../auth/admin.guard';
 import { RateLimitGuard } from '../common/rate-limit.guard';
 import { pgPoolProvider } from '../db/db.provider';
 import { PricingModule } from '../pricing/pricing.module';
+import { AdminFootwearController } from './admin-footwear.controller';
 import { AdminImageController } from './admin-image.controller';
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from './catalog.service';
@@ -24,7 +25,7 @@ import { WatchController } from './watch.controller';
  */
 @Module({
   imports: [PricingModule],
-  controllers: [CatalogController, AdminImageController, EventsController, OrderFeedbackController, WatchController],
+  controllers: [CatalogController, AdminImageController, AdminFootwearController, EventsController, OrderFeedbackController, WatchController],
   providers: [CatalogService, EmailService, pgPoolProvider, AdminGuard, RateLimitGuard],
 })
 export class CatalogModule {}
