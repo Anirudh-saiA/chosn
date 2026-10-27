@@ -8,6 +8,7 @@ import {
   type MarketIntelligenceSummary,
   type Signal,
 } from '../pricing/market-intelligence.service';
+import { TtlCache } from '../common/ttl-cache';
 import { REAL_LISTING } from '../pricing/real-listing';
 import { BUDGET_LIMITS, POPULAR_MIN_STORES, clampBudgetParams, toBudgetItem, type BudgetItem, type BudgetSort } from './budget';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
@@ -369,7 +370,14 @@ export class CatalogService {
     private readonly intelligence: MarketIntelligenceService,
   ) {}
 
-  async getVariantPage(styleCode: string, size: number): Promise<CatalogResponse> {
+  /** Same page for the same shoe and size within 20 s: one set of queries serves a whole burst (see TtlCache). Prices change hourly or nightly. */
+  private readonly variantPages = new TtlCache<CatalogResponse>(20_000, 500);
+
+  getVariantPage(styleCode: string, size: number): Promise<CatalogResponse> {
+    return this.variantPages.get(`${styleCode}|${size}`, () => this.loadVariantPage(styleCode, size));
+  }
+
+  private async loadVariantPage(styleCode: string, size: number): Promise<CatalogResponse> {
     const { rows } = await this.db.execute(sql`
       SELECT s.id AS sneaker_id, s.style_code, s.brand, s.model, s.colorway, s.silhouette, s.gender,
              s.primary_image_url, s.gallery_image_refs,
@@ -704,7 +712,7 @@ export class CatalogService {
     return value;
   }
 
-  private budgetCache = new Map<string, { at: number; value: BudgetItem[] }>();
+  private readonly budgetCache = new TtlCache<BudgetItem[]>(300_000, 200);
 
   /**
    * The budget shelf: for each shoe, its cheapest eligible offer at or under `max` rupees, cheapest shoes first, with the offers that store runs.
@@ -712,11 +720,12 @@ export class CatalogService {
    * store's own cadence), and a known rupee price (price plus shipping, via effective_price_inr). Prices under Rs 500 are ignored as junk, as in discounts().
    * Offers are the store's own, with their source and date; none are made up.
    */
-  async budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest'): Promise<BudgetItem[]> {
+  budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest'): Promise<BudgetItem[]> {
     const { max, limit } = clampBudgetParams(maxIn, limitIn);
-    const key = `${max}|${limit}|${sort}`;
-    const hit = this.budgetCache.get(key);
-    if (hit && Date.now() - hit.at < 300_000) return hit.value;
+    return this.budgetCache.get(`${max}|${limit}|${sort}`, () => this.loadBudget(max, limit, sort));
+  }
+
+  private async loadBudget(max: number, limit: number, sort: BudgetSort): Promise<BudgetItem[]> {
     const popular = sort === 'popular';
     // Shortlist from catalog_stats_mv (one row per shoe: store count and lowest real price, refreshed hourly), then apply the full
     // eligibility rules to only those shoes. Scanning every latest snapshot instead took 30 to 50 seconds and held a pool connection
@@ -755,9 +764,7 @@ export class CatalogService {
       ORDER BY ${popular ? sql`st.store_count DESC, c.eff ASC` : sql`c.eff ASC`}, c.brand, c.model, c.style_code
       LIMIT ${limit}
     `);
-    const value = (rows as Array<Record<string, unknown>>).map(toBudgetItem);
-    this.budgetCache.set(key, { at: Date.now(), value });
-    return value;
+    return (rows as Array<Record<string, unknown>>).map(toBudgetItem);
   }
 
   private dropsCache = new Map<string, { at: number; value: PriceDrop[] }>();
