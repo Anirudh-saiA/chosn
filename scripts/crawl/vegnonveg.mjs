@@ -4,6 +4,7 @@
 import { CheerioCrawler, Configuration } from 'crawlee';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { toCsv } from './csv.mjs';
+import { extractPrice } from './vegnonveg-price.mjs';
 
 const LIMIT = Number(process.argv[2] || 50);
 const OUT = process.argv[3] || '../../chosn-vegnonveg-all-prices.csv';
@@ -52,7 +53,7 @@ const crawler = new CheerioCrawler({
     const brand = ld.brand?.name || '';
     const model = ($('h1.p-name').text().trim() || ld.name || '').replace(new RegExp('^' + brand + '\\s+', 'i'), '');
     const colorway = $('h1.p-name').nextAll('p').first().text().trim();
-    const price = $('h1.p-name').parent().find('p span').first().text().replace(/[^\d]/g, '');
+    const { price, compareAt } = extractPrice($); // price = what the customer pays today; compareAt = the struck-through price
     const info = $('div.flex').filter((_, e) => /Additional Information/i.test($(e).text())).first().text();
     // "Additional Information : <code>" is the style code for every brand (e.g. IO4244-500, 1203B081.103)
     const field = (info.match(/Additional Information\s*:\s*(\S.*)/i) || [])[1]?.trim() || '';
@@ -63,7 +64,7 @@ const crawler = new CheerioCrawler({
 
     if (!sizes.length) soldOut.push(request.url); // no size boxes rendered => nothing in stock
     for (const size of sizes) {
-      const row = { brand, model, colorway, style_code: style, size, retailer: 'VegNonVeg', price, shipping: '', url: request.url, in_stock: 'yes', image_url: image, size_system: 'uk', condition: 'new', delivery_time: DELIVERY };
+      const row = { brand, model, colorway, style_code: style, size, retailer: 'VegNonVeg', price, compare_at_price: compareAt, shipping: '', url: request.url, in_stock: 'yes', image_url: image, size_system: 'uk', condition: 'new', delivery_time: DELIVERY };
       (style ? rows : missing).push(row);
     }
     log.info(`${brand} ${model} ${style || '(no style code)'} ${sizes.length} sizes @ ${price}`);
