@@ -154,13 +154,14 @@ export function StoreRow({
   const delivery = formatDelivery(offer);
   const ship = shippingInfo(offer);
   const extra = price - min;
+  const isLowest = extra < 1;
   const offers = offer.offers ?? [];
   const pays = acceptedPayments(offer);
 
   return (
     <li className={`overflow-hidden rounded-2xl bg-white ${isBest ? 'border-2 border-[#14213D]' : 'border border-text/12'}`}>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 p-4 sm:p-5">
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-4 text-left">
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex min-w-0 basis-full items-center gap-4 text-left sm:flex-1 sm:basis-0">
           {offer.retailerLogoUrl ? (
             <img src={offer.retailerLogoUrl} alt="" className="h-9 w-auto max-w-[8rem] shrink-0 rounded-md object-contain" />
           ) : null}
@@ -180,7 +181,7 @@ export function StoreRow({
                   </>
                 )}
             </span>
-            <span className="mt-1 block text-[0.82rem] text-text-soft">
+            <span className="mt-1 block text-[0.74rem] text-text-faint">
               {chosenBy >= 3 ? <span className="mr-2 font-semibold text-text">{chosenBy} shoppers chose this store for this shoe</span> : null}
               {delivery ? `Delivery ${delivery}` : 'Delivery not published'}
               {ship.free ? ' · Free shipping' : ''}
@@ -199,10 +200,11 @@ export function StoreRow({
           </span>
           <ChevronDown className={`ml-auto h-5 w-5 shrink-0 text-text-faint transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </button>
-        <div className="text-right">
-          <p className="font-mono text-[1.6rem] font-extrabold leading-none tabular-nums text-text">{formatInr(price)}</p>
-          <p className="mt-1 text-[0.78rem] text-text-soft">
-            {extra < 1 ? 'Lowest price' : `+${formatInr(extra)}`}
+        <div className="text-left sm:text-right">
+          {/* Price is what shoppers compare first: the lowest is large, every other store is smaller. */}
+          <p className={`font-mono leading-none tabular-nums ${isLowest ? 'text-[clamp(2.1rem,6.5vw,2.75rem)] font-extrabold text-text' : 'text-[1.1rem] font-bold text-text-soft'}`}>{formatInr(price)}</p>
+          <p className={`mt-1 ${isLowest ? 'text-[0.8rem] font-semibold text-text' : 'text-[0.72rem] text-text-faint'}`}>
+            {isLowest ? 'Lowest price' : `+${formatInr(extra)}`}
             {slowerDays >= 1 ? ` · ${Math.round(slowerDays)}d slower` : ''}
           </p>
           {offer.trustScore != null &&
