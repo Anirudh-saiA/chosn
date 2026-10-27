@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { authDb } from '@/lib/auth/db';
@@ -40,7 +40,12 @@ export async function POST(request: Request): Promise<Response> {
 
   const token = randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 60 * 60 * 1000);
-  await authDb.insert(verificationTokens).values({ identifier: `password-reset:${email}`, token, expires });
+  await authDb.insert(verificationTokens).values({
+    identifier: `password-reset:${email}`,
+    // Only a SHA-256 of the token is stored (a database read must not hand out working reset links); the e-mailed link carries the raw token.
+    token: createHash('sha256').update(token).digest('hex'),
+    expires,
+  });
 
   const resetUrl = `${process.env.AUTH_URL ?? 'http://localhost:3000'}/reset-password?email=${encodeURIComponent(email)}&token=${token}`;
   await sendPasswordResetEmail(email, resetUrl).catch((err) => console.error('[password-reset] send failed:', err.message));
