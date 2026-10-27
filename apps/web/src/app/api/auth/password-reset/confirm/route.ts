@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { authDb } from '@/lib/auth/db';
@@ -11,10 +12,12 @@ const IP_LIMIT = { limit: 10, windowSeconds: 15 * 60 };
 export async function POST(request: Request): Promise<Response> {
   const body = await request.json().catch(() => null);
   const email = String(body?.email ?? '').toLowerCase().trim();
-  const token = String(body?.token ?? '');
+  const rawToken = String(body?.token ?? '');
+  // Tokens are stored as SHA-256 hashes (see password-reset/request).
+  const token = createHash('sha256').update(rawToken).digest('hex');
   const newPassword = String(body?.newPassword ?? '');
 
-  if (!email || !token) return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+  if (!email || !rawToken) return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   if (!passwordMeetsMinimumStrength(newPassword)) {
     return NextResponse.json(
       { error: 'weak_password', message: 'Password needs to be at least 10 characters.' },

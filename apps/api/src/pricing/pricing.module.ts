@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { redisProvider } from '../common/redis.provider';
-import { pgPoolProvider } from '../db/db.provider';
-import { drizzleProvider } from '../db/drizzle.provider';
+import { pgBgPoolProvider, pgPoolProvider } from '../db/db.provider';
+import { drizzleBgProvider, drizzleProvider } from '../db/drizzle.provider';
 import { PriceFetchService } from '../queue/price-fetch.service';
 import {
   RETAILER_ADAPTER_CLASSES,
@@ -31,8 +31,10 @@ import { PriceSnapshotService } from './price-snapshot.service';
   controllers: [FetchHealthController, FetchTriggerController, MarketIntelligenceController, PriceImportController],
   providers: [
     pgPoolProvider,
+    pgBgPoolProvider,
     redisProvider,
     drizzleProvider,
+    drizzleBgProvider,
     ...RETAILER_ADAPTER_CLASSES,
     retailerAdaptersProvider,
     PriceSnapshotService,

@@ -58,11 +58,24 @@ FOOTWEAR = re.compile(r"sneaker|shoe|footwear|slide|clog|sandal|boot|loafer|slip
 NOT_FOOTWEAR = re.compile(r"straw|mug|bottle|care|cleaner|protector|sock|bag|cap\b|hat|lace|cleaner|wipe|insole|shoe ?box|shoe ?tree|keychain|sticker", re.I)
 
 
+# Sneakers only (founder decision 2026-10-27, card data-scope-slides): slides, sandals, flip-flops, slippers, clogs and mules
+# are not collected. Old rows stay in the database as history.
+NOT_SNEAKER = re.compile(r"\b(slides?|sliders?|sandals?|slippers?|clogs?|flip[ -]?flops?|mules?|thongs?|floaters?|crocs|adilette|"
+                         r"leadcat|popcat)\b", re.I)
+
+
+def is_non_sneaker_footwear(p):
+    """True when the product type, title or tags name slides, sandals, flip-flops, slippers, clogs or mules."""
+    return bool(NOT_SNEAKER.search(" ".join([p.get("product_type") or "", p.get("title") or "", " ".join(p.get("tags", []))])))
+
+
 def is_sneaker(p):
-    """Kept the old name: True for any footwear product."""
+    """True for sneaker-type footwear (slides, sandals, flip-flops, slippers, clogs and mules are excluded)."""
     ptype = (p.get("product_type") or "")
     tags = " ".join(p.get("tags", []))
     title = p.get("title") or ""
+    if is_non_sneaker_footwear(p):
+        return False
     if NOT_FOOTWEAR.search(ptype) or NOT_FOOTWEAR.search(title) and not FOOTWEAR.search(ptype):
         return False
     return bool(FOOTWEAR.search(ptype) or ("footwear" in tags.lower() and FOOTWEAR.search(tags)))

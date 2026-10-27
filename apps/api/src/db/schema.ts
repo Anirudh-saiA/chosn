@@ -39,6 +39,8 @@ import {
 
 export const genderEnum = pgEnum('gender', ['men', 'women', 'unisex', 'gs', 'td']);
 export const categoryEnum = pgEnum('category', ['basketball', 'lifestyle', 'running', 'skate']);
+/** Migration 0050: slides, sandals and boots/other are hidden from every public read. Set by the database (classify_footwear) on insert and rename. */
+export const footwearTypeEnum = pgEnum('footwear_type', ['sneaker', 'slide', 'sandal', 'other']);
 export const sizeSystemEnum = pgEnum('size_system', ['us', 'uk', 'eu', 'cm']);
 export const regionEnum = pgEnum('region', ['india', 'us', 'global']);
 
@@ -103,6 +105,9 @@ export const sneakers = pgTable(
     galleryImageRefs: text('gallery_image_refs').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    footwearType: footwearTypeEnum('footwear_type').notNull().default('sneaker'),
+    /** true = a person set footwear_type; the rule never overrides it. */
+    footwearTypeManual: boolean('footwear_type_manual').notNull().default(false),
     // search_vector (tsvector, GENERATED ALWAYS ... STORED) also exists
     // physically — see 0005_sneaker_search.sql. Not modeled here:
     // CatalogService only ever reaches it through `@@ to_tsquery(...)`

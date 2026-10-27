@@ -1,7 +1,7 @@
 import { scoreOutlook, type PriceOutlook } from './price-outlook';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { COLOR_FAMILIES, colorRegex, normalizeQuery, parseList } from './catalog-filters';
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import {
   MarketIntelligenceService,
@@ -10,7 +10,7 @@ import {
 } from '../pricing/market-intelligence.service';
 import { TtlCache } from '../common/ttl-cache';
 import { REAL_LISTING } from '../pricing/real-listing';
-import { BUDGET_LIMITS, POPULAR_MIN_STORES, clampBudgetParams, toBudgetItem, type BudgetItem, type BudgetSort } from './budget';
+import { BUDGET_LIMITS, POPULAR_MIN_STORES, budgetRanking, clampBudgetParams, clampTrendingDays, toBudgetItem, type BudgetItem, type BudgetRanking, type BudgetSort } from './budget';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
 /** One offer a store runs. kind: sale | coupon | bank | card | wallet | emi | shipping | credit | info. See scripts/offers/curated_offers.json. */
@@ -686,6 +686,7 @@ export class CatalogService {
         JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
         JOIN sneakers s ON s.id = v.sneaker_id
         WHERE ps.is_latest = true AND ps.in_stock = true AND ps.compare_at_price IS NOT NULL
+          AND s.footwear_type = 'sneaker'
           AND ps.listing_url NOT LIKE '%FIXTURE%'
           AND ps.price >= 500
           AND ps.compare_at_price >= ps.price * 1.15 AND ps.compare_at_price <= ps.price * 2 -- up to 50% off: beyond that a "was" price is rarely believable
@@ -712,39 +713,66 @@ export class CatalogService {
     return value;
   }
 
-  private readonly budgetCache = new TtlCache<BudgetItem[]>(300_000, 200);
+  private readonly budgetCache = new TtlCache<{ ranking: BudgetRanking; items: BudgetItem[] }>(300_000, 200);
 
   /**
-   * The budget shelf: for each shoe, its cheapest eligible offer at or under `max` rupees, cheapest shoes first, with the offers that store runs.
+   * The budget shelf: for each shoe, its cheapest eligible offer at or under `max` rupees, with the offers that store runs, one card per model
+   * (brand + model; the best-ranked colourway stands for it), so limit=10 gives 10 different shoes. Orders: cheapest (price), popular (store count
+   * then price, 2 or more stores), trending (views plus Buy clicks over the last `days` days from popular_daily, then store count, then price; 2 or
+   * more stores). `ranking` in the result says which order really produced the list: a trending list with no traffic at all is the store-count one.
    * Eligible = the price page's own rules: latest snapshot, in stock, not placeholder data (a FIXTURE listing), not stale (fetched within twice the
    * store's own cadence), and a known rupee price (price plus shipping, via effective_price_inr). Prices under Rs 500 are ignored as junk, as in discounts().
-   * Offers are the store's own, with their source and date; none are made up.
+   * Offers are the store's own, with their source and date; none are made up. Slides, sandals and boots are never listed.
    */
-  budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest'): Promise<BudgetItem[]> {
+  budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest', daysIn?: number): Promise<{ ranking: BudgetRanking; items: BudgetItem[] }> {
     const { max, limit } = clampBudgetParams(maxIn, limitIn);
-    return this.budgetCache.get(`${max}|${limit}|${sort}`, () => this.loadBudget(max, limit, sort));
+    const days = clampTrendingDays(daysIn);
+    return this.budgetCache.get(`${max}|${limit}|${sort}|${sort === 'trending' ? days : 0}`, async () => {
+      const items = await this.loadBudget(max, limit, sort, days);
+      return { ranking: budgetRanking(sort, items), items };
+    });
   }
 
-  private async loadBudget(max: number, limit: number, sort: BudgetSort): Promise<BudgetItem[]> {
-    const popular = sort === 'popular';
-    // Shortlist from catalog_stats_mv (one row per shoe: store count and lowest real price, refreshed hourly), then apply the full
-    // eligibility rules to only those shoes. Scanning every latest snapshot instead took 30 to 50 seconds and held a pool connection
-    // the whole time. The shortlist is a superset (the view has no staleness test), so it is over-fetched and the exact rules decide.
+  private async loadBudget(max: number, limit: number, sort: BudgetSort, days: number): Promise<BudgetItem[]> {
+    const ranked = sort !== 'cheapest';
+    const trending = sort === 'trending';
+    // One ordering for the shortlist and the final list. Each argument is the column to read in that place (score, store count, price).
+    const keys = (score: SQL, stores: SQL, price: SQL) =>
+      trending ? sql`${score} DESC, ${stores} DESC, ${price} ASC` : ranked ? sql`${stores} DESC, ${price} ASC` : sql`${price} ASC`;
+    // The shoe's model: the same key search uses, so colourways of one model collapse to one card.
+    const model = (brand: SQL, name: SQL) => sql`lower(${brand}) || '|' || regexp_replace(lower(${name}), '[^a-z0-9]+', '', 'g')`;
+    // Shortlist from catalog_stats_mv (one row per sneaker: store count and lowest real price, refreshed hourly; it already leaves out slides,
+    // sandals and boots), then apply the full eligibility rules to only those shoes. Scanning every latest snapshot instead took 30 to 50 seconds
+    // and held a pool connection the whole time. The shortlist is a superset (the view has no staleness test), so it is over-fetched: up to
+    // three colourways per model, so that the exact rules and the one-card-per-model step still leave enough different models.
     const candidates = Math.min(limit * 8, 400);
     const { rows } = await this.db.execute(sql`
-      WITH cand AS (
-        SELECT sneaker_id FROM catalog_stats_mv
-        WHERE min_price <= ${max} AND ${popular ? sql`store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
-        ORDER BY ${popular ? sql`store_count DESC, min_price ASC` : sql`min_price ASC`}
+      WITH score AS (
+        SELECT style_code, sum(views + clicks)::int AS score FROM popular_daily
+        WHERE ${trending ? sql`day > (now() AT TIME ZONE 'Asia/Kolkata')::date - ${days}::int` : sql`false`}
+        GROUP BY style_code
+      ),
+      cand0 AS (
+        SELECT st.sneaker_id, COALESCE(sc.score, 0) AS score, st.store_count, st.min_price,
+               row_number() OVER (PARTITION BY ${model(sql`s.brand`, sql`s.model`)}
+                                  ORDER BY ${keys(sql`COALESCE(sc.score, 0)`, sql`st.store_count`, sql`st.min_price`)}) AS rn
+        FROM catalog_stats_mv st
+        JOIN sneakers s ON s.id = st.sneaker_id AND s.footwear_type = 'sneaker'
+        LEFT JOIN score sc ON sc.style_code = s.style_code
+        WHERE st.min_price <= ${max} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+      ),
+      cand AS (
+        SELECT sneaker_id FROM cand0 WHERE rn <= 3
+        ORDER BY ${keys(sql`score`, sql`store_count`, sql`min_price`)}
         LIMIT ${candidates}
       ),
       elig AS (
         SELECT s.id AS sid, s.style_code, s.brand, s.model, s.colorway, s.primary_image_url, v.size, r.id AS rid,
-               r.slug, r.name AS store_name, r.offers, r.offers_updated_at,
+               r.slug, r.name AS store_name, r.offers, r.offers_updated_at, r.delivery_min_days, r.delivery_max_days,
                ps.shipping_cost, ps.listing_url, ps.fetched_at,
                effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS eff
         FROM cand
-        JOIN sneakers s ON s.id = cand.sneaker_id
+        JOIN sneakers s ON s.id = cand.sneaker_id AND s.footwear_type = 'sneaker'
         JOIN sneaker_variants v ON v.sneaker_id = s.id
         JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id
         JOIN retailers r ON r.id = ps.retailer_id
@@ -758,10 +786,20 @@ export class CatalogService {
       cheapest AS (
         SELECT DISTINCT ON (sid) * FROM elig WHERE eff <= ${max}
         ORDER BY sid, eff ASC, fetched_at DESC
+      ),
+      scored AS (
+        SELECT c.*, st.store_count, COALESCE(sc.score, 0) AS trend_score, ${model(sql`c.brand`, sql`c.model`)} AS grp
+        FROM cheapest c
+        JOIN stores st USING (sid)
+        LEFT JOIN score sc ON sc.style_code = c.style_code
+        WHERE ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+      ),
+      one_per_model AS (
+        SELECT scored.*, row_number() OVER (PARTITION BY grp ORDER BY ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, style_code) AS rn
+        FROM scored
       )
-      SELECT c.*, st.store_count FROM cheapest c JOIN stores st USING (sid)
-      WHERE ${popular ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
-      ORDER BY ${popular ? sql`st.store_count DESC, c.eff ASC` : sql`c.eff ASC`}, c.brand, c.model, c.style_code
+      SELECT * FROM one_per_model WHERE rn = 1
+      ORDER BY ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, brand, model, style_code
       LIMIT ${limit}
     `);
     return (rows as Array<Record<string, unknown>>).map(toBudgetItem);
@@ -794,7 +832,8 @@ export class CatalogService {
         JOIN sneaker_variants v ON v.id = c.sneaker_variant_id
         JOIN sneakers s ON s.id = v.sneaker_id
         JOIN retailers rt ON rt.id = c.best_retailer_id
-        WHERE c.best_retailer_id = p.best_retailer_id -- the same store cut its price (not a cheaper store showing up)
+        WHERE s.footwear_type = 'sneaker'
+          AND c.best_retailer_id = p.best_retailer_id -- the same store cut its price (not a cheaper store showing up)
           AND c.best_price_inr < p.best_price_inr * (1 - ${minPct}::numeric / 100)
           AND c.best_price_inr > p.best_price_inr * 0.5 -- a fall of more than half in a day is far more likely a data slip than a real cut
           AND c.best_price_inr >= 300 AND p.best_price_inr >= 500
@@ -837,7 +876,7 @@ export class CatalogService {
       JOIN price_snapshots ps ON ps.retailer_id = r.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
       JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
       JOIN sneakers s ON s.id = v.sneaker_id
-      WHERE r.status = 'active'
+      WHERE r.status = 'active' AND s.footwear_type = 'sneaker'
       GROUP BY r.id
       ORDER BY shoes DESC
     `);
@@ -946,7 +985,8 @@ export class CatalogService {
       ? sql`LEFT JOIN LATERAL (SELECT max(f.first_seen) AS new_at FROM listing_first_seen f WHERE f.sneaker_id = s.id AND NOT f.is_baseline AND f.first_seen >= current_date - ${params.newDays}::int) nw ON true`
       : sql`LEFT JOIN LATERAL (SELECT NULL::date AS new_at) nw ON true`;
 
-    const baseConditions = [];
+    // Slides, sandals and boots are hidden from every public list (migration 0050); the views behind `st` and `dv` leave them out too.
+    const baseConditions = [sql`s.footwear_type = 'sneaker'`];
     if (tsQuery) {
       // Words match as prefixes ("nik dun" finds Nike Dunk); a style code (has a digit) also matches by its start.
       baseConditions.push(
@@ -1080,7 +1120,7 @@ export class CatalogService {
                                     'p98', percentile_cont(0.98) WITHIN GROUP (ORDER BY min_price))
              FROM base WHERE min_price IS NOT NULL) AS price
       `),
-      this.db.execute(sql`SELECT brand FROM sneakers GROUP BY brand ORDER BY lower(brand), brand`),
+      this.db.execute(sql`SELECT brand FROM sneakers WHERE footwear_type = 'sneaker' GROUP BY brand ORDER BY lower(brand), brand`),
       this.searchCommunityPosts(params.q),
     ]);
 
@@ -1168,6 +1208,7 @@ export class CatalogService {
                  + ts_rank(s.search_vector, t.q)) AS score
         FROM sneakers s, t
         WHERE s.id <> t.id
+          AND s.footwear_type = 'sneaker'
           AND lower(s.brand) = t.brand
           AND s.search_vector @@ t.q
         ORDER BY score DESC, s.style_code
@@ -1271,7 +1312,7 @@ export class CatalogService {
                                 AND ps.listing_url NOT LIKE '%FIXTURE%'
         WHERE v.sneaker_id = s.id
       ) bp ON true
-      WHERE s.id = t.id OR bp.price IS NOT NULL
+      WHERE s.id = t.id OR (bp.price IS NOT NULL AND s.footwear_type = 'sneaker')
       ORDER BY (s.id = t.id) DESC, bp.price ASC NULLS LAST, s.colorway
       LIMIT 60
     `);
@@ -1411,7 +1452,8 @@ export class CatalogService {
       SELECT DISTINCT s.style_code, v.size
       FROM sneaker_variants v
       JOIN sneakers s ON s.id = v.sneaker_id
-      WHERE EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
+      WHERE s.footwear_type = 'sneaker'
+        AND EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
       ORDER BY s.style_code, v.size
     `);
     return (rows as unknown as { style_code: string; size: string }[]).map((r) => ({

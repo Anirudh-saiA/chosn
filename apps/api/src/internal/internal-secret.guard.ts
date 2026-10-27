@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 
 /**
@@ -22,9 +23,16 @@ export class InternalSecretGuard implements CanActivate {
     const provided = request.headers['x-internal-secret'];
     const expected = process.env.API_JWT_SECRET;
 
-    if (!expected || provided !== expected) {
+    if (!expected || typeof provided !== 'string' || !safeEqual(provided, expected)) {
       throw new ForbiddenException({ error: 'forbidden', message: 'Internal endpoint.' });
     }
     return true;
   }
+}
+
+/** Constant-time compare (lengths are hashed away by comparing equal-length buffers; a length mismatch is rejected first). */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
 }

@@ -163,6 +163,16 @@ def export_day_row(failed):
     DATA_RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
     DATA_RUN_LOG.write_text(NL.join(kept).rstrip(NL) + NL + row + NL, encoding="utf-8")
     log(f"data-run log row written for {date}")
+    fill_popular_daily()
+
+
+def fill_popular_daily():
+    """Fill popular_daily (views and Buy clicks per shoe for the day) for the budget tabs. Best effort: a failure never fails the nightly."""
+    try:
+        p = subprocess.run([NODE, "--env-file=.env", "dist/scripts/fill-popular-daily.js"], cwd=ROOT / "apps" / "api", capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+        log("   popular_daily: " + ((p.stdout or p.stderr or "").strip().splitlines() or ["no output"])[-1][:200])
+    except Exception as e:
+        log(f"   popular_daily fill skipped: {e}")
 
 
 def read_rows(path):

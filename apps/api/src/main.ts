@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
+import type { NextFunction, Request, Response } from 'express';
 import { Pool } from 'pg';
 import { AppModule } from './app.module';
 import { parseAllowedOrigins } from './common/cors-origins';
@@ -50,10 +51,21 @@ async function bootstrap() {
   // which stay behind the enableCors origin check above.
   app.useWebSocketAdapter(new WsAdapter(app));
   app.getHttpAdapter().getInstance().set('trust proxy', 1); // Railway/Vercel sit behind a proxy
+  // SEC-5: no framework banner, and the basic hardening headers on every response. (No Cross-Origin-Resource-Policy: the web app loads /media images cross-origin.)
+  app.disable('x-powered-by');
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Frame-Options', 'DENY');
+    if (process.env.NODE_ENV === 'production') res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+    next();
+  });
 
   const port = process.env.PORT ?? 4000;
-  await app.listen(port);
-  console.log(`chosn-api listening on :${port}`);
+  // Local dev listens on loopback only (SEC-12: it was reachable from the whole LAN). Hosted/Docker runs set NODE_ENV=production (or HOST) and keep all interfaces.
+  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+  await app.listen(port, host);
+  console.log(`chosn-api listening on ${host}:${port}`);
 }
 
 bootstrap();

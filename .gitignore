@@ -64,3 +64,10 @@ reel/
 brag-output*/
 data/daily/
 data/daily-snapshots/*.csv.gz
+
+# Internal-only: unpatched-vulnerability findings, security patches awaiting merge, outreach leads and drafts.
+# The repo is public; these stay on the founder machine. (Already in earlier commits: history is not rewritten.)
+office/security/
+office/reports/security/
+office/outreach/
+handoff/security-*/
