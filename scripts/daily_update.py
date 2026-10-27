@@ -132,6 +132,33 @@ def keep_awake(on=True):
         pass
 
 
+NL = chr(10)
+DATA_RUN_LOG = ROOT / "office" / "data-run" / "LOG.md"
+
+
+def export_day_row(failed):
+    """60-day data run: export today's price snapshots (scripts/export_daily_snapshot.py, read-only) and put its row into
+    office/data-run/LOG.md, replacing an earlier row of the same date. A store that failed this run makes the day PARTIAL. Best effort."""
+    p = subprocess.run([sys.executable, "scripts/export_daily_snapshot.py"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    lines = [l for l in p.stdout.splitlines() if l.strip()]
+    for l in lines:
+        log("   " + l[:300])
+    row = next((l for l in lines if l.startswith("| ")), None)
+    if row is None:
+        raise RuntimeError(f"snapshot export gave no log row (exit {p.returncode}): {(p.stderr or '')[:200]}")
+    if failed:
+        cells = row.split(" | ")
+        if len(cells) > 2 and cells[2].strip() == "OK":
+            cells[2] = "PARTIAL"
+        row = " | ".join(cells).rstrip(" |") + f"; not scraped this run (site refused or failed): {', '.join(sorted(failed))} |"
+    date = row.split("|")[1].strip()
+    text = DATA_RUN_LOG.read_text(encoding="utf-8-sig") if DATA_RUN_LOG.exists() else ""
+    kept = [l for l in text.splitlines() if not l.startswith(f"| {date} |")]
+    DATA_RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
+    DATA_RUN_LOG.write_text(NL.join(kept).rstrip(NL) + NL + row + NL, encoding="utf-8")
+    log(f"data-run log row written for {date}")
+
+
 def read_rows(path):
     with open(path, encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -396,6 +423,11 @@ def main():
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")
     write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))
+    # 60-day data run: today's snapshot file and its LOG.md row. Best effort: a failure here never fails the run.
+    try:
+        export_day_row(failed_retailers)
+    except (RuntimeError, OSError) as e:
+        log(f"Snapshot export / data-run log skipped: {e}")
     return 0
 
 
