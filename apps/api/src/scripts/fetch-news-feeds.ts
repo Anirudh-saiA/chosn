@@ -7,6 +7,7 @@
  * the original. Items are de-duplicated by link, older than 30 days are ignored, and gathered items older than 45 days are removed.
  */
 import { Pool } from 'pg';
+import { fetchLimited } from './limited-fetch';
 
 const UA = 'CHOSN-price-compare/1.0 (+contact: join.sneakercommunity@gmail.com)';
 const PAUSE_MS = 1500;
@@ -88,10 +89,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function allowed(url: string): Promise<boolean> {
   const u = new URL(url);
   try {
-    const res = await fetch(`${u.origin}/robots.txt`, { headers: { 'User-Agent': UA } });
+    const res = await fetchLimited(`${u.origin}/robots.txt`, { headers: { 'User-Agent': UA } }, { timeoutMs: 15_000, maxBytes: 500_000 });
     if (res.status === 404) return true;
     if (!res.ok) return false;
-    const lines = (await res.text()).split(/\r?\n/).map((l) => l.replace(/#.*/, '').trim());
+    const lines = res.text.split(/\r?\n/).map((l) => l.replace(/#.*/, '').trim());
     let applies = false;
     let blocked = false;
     let allow = -1;
@@ -170,9 +171,10 @@ async function main() {
       if (!(await allowed(f.url))) { report.push(`${f.name}: skipped (robots.txt)`); continue; }
       let items: Item[];
       try {
-        const res = await fetch(f.url, { headers: { 'User-Agent': UA, Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' } });
+        // Time and size limits: one stalled or oversized feed must not block the rest of the run (SEC-11).
+        const res = await fetchLimited(f.url, { headers: { 'User-Agent': UA, Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' } });
         if (!res.ok) { report.push(`${f.name}: HTTP ${res.status}`); continue; }
-        items = parse(await res.text());
+        items = parse(res.text);
       } catch (e) {
         report.push(`${f.name}: ${(e as Error).message}`);
         continue;
