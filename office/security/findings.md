@@ -2,6 +2,9 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+## Patches ready (2026-10-27, founder approved)
+Not applied; owners apply, Main merges. Back end: handoff/security-backend/ (SEC-1, SEC-12, SEC-13, SEC-14, the file-type part of SEC-6, untrack .pyc from SEC-11, and the dependency upgrade plan). Drops and News desk: handoff/security-news-drops/ (news feed limits, SEC-11). Still founder-only: rotate secrets and reset the Railway password (SEC-2). Not yet prepared: SEC-9 calendar token (needs a database migration and a web change), SEC-4, SEC-5, SEC-7, SEC-10.
+
 ### SEC-14  Rate limits can be dodged by changing X-Forwarded-For; counters shared between routes    Severity: medium    Status: open
 Where: apps/api/src/common/rate-limit.guard.ts:45 and :50; apps/web/src/lib/auth/rate-limit.ts (clientIp)        Found: 2026-10-27        Owner: Back end
 What: the limiter keys on the first X-Forwarded-For value from the request, which the caller controls, and on the handler name, which is shared by four handlers called create (comments, posts, feedback, reports).
