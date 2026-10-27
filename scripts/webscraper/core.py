@@ -104,15 +104,26 @@ def robots_for(url):
         rp = urllib.robotparser.RobotFileParser()
         try:
             req = urllib.request.Request(base + "/robots.txt", headers={"User-Agent": USER_AGENT})
-            rp.parse(urllib.request.urlopen(req, timeout=20).read().decode("utf-8", "ignore").splitlines())
+            lines = urllib.request.urlopen(req, timeout=20).read().decode("utf-8", "ignore").splitlines()
         except Exception:
-            rp.parse([])  # no robots.txt (or unreadable): nothing is disallowed
+            lines = []  # no robots.txt (or unreadable): nothing is disallowed
+        # urllib.robotparser drops the "?" of a rule such as "Disallow: /?" and then treats it as "Disallow: /" (everything).
+        # Keep those rules out of the parser and honour them here as what they say: a URL starting with that path and a query.
+        rp.parse([ln for ln in lines if not _QUERY_RULE.match(ln)])
+        rp._chosn_query_rules = [m.group(1) for m in (_QUERY_RULE.match(ln) for ln in lines) if m]
         _robots[base] = rp
     return _robots[base]
 
 
+_QUERY_RULE = re.compile(r"^\s*Disallow:\s*(/\S*)\?\s*$", re.I)
+
+
 def allowed(url):
-    return robots_for(url).can_fetch(USER_AGENT, url) or robots_for(url).can_fetch("*", url)
+    rp = robots_for(url)
+    p = urllib.parse.urlparse(url)
+    if p.query and any(p.path == r for r in getattr(rp, "_chosn_query_rules", [])):
+        return False  # the "Disallow: <path>?" rules (any URL with a query under that path)
+    return rp.can_fetch(USER_AGENT, url) or rp.can_fetch("*", url)
 
 
 # Sites that answered HTTP 429 at the default pace get a longer pause between requests (seen 18 Oct 2026, after full
