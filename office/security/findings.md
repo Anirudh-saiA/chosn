@@ -2,6 +2,28 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+### SEC-14  Rate limits can be dodged by changing X-Forwarded-For; counters shared between routes    Severity: medium    Status: open
+Where: apps/api/src/common/rate-limit.guard.ts:45 and :50; apps/web/src/lib/auth/rate-limit.ts (clientIp)        Found: 2026-10-27        Owner: Back end
+What: the limiter keys on the first X-Forwarded-For value from the request, which the caller controls, and on the handler name, which is shared by four handlers called create (comments, posts, feedback, reports).
+Proof: localhost, POST /notifications/subscriptions x34 (limit 30): fixed header gave 429 from call 31; 34 different header values gave no 429.
+Fix: use req.ip (trust proxy is already set); key on controller plus handler name.        Verified fixed: not yet
+
+### SEC-13  WebSocket gateways accept oversized frames and unbounded room joins    Severity: medium    Status: open
+Where: apps/api/src/chat/chat.gateway.ts:56 and :186, apps/api/src/drops/drop-live.gateway.ts:59        Found: 2026-10-27        Owner: Back end
+What: no maxPayload (ws default about 100 MB); chat:join accepts any string and adds it to an in-memory map.
+Proof: localhost, an anonymous connection to /ws/chat sent a 5 MB frame and stayed open.
+Fix: maxPayload 16 KB, roomId must be a UUID, cap rooms per socket and connections per IP.        Verified fixed: not yet
+
+### SEC-12  Database, Redis, API and web listen on all interfaces; default DB password; Redis without password    Severity: high    Status: open
+Where: docker-compose.yml:7, :14, :25        Found: 2026-10-27        Owner: Back end (compose) / Founder (machine)
+What: Anyone on the same network can reach Postgres as postgres with the default password and Redis with none. Windows Firewall not tested.
+Proof: netstat on this PC shows 55432, 6380, 4000 and 3000 on 0.0.0.0 and [::].
+Fix: bind to 127.0.0.1 in compose, change the password, set requirepass.        Verified fixed: not yet
+
+### SEC-11  Smaller items from the whole-project check    Severity: low    Status: open
+Where: see office/security/bug-check-2026-10-27.md items 9, 10 and 15 (tracked .pyc files, news feed fetch without timeout, sign-up enumeration, plain reset tokens, secret compare)        Found: 2026-10-27        Owner: Main / News desk / Front end / Back end
+What and Fix: listed one by one in the bug check.        Verified fixed: not yet
+
 ### SEC-10  Wishlist e-mail can be reset by anyone holding the watch id, switching off the owner's alerts    Severity: low    Status: open
 Where: POST /watch/:id/email, PUT /watch/:id/items, apps/api/src/catalog/watch.controller.ts        Found: 2026-10-22        Owner: Back end
 What: With only the watch id, a caller can replace the stored e-mail (the owner's `email_confirmed` flips to false at once, so their alerts stop until a new confirmation), replace the whole wishlist, or send a confirmation e-mail to any address (see SEC-4). No account, so the id is the only barrier. The id is a random v4 UUID from `gen_random_uuid()` (122 bits), so it cannot be guessed or enumerated; the risk is leakage only (see SEC-9).
@@ -14,11 +36,11 @@ What: The link is meant to be pasted into Google, Apple or Outlook calendar, so 
 Proof: on localhost, created a test watch; `GET /drops/my.ics?watch=<id>` returned 200 text/calendar; `PATCH /watch/<id>/prefs {"instant":false}` with the same id returned 204 and `GET /watch/<id>` then showed `instant:false`. The calendar response sets no Cache-Control. An unknown id also returns 200 (empty feed), so the endpoint is not an oracle for valid ids.
 Fix: add a separate random `calendar_token` per watch (read-only, regenerable) and use it in the feed URL; keep the watch id out of any shareable link. Add `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer` on the feed.        Verified fixed: not yet
 
-### SEC-8  Newsletter reader trusts any SPF/DKIM pass, not one that matches the From address    Severity: medium    Status: open
+### SEC-8  Newsletter reader trusts any SPF/DKIM pass, not one that matches the From address    Severity: medium    Status: fixed
 Where: apps/api/src/scripts/fetch-email-news.ts (`authenticated()`, line 79; used at line 196)        Found: 2026-10-22        Owner: Drops and News desk
 What: A mail is accepted if its Authentication-Results header contains `dkim=pass` or `spf=pass` for any domain. An attacker who owns a domain with valid SPF/DKIM can send mail with a forged From (a brand such as nike.com, or googlealerts-noreply@google.com) and it passes. Impact: made-up headlines on the public news page (fake "drops"), and for Google Alert mail, links to any https site shown as news. The attacker needs the address of the news mailbox. Output is limited: https links only, tags stripped, and React escapes text, so no script injection.
 Proof: code read and a unit-level reading of the regex; I did not send mail (outward action). A duplicated Authentication-Results header makes mailparser return an array, which the code treats as failed, so that path fails closed.
-Fix: accept only when the passing domain matches the From domain (`header.from=` / `header.d=` equals or is a subdomain of the sender's domain, or `dmarc=pass`); add a spec with a forged-From sample. Until then keep the email reader off (NEWS_IMAP_* unset).        Verified fixed: not yet
+Fix: accept only when the passing domain matches the From domain (`header.from=` / `header.d=` equals or is a subdomain of the sender's domain, or `dmarc=pass`); add a spec with a forged-From sample. Until then keep the email reader off (NEWS_IMAP_* unset).        Verified fixed: 2026-10-27 by reading commit 135ea09 (authenticated() now needs the passing domain to match the From domain) and the 105 API tests passing; not re-proven with a forged mail
 
 ### SEC-7  Error reports and logs can carry personal data and the watch id    Severity: low    Status: open
 Where: apps/api/src/instrument.ts (Sentry.init with no scrubbing), apps/api/src/email/email.service.ts:25,51 and waitlist.service.ts (e-mail addresses in log lines)        Found: 2026-10-21        Owner: Back end
