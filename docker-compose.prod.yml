@@ -1,0 +1,62 @@
+# Production stack for ONE host: API + Redis + Caddy (TLS). Postgres is NOT here: use a managed Postgres
+# (backups, upgrades) and put its address in DATABASE_URL.
+#
+#   cp apps/api/.env.example .env.production      # fill in real values; never commit this file
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# .env.production must set at least: DATABASE_URL, API_JWT_SECRET, WEB_ORIGIN, WEB_URL, API_PUBLIC_URL, RESEND_API_KEY,
+# and API_DOMAIN (the public host name Caddy gets a certificate for). Set WAITLIST_DRIP and DROP_REMINDERS to "on".
+#
+# Run ONE api container. The reminder and waitlist loops inside it have no lock yet, so a second copy would send every
+# reminder twice. Caddy is the single trusted proxy in front (the API is configured with `trust proxy` = 1).
+services:
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    command: ["node", "dist/scripts/migrate.js"]
+    env_file: .env.production
+    environment: { REDIS_URL: redis://redis:6379 }
+    restart: "no"
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      REDIS_URL: redis://redis:6379
+      PORT: "4000"
+    volumes:
+      - media:/data/media
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    expose: ["4000"]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env.production}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [api]
+
+volumes:
+  media:
+  redis-data:
+  caddy-data:
+  caddy-config:
