@@ -1,4 +1,4 @@
-export const COLUMNS = ['brand', 'model', 'colorway', 'style_code', 'size', 'retailer', 'price', 'shipping', 'url', 'in_stock', 'image_url', 'size_system', 'condition', 'delivery_time'];
+export const COLUMNS = ['brand', 'model', 'colorway', 'style_code', 'size', 'retailer', 'price', 'shipping', 'url', 'in_stock', 'image_url', 'size_system', 'condition', 'delivery_time', 'compare_at_price'];
 
 const esc = (v) => {
   const s = String(v ?? '');
