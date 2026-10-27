@@ -8,6 +8,7 @@ import {
   type MarketIntelligenceSummary,
   type Signal,
 } from '../pricing/market-intelligence.service';
+import { REAL_LISTING } from '../pricing/real-listing';
 import { BUDGET_LIMITS, clampBudgetParams, toBudgetItem, type BudgetItem } from './budget';
 import { retailerModeFor, type RetailerMode } from '../retailers/retailer-mode';
 
@@ -727,7 +728,7 @@ export class CatalogService {
         JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
         JOIN sneakers s ON s.id = v.sneaker_id
         WHERE ps.is_latest = true AND ps.in_stock = true
-          AND ps.listing_url NOT LIKE '%FIXTURE%'
+          AND ${REAL_LISTING}
           AND ps.fetched_at >= now() - (r.fetch_frequency_minutes * 2) * interval '1 minute'
           AND ps.price >= ${BUDGET_LIMITS.minMax}
           AND effective_price_inr(ps.price, ps.shipping_cost, ps.currency) IS NOT NULL
