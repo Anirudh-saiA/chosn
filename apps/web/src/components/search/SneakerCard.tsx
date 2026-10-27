@@ -372,7 +372,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   <li
                     key={o.slug}
                     title={st?.name ?? o.slug}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} ${o.inStock ? '' : 'opacity-60'}`}
+                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} `}
                   >
                     <span className="flex h-4 items-center justify-center">
                       {st?.logoUrl ? (
