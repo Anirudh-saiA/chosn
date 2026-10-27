@@ -1,0 +1,23 @@
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 0060835..faf5ed0 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -11,7 +11,8 @@ services:
+       # services (v13 and v18) already occupying both 5432 and 5433.
+       # Container-internal port is untouched, so DATABASE_URL below
+       # just points at 55432.
+-      - '55432:5432'
++      # 127.0.0.1 only: published as '55432:5432' it listened on every network interface (SEC-12).
++      - '127.0.0.1:55432:5432'
+     volumes:
+       - chosn-postgres:/var/lib/postgresql/data
+ 
+@@ -22,7 +23,7 @@ services:
+       # Host port 6380, not 6379 — this machine already has another
+       # project's Redis bound to 6379. Container-internal port is
+       # untouched, so REDIS_URL below just points at 6380.
+-      - '6380:6379'
++      - '127.0.0.1:6380:6379'
+ 
+ volumes:
+   chosn-postgres:
