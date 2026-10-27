@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { fromBuffer as sniffFileType } from 'file-type';
 import sharp from 'sharp';
 import { classifyImage } from '../moderation/classifier.service';
 import { DRIZZLE, type Db } from '../db/drizzle.provider';
@@ -27,6 +26,18 @@ const SNIFFED_TO_EXT: Record<string, string> = { jpg: '.jpg', png: '.png', webp:
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export class InvalidImageError extends Error {}
+
+/**
+ * Reads the first bytes to tell JPEG, PNG and WebP apart (and nothing else). It replaces the `file-type` package: that one tries dozens of
+ * container parsers on untrusted bytes, and an advisory (ASF parser infinite loop, SEC-6) means a crafted upload can hang the API. Three
+ * signatures are all this route ever accepts.
+ */
+export function sniffImage(buf: Buffer): { ext: 'jpg' | 'png' | 'webp'; mime: string } | undefined {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { ext: 'jpg', mime: 'image/jpeg' };
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { ext: 'png', mime: 'image/png' };
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return { ext: 'webp', mime: 'image/webp' };
+  return undefined;
+}
 
 /**
  * Legit Check is this app's first real image-upload UGC surface (task
@@ -86,7 +97,7 @@ export class PostImagesService {
     // whatever Content-Type the client sent, trivial to spoof. Reject
     // if the actual bytes don't agree — same rejection path as a bad
     // declared mimetype, before anything is uploaded or re-encoded.
-    const sniffed = await sniffFileType(file.buffer);
+    const sniffed = sniffImage(file.buffer);
     const ext = sniffed ? SNIFFED_TO_EXT[sniffed.ext] : undefined;
     if (!sniffed || !ext || sniffed.mime !== file.mimetype) {
       throw new InvalidImageError('This file is not a valid JPEG, PNG, or WebP image.');
