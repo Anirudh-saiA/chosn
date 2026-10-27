@@ -8,7 +8,8 @@ A "day" is the IST calendar day: price_snapshots rows whose fetched_at is from 0
 nightly import has finished; a run during the import gives a partial file, and the manifest says so (rows per store).
 Next to the file it writes <date>.manifest.json (row count, rows per store, sha256, bytes, when it was exported).
 It only SELECTs (default_transaction_read_only is switched on), never changes data and prints no secrets.
-Re-running a day overwrites that day's two files with the current database contents.
+Re-running a day overwrites that day's two files with the current database contents (the file grows when there are two runs a
+day), unless a <date>.frozen marker file sits next to them: then the day is left exactly as it is.
 
 The file holds what the database holds, test rows included: is_fixture = 1 marks listing_url containing FIXTURE (test rows).
 A day with no rows writes no data file; the manifest says rows 0 so the gap is on record, never filled in.
@@ -28,16 +29,17 @@ DAY1 = datetime.date(2026, 10, 27)  # day 1 of the 60-day run
 IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
 PSQL = ["docker", "exec", "-e", "PGOPTIONS=-c default_transaction_read_only=on", "chosn-postgres-1",
         "psql", "-U", "postgres", "-d", "chosn_dev", "-X", "-q"]
-COLUMNS = ("fetched_at_utc,style_code,brand,model,colorway,size_uk,retailer,price_inr,compare_at_price_inr,shipping_inr,"
-           "in_stock,price_type,condition,is_latest,is_fixture,listing_url,snapshot_id")
+# The store (retailer name) sits right after the price, so every price shows which company it came from.
+COLUMNS = ("fetched_at_utc,style_code,brand,model,colorway,size_uk,price_inr,retailer,in_stock,compare_at_price_inr,shipping_inr,"
+           "price_type,condition,is_latest,is_fixture,retailer_slug,listing_url,snapshot_id")
 
 
 def query(day):
     nxt = day + datetime.timedelta(days=1)
     return f"""COPY (
   SELECT to_char(s.fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), sn.style_code, sn.brand, sn.model, sn.colorway,
-         v.size, r.slug, s.price, s.compare_at_price, s.shipping_cost, s.in_stock, s.price_type, s.condition, s.is_latest,
-         (s.listing_url LIKE '%FIXTURE%')::int, s.listing_url, s.id
+         v.size, s.price, r.name, s.in_stock, s.compare_at_price, s.shipping_cost, s.price_type, s.condition, s.is_latest,
+         (s.listing_url LIKE '%FIXTURE%')::int, r.slug, s.listing_url, s.id
   FROM price_snapshots s
   JOIN sneaker_variants v ON v.id = s.sneaker_variant_id
   JOIN sneakers sn ON sn.id = v.sneaker_id
@@ -56,6 +58,9 @@ def main():
     out = pathlib.Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     data_file, manifest_file = out / f"{day}.csv.gz", out / f"{day}.manifest.json"
+    if (out / f"{day}.frozen").exists():  # a day kept as a reference point: never rewritten
+        print(f"{day} is frozen ({day}.frozen exists); left as it is")
+        return 0
     tmp = out / f"{day}.csv.gz.part"
 
     p = subprocess.Popen(PSQL + ["-c", query(day)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
