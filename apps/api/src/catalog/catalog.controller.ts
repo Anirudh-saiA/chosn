@@ -12,7 +12,7 @@ import {
   type StoreSummary,
   type SearchResultItem,
 } from './catalog.service';
-import type { BudgetItem } from './budget';
+import { clampTrendingDays, type BudgetItem, type BudgetRanking } from './budget';
 import { BudgetQueryDto } from './dto/budget-query.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
 
@@ -54,11 +54,16 @@ export class CatalogController {
     return this.catalog.discounts(l, m);
   }
 
-  /** The budget shelf: /catalog/budget?max=5000&limit=12[&sort=popular]. Each shoe's cheapest eligible offer at or under `max` rupees, with that store's offers. sort=popular lists shoes sold at the most stores (2 or more). */
+  /**
+   * The budget shelf: /catalog/budget?max=5000&limit=12[&sort=cheapest|popular|trending][&days=7]. Each shoe's cheapest eligible offer at or under `max`
+   * rupees, one card per model, with that store's offers and delivery estimate. sort=popular: most stores first (2 or more). sort=trending: most looked
+   * at and clicked over the last `days` days (1 to 7), then most stores, then price. `ranking` says which order produced the list.
+   */
   @Get('budget')
-  async budget(@Query() q: BudgetQueryDto): Promise<{ max: number; sort: string; items: BudgetItem[] }> {
-    const items = await this.catalog.budget(q.max, q.limit, q.sort);
-    return { max: q.max ?? 5000, sort: q.sort ?? 'cheapest', items };
+  async budget(@Query() q: BudgetQueryDto): Promise<{ max: number; sort: string; ranking: BudgetRanking; days: number | null; items: BudgetItem[] }> {
+    const sort = q.sort ?? 'cheapest';
+    const { ranking, items } = await this.catalog.budget(q.max, q.limit, sort, q.days);
+    return { max: q.max ?? 5000, sort, ranking, days: sort === 'trending' ? clampTrendingDays(q.days) : null, items };
   }
 
   /** "Crazy falls": the biggest recorded price falls since the previous recorded day. */

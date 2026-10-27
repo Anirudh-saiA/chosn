@@ -24,14 +24,37 @@ export interface BudgetItem {
   fetchedAt: string;
   offers: BudgetOffer[];
   offersUpdatedAt: string | null;
-  /** How many different stores have this shoe eligible right now (any size, any price), the "popular" measure. */
+  /** How many different stores have this shoe eligible right now (any size, any price), the "popular" measure. All stores count. */
   storeCount: number;
+  /** The store's own delivery estimate in days (null when we have not recorded one). */
+  deliveryMinDays: number | null;
+  deliveryMaxDays: number | null;
+  /** Views plus Buy clicks on this shoe over the trending window (from popular_daily). 0 when nobody looked or the ranking is not trending. */
+  trendScore: number;
 }
 
-export type BudgetSort = 'cheapest' | 'popular';
-export const BUDGET_SORTS: readonly BudgetSort[] = ['cheapest', 'popular'];
+export type BudgetSort = 'cheapest' | 'popular' | 'trending';
+export const BUDGET_SORTS: readonly BudgetSort[] = ['cheapest', 'popular', 'trending'];
+/** Which ordering actually produced the list: price (cheapest), store count then price (popular, or trending with no traffic yet), or traffic (trending). */
+export type BudgetRanking = 'price' | 'stores' | 'trending';
 export const POPULAR_MIN_STORES = 2;
+export const TRENDING_DAYS = { min: 1, max: 7, default: 7 };
 export const BUDGET_LIMITS = { defaultMax: 5000, minMax: 500, maxMax: 1_000_000, defaultLimit: 12, maxLimit: 48 };
+
+/**
+ * trending ranks by views plus Buy clicks over the last 1 to 7 days, then store count, then price. Traffic is tiny today, so when no shoe in the
+ * list has any, the list is the store-count-then-price order and says so (ranking: "stores") instead of claiming a trend that is not there.
+ */
+export function budgetRanking(sort: BudgetSort, items: ReadonlyArray<Pick<BudgetItem, 'trendScore'>>): BudgetRanking {
+  if (sort === 'cheapest') return 'price';
+  if (sort === 'trending' && items.some((i) => i.trendScore > 0)) return 'trending';
+  return 'stores';
+}
+
+export function clampTrendingDays(days: unknown): number {
+  const n = typeof days === 'string' || typeof days === 'number' ? Math.floor(Number(days)) : NaN;
+  return Number.isFinite(n) ? Math.min(Math.max(n, TRENDING_DAYS.min), TRENDING_DAYS.max) : TRENDING_DAYS.default;
+}
 const MAX_OFFERS = 8;
 const str = (v: unknown, cap: number): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim().slice(0, cap) : null);
 
@@ -78,5 +101,8 @@ export function toBudgetItem(r: Record<string, unknown>): BudgetItem {
     offers: budgetOffers(r.offers),
     offersUpdatedAt: iso(r.offers_updated_at),
     storeCount: Number(r.store_count ?? 1),
+    deliveryMinDays: r.delivery_min_days == null ? null : Number(r.delivery_min_days),
+    deliveryMaxDays: r.delivery_max_days == null ? null : Number(r.delivery_max_days),
+    trendScore: Number(r.trend_score ?? 0),
   };
 }
