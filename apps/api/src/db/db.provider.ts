@@ -29,7 +29,9 @@ export const pgPoolProvider = {
       // pool with no connections at all.
       max: Number(process.env.PG_POOL_MAX || 20),
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 5_000,
+      // How long a request may wait for a free connection before it fails. 5 s turned a burst (150 parallel cold pages on a small
+      // database) into 500s although every query was fast once it ran; 15 s lets the burst queue. Raise or lower with PG_CONNECT_TIMEOUT_MS.
+      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 15_000),
     });
 
     // Found during Day 11's monitoring check (task 8), not the load

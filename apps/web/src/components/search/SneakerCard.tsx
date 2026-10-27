@@ -225,9 +225,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
           {bestPrice !== null ? (
             <span className="font-sans text-[1rem] font-extrabold sm:text-[clamp(1.1rem,1.5vw,1.3rem)] leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
           ) : (
-            <span className="text-[0.8rem] font-bold text-[#0A0A0A]/50 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
+            <span className="text-[0.8rem] font-bold text-[#0A0A0A]/60 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
           )}
-          {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/45 line-through">{formatInr(was)}</span>}
+          {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/60 line-through">{formatInr(was)}</span>}
           {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
         </div>
       </div>
@@ -254,7 +254,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             disabled={known !== undefined && photos.length <= 1}
             aria-label={dir === 'next' ? 'Next photo' : 'Previous photo'}
             title={known !== undefined && photos.length <= 1 ? 'No more photos of this colour yet' : dir === 'next' ? 'Next photo' : 'Previous photo'}
-            className={`absolute top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
+            className={`absolute top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center before:absolute before:-inset-2 before:content-['']  justify-center rounded-full bg-white text-[#0A0A0A] opacity-70 shadow-[0_2px_10px_rgba(10,10,10,0.12)] ring-1 ring-[#0A0A0A]/5 transition duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] group-hover:opacity-100 disabled:cursor-default disabled:opacity-25 ${dir === 'next' ? 'right-2.5' : 'left-2.5'}`}
           >
             {dir === 'next' ? <ChevronRight className="h-4 w-4" strokeWidth={2.25} aria-hidden /> : <ChevronLeft className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
           </button>
@@ -292,19 +292,21 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                     onMouseEnter={() => pickColour(i)}
                     onFocus={() => pickColour(i)}
                     onClick={() => pickColour(i)}
-                    className={`relative h-6 w-6 overflow-hidden rounded-md bg-[#F3F5F8] transition-shadow ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
+                    className={`relative h-6 w-6 rounded-md bg-[#F3F5F8] transition-shadow before:absolute before:-inset-x-[3px] before:-inset-y-2.5 before:content-[''] ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
                   >
+                    <span className="block h-full w-full overflow-hidden rounded-md">
                     {c.primaryImageUrl ? (
                       <ShoePhoto key={c.primaryImageUrl} src={c.primaryImageUrl} alt="" className="h-full w-full object-contain p-0.5" fallback={<span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />} />
                     ) : (
                       <span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />
                     )}
+                    </span>
                   </button>
                 </li>
               ))}
-              {extra > 0 && <li className="font-mono text-[0.72rem] font-bold text-[#0A0A0A]/50">+{extra}</li>}
+              {extra > 0 && <li className="font-mono text-[0.72rem] font-bold text-[#0A0A0A]/60">+{extra}</li>}
             </ul>
-            <span className="ml-auto hidden font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/40 sm:inline">{colours.length} colours</span>
+            <span className="ml-auto hidden font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/60 sm:inline">{colours.length} colours</span>
           </div>
         )}
 
@@ -312,13 +314,13 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-[0.7rem] font-bold text-[#0A0A0A] sm:text-[0.78rem]">Sizes</h3>
-            <span className={`flex items-center gap-1.5 text-[0.68rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/40'}`}>
+            <span className={`flex items-center gap-1.5 text-[0.68rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/60'}`}>
               <span className={`h-2 w-2 rounded-full ${anyStock ? 'bg-[#1FA34A]' : 'bg-[#0A0A0A]/25'}`} aria-hidden />
               {anyStock ? 'In Stock' : 'Sold out'}
             </span>
           </div>
           {sizeList.length > 0 ? (
-            <ul ref={sizesRef} className="relative z-10 mt-1 flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
+            <ul ref={sizesRef} className="relative z-10 -mb-2.5 mt-[-0.375rem] flex gap-1 overflow-x-auto pb-3 pt-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="UK sizes">
               {sizeList.map((s, idx) => {
                 const active = s.size === size;
                 return (
@@ -329,12 +331,12 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                       aria-pressed={active}
                       aria-label={`UK ${formatSize(s.size)}${s.available ? '' : ', sold out everywhere'}`}
                       title={s.available ? undefined : 'Sold out at every store we compare'}
-                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-md border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors ${
+                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-md border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors before:absolute before:-inset-x-0.5 before:-inset-y-2.5 before:content-[''] ${
                         active
                           ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
                           : s.available
                             ? 'border-[#0A0A0A]/12 bg-white text-[#0A0A0A] hover:border-[#0A0A0A]/50'
-                            : 'border-[#0A0A0A]/8 bg-[#0A0A0A]/[0.03] text-[#0A0A0A]/30 after:pointer-events-none after:absolute after:inset-x-1.5 after:top-1/2 after:h-px after:-rotate-[22deg] after:bg-[#0A0A0A]/35 after:content-[\'\']'
+                            : 'border-[#0A0A0A]/8 bg-[#0A0A0A]/[0.03] text-[#0A0A0A]/60 after:pointer-events-none after:absolute after:inset-x-1.5 after:top-1/2 after:h-px after:-rotate-[22deg] after:bg-[#0A0A0A]/35 after:content-[\'\']'
                       }`}
                     >
                       {idx === 0 ? `UK ${formatSize(s.size)}` : formatSize(s.size)}
@@ -344,7 +346,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
               })}
             </ul>
           ) : (
-            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/45">{data === null ? 'Loading sizes…' : 'No sizes listed'}</p>
+            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/60">{data === null ? 'Loading sizes…' : 'No sizes listed'}</p>
           )}
         </div>
 
@@ -357,7 +359,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         <div className="mt-auto hidden sm:block">
           <div className="flex items-center justify-between">
             <h3 className="text-[0.78rem] font-bold text-[#0A0A0A]">Compare Prices</h3>
-            <span className="text-[0.68rem] text-[#0A0A0A]/45">
+            <span className="text-[0.68rem] text-[#0A0A0A]/60">
               {storeCount} {storeCount === 1 ? 'Store' : 'Stores'}
             </span>
           </div>
@@ -370,7 +372,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   <li
                     key={o.slug}
                     title={st?.name ?? o.slug}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} ${o.inStock ? '' : 'opacity-60'}`}
+                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} `}
                   >
                     <span className="flex h-4 items-center justify-center">
                       {st?.logoUrl ? (
@@ -379,10 +381,10 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                         <span className="max-w-[3.4rem] truncate text-[0.6rem] font-bold text-[#0A0A0A]/70">{st?.name ?? o.slug}</span>
                       )}
                     </span>
-                    <span className={`text-[0.76rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/40 line-through'}`}>{formatInr(o.price)}</span>
+                    <span className={`text-[0.76rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/60 line-through'}`}>{formatInr(o.price)}</span>
                     <span
                       className={`rounded-full px-1.5 py-px text-[0.56rem] font-semibold ${
-                        lowest ? 'bg-[#C9EDD3] text-[#1B7A34]' : o.inStock ? 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/55' : 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/45'
+                        lowest ? 'bg-[#C9EDD3] text-[#14662A]' : o.inStock ? 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/70' : 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/60'
                       }`}
                     >
                       {lowest ? 'Lowest' : o.inStock ? 'In Stock' : 'Sold out'}
@@ -392,7 +394,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
               })}
             </ul>
           ) : (
-            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/45">{offers === null ? (data === null ? 'Loading prices…' : 'Loading prices for this size…') : 'No store lists this size right now.'}</p>
+            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/60">{offers === null ? (data === null ? 'Loading prices…' : 'Loading prices for this size…') : 'No store lists this size right now.'}</p>
           )}
         </div>
       </div>

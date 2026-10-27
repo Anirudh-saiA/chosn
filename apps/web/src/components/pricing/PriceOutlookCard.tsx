@@ -28,7 +28,7 @@ export function PriceOutlookCard({ outlook }: { outlook: PriceOutlook | null }) 
         {outlook.historyDays > 0 ? ` · ${outlook.historyDays} day${outlook.historyDays === 1 ? '' : 's'} of this shoe's prices` : ''}
       </p>
 
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-3 text-sm font-semibold text-text underline underline-offset-4">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-1 inline-flex min-h-[44px] min-w-[44px] items-center text-sm font-semibold text-text underline underline-offset-4">
         {open ? 'Hide why' : 'Why?'}
       </button>
       {open ? (

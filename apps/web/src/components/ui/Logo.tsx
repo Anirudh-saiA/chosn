@@ -24,7 +24,7 @@ export function Logo({ className = '', asLink = true, lockup = false }: { classN
   );
   if (!asLink) return logo;
   return (
-    <Link href="/" aria-label="CHOSN home" className="inline-flex">
+    <Link href="/" aria-label="CHOSN home" className="inline-flex min-h-11 min-w-11 items-center">
       {logo}
     </Link>
   );

@@ -15,3 +15,17 @@ First assigned 2026-10-21.
 - 2026-10-23: SEC-8 mail-sender check with tests (task from 2026-10-22 brief).
 - 2026-10-23: Feed health table, off-topic filters tightened, `--dry` flag; drop-calendar numbers; issue 2026-10-23 checked. See office/reports/news-drops/2026-10-23.md.
 - Still open: propose new sneaker sources that robots.txt allows (not done); two drops missing pictures (data, needs fetch_drop_images run).
+
+## FOUNDER-TASK 2026-10-26: complete update of today's shoes and news (founder asked)
+Goal: today's data in the local database is complete and current, so the local site (http://localhost:3000) and the hosted copy later show it.
+1. News: run the news cycle now (scripts/news_update.py) and confirm new stories for 26 Oct appear in /news. Report count added, feeds that failed, and anything filtered out.
+2. Drops: refresh the drop calendar; confirm today's and the next 7 days' releases. Check why the Jordan 12 Retro "Fireside" left the calendar on 24 Oct (Social asked) and say whether it moved, sold out or was removed in error.
+3. Shoes and prices: check with Data that the 02:00 scrape finished (webscraper daily update) and how many stores and products updated today. If it did not run, say so; do not run a full scrape without Main.
+4. Report to Main: counts, failures, what is stale. Use Confirmed / Reported / Unconfirmed labels. Push only to team/news-drops. Main merges on approval.
+
+## FOUNDER DECISION 2026-10-27: card newsdrops-lane approved
+Your lane is widened: you own the Releases, News and Magazine pages (see office/roles/news-drops.md). Start with step 1 and 2 of your order (lane note done by Main; clean the 138 drops with the 2-source rule). Send a REVIEW per step. Brand rule is pure black and white, Inter. Ask the founder for the magazine references through Main.
+
+
+## NOTICE 2026-10-27 from Frontend via Main: a new block sits in your Drops tab
+Frontend added 2 lines to apps/web/src/app/releases/page.tsx (an import and <div className="mt-14"><BudgetShelf /></div> after the Drops calendar block, before Just landed). Founder approved the Shop by budget shelf (card fe-budget-shelf). The block fetches its own data in the browser and needs nothing from you. If you move or restyle the page, move that one line. Frontend's commit is on team/frontend until Main merges it.

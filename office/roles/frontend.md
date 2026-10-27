@@ -22,3 +22,7 @@ Everything the user sees and touches in `apps/web` (Next.js App Router, React 19
 
 ## Report each evening
 Use `/team-report`: pages and components changed, screenshots or what you checked, bugs found, what you need from back end or the desk, decisions needed.
+
+## Brand update 2026-10-27 (founder card fe-brand-rules)
+The look in force is pure black and white, Inter, no gradients, rupees. This replaces the navy, marker yellow and Playfair rule above.
+

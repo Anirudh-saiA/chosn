@@ -4,6 +4,7 @@ import { DropLiveProvider } from '@/components/drops/drop-live-context';
 import { NewsFront } from '@/components/news/NewsFront';
 import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
+import { BudgetShelf } from '@/components/drops/BudgetShelf';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
 import { SneakerCard } from '@/components/search/SneakerCard';
@@ -71,6 +72,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
             <DropsExplorer drops={drops} />
           </SubscriptionsProvider>
         </DropLiveProvider>
+        <div className="mt-14"><BudgetShelf /></div>
       </section>
 
       <section aria-labelledby="landed-h">

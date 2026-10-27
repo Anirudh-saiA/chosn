@@ -56,7 +56,8 @@ const connectionIdentity = new WeakMap<WebSocket, ApiJwtPayload>();
  * before sending," not a connection-auth system built from scratch
  * under deadline once that feature exists.
  */
-@WebSocketGateway({ path: '/ws/drops' })
+// This gateway takes no messages from clients, so frames are capped tiny (SEC-13).
+@WebSocketGateway({ path: '/ws/drops', maxPayload: 1024 })
 export class DropLiveGateway implements OnModuleInit, OnModuleDestroy, OnGatewayConnection {
   private readonly logger = new Logger(DropLiveGateway.name);
   private subscriber?: Redis;

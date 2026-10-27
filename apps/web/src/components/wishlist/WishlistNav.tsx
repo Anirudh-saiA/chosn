@@ -11,7 +11,7 @@ export function WishlistNav() {
     <Link
       href="/wishlist"
       aria-label={items.length ? `Wishlist, ${items.length} saved` : 'Wishlist'}
-      className="relative flex h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
+      className="relative flex h-11 w-11 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
     >
       <WishlistIcon className="h-[22px] w-[22px]" />
       {items.length > 0 && (

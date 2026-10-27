@@ -1,0 +1,33 @@
+# Founder log
+
+Main appends here every time the founder changes something or gives a team a new direction, and every hand-off between teams. Newest at the bottom. One line each: date, who, what, which teams were told.
+
+- 2026-10-23: Founder asked for goals for every team and a rule that teams report to Main whenever the founder works in their section, and that Main tells the right team about any change made in Main. Written to office/GOALS.md and office/ORG.md ("How we communicate"). All live teams told by message; teams that were not running (Nightly, Back end, Front end, Security) will read it from ORG.md when they start.
+- 2026-10-23: Founder set the order: test (fixture) rows are in the live price tables. Videos and posts using them are on hold; Data and Social told; Back end asked to exclude them. Awaiting the founder's call on hiding the rows and on which shoe to re-make the videos with.
+- 2026-10-23: Data reported FOUNDER-TASK: the founder confirmed in Data's chat "create the team/data worktree from develop and do the Puma fix, the price_history README and the task file"; already done (team/data, cff78e4). Main had waived Data's wait on the uncommitted main checkout.
+- 2026-10-23: Teams that ACKed the goals and communication rules: Data, Social, Outreach. Pending ACK: R&D, Drops and News (running, busy). Not running: Nightly, Back end, Front end, Security.
+- 2026-10-23: Outreach asked the founder two questions (is CHOSN registered or DPIIT-recognised; which companies may be named). Unanswered.
+- 2026-10-23: Founder asked for a phone approval system. Main published a private page "CHOSN Approvals" (https://claude.ai/artifact/B1rG2WBfQzCQexGcd6qeoq; only the owner can write decisions) with 11 cards: merges of team/rnd, team/data, team/social, team/outreach, team/news-drops (all reviewed by Main), hide the test price rows (saved to a file first, reversible), push develop, and four questions (shoe for the re-made videos, DPIIT, whether the 23 Oct post went out, whether the marketplace may be named). A cron job in the main session checks the page every 10 minutes and runs only that fixed list; it dies when the session closes and expires after 7 days. Anything the founder taps there counts as his word for that one card only.
+- 2026-10-23 (phone approvals, 15:25 to 15:35): founder tapped Approve on all cards. Done by Main: merged team/rnd, team/data, team/social, team/outreach, team/news-drops into develop (typecheck, 12 feed tests and API rebuild passed); hid 1,302 test price rows (backup: data/daily/fixture-rows-backup-2026-10-23.csv; undo by setting is_latest=true for those ids); pushed develop to GitHub (ee67945..8c36bde). Answers: shoe for the re-made videos = Samba OG UK 8 (4 real stores, so the voice line must say four); registered/DPIIT = "Neither yet" (told Outreach); posted the 23 Oct markdown post = Yes (Social to draft the correction); Outreach may name the marketplace = Yes (Outreach to ask the founder which company; wording stays his unverified statement).
+- 2026-10-23: Founder asked sessions renamed to plain roles. Done: Frontend, Backend, Data, Security, R&D, Nightly, Social, Outreach, Drops and News, Backup. Message these sessions by the new names. Old duplicate Social session (started by Social on 22 Oct) left as is.
+
+## 2026-10-24 (Social report)
+- Founder asked Social for today's posts. Social re-ran the draft 09:22 IST: morning = new releases (Air Max 95 Reverse Blue Spark ~US$190, Air Jordan 1 Low SE ~US$130; Reported, labelled US, 'India prices not announced'); evening = fake-check 1. Jordan 12 Retro Fireside left the drop calendar overnight (cause unchecked; Drops and News owns it). File office/social/posts/2026-10-24.md pushed to team/social. Not merged into develop. Nothing posted.
+
+## 2026-10-24 (Social report 2)
+- Founder asked Social for complete messages for any controversy. Social added '7-Eleven drops Nike Air Max 95 lawsuit' (Sneaker Bar Detroit, 22 Oct; sued July 2026, dropped with prejudice 19 Oct, no ruling, no reason; Reported, one outlet) to office/social/controversies.md and gave founder full text of 4 controversy posts (that one plus banned AJ1, Nike v StockX, Yeezy inventory) with source links. Yeezy and StockX sources not opened in full; filings not checked. Pushed to team/social, not merged. Nothing posted.
+
+## 2026-10-26
+- Founder: run locally (done: web :3000 COMING_SOON=off, API :4000 with chosn_dev). Asked Drops and News for a complete update of today's shoes and news; session not running, task written to office/tasks/news-drops.md and the daily brief.
+
+- 2026-10-26: founder said ready to deploy. No team sessions running; DEPLOY NOTICE written to office/daily/2026-10-26.md for all teams. Local search bar tested OK (API and UI).
+- 27 Oct: merged team/nightly into develop locally (6629550, not pushed). Wrote by-hand scrape rule into ORG.md; told Data and Nightly in their task files.
+- 27 Oct: founder approved the Social form (A1-A3 yes, A4 hold, B1/B4 yes, B2/B3 no). Written to office/tasks/social.md.
+- 27 Oct: founder assigned the schedule-fix and health-task commands to Nightly (FOUNDER-TASK in office/tasks/nightly.md).
+- 27 Oct: founder orders: Security bug check, Frontend hero-lag diagnosis, research imported into Data, 60-day data run (27 Oct to 25 Dec) with a stored-in-file report after each run. Tasks written to office/tasks/*.md; plan in office/data-run/.
+- 27 Oct: founder says KEEP the resale flag (Mainstreet Marketplace and Culture Circle rows = resale; importer patch bf63e63 stays). Data's README notes (b451c7a) can be merged.
+- 27 Oct: founder reports VegNonVeg prices differ from the VegNonVeg site (HF5441-100: ours 8,295, site 7,051). Task for Data and Nightly written; sessions were closed, so no message sent.
+- 27 Oct: founder wants categories Popular, Under 5k, 10k, 15k, 20k. Task written for Frontend and Back end; sessions closed, no message sent. Open question: does the 2-store rule count retail stores only or all stores.
+- 2026-10-28 Backend: footwear_type (hide) and hourly refresh tasks written to office/tasks/backend.md; Backend session closed
+- 2026-10-28 Frontend: budget shelf (408dbf2, 477eac8) cherry-picked into develop as 17750e5, c697257 after tsc+eslint clean; popularity requests routed to Backend
+- 2026-10-28 (Reported by Frontend, founder said it in Frontend's session; Main has not heard it directly): "2 or more stores" rule counts ALL stores, no retail-only filter. Accent colours kept (amber #9A5A00, green #0A6B44, brown #7A4B00, green Lowest pill). Pale-yellow "Best available" price not decided.

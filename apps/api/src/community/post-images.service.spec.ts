@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../db/drizzle.provider';
-import { InvalidImageError, PostImagesService, type UploadedFileLike } from './post-images.service';
+import { InvalidImageError, PostImagesService, sniffImage, type UploadedFileLike } from './post-images.service';
 import type { StorageService } from './storage.service';
 
 /**
@@ -16,9 +16,6 @@ import type { StorageService } from './storage.service';
 
 vi.mock('../moderation/classifier.service', () => ({
   classifyImage: vi.fn(),
-}));
-vi.mock('file-type', () => ({
-  fromBuffer: vi.fn(async () => ({ ext: 'jpg', mime: 'image/jpeg' })),
 }));
 vi.mock('sharp', () => ({
   default: vi.fn(() => ({
@@ -62,7 +59,7 @@ const file: UploadedFileLike = {
   originalname: 'photo.jpg',
   mimetype: 'image/jpeg',
   size: 1_000,
-  buffer: Buffer.from('not-really-a-jpeg-but-file-type-is-mocked'),
+  buffer: Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('jpeg-body-bytes')]),
 };
 
 describe('PostImagesService — classifier failure mode', () => {
@@ -91,5 +88,19 @@ describe('PostImagesService — classifier failure mode', () => {
 
     expect(result.classifierStatus).toBe('clean');
     expect(storage.deleteByUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe('sniffImage (replaces file-type, SEC-6)', () => {
+  it('recognises JPEG, PNG and WebP by their first bytes', () => {
+    expect(sniffImage(Buffer.from([0xff, 0xd8, 0xff, 0xe1, 0, 0]))).toEqual({ ext: 'jpg', mime: 'image/jpeg' });
+    expect(sniffImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]))).toEqual({ ext: 'png', mime: 'image/png' });
+    expect(sniffImage(Buffer.from('RIFF\u0000\u0000\u0000\u0000WEBPVP8 ', 'latin1'))).toEqual({ ext: 'webp', mime: 'image/webp' });
+  });
+  it('rejects other formats, including a crafted ASF/GIF/SVG/empty file', () => {
+    expect(sniffImage(Buffer.from([0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11, 0xa6, 0xd9, 0x00, 0xaa, 0x00, 0x62, 0xce, 0x6c]))).toBeUndefined();
+    expect(sniffImage(Buffer.from('GIF89a......'))).toBeUndefined();
+    expect(sniffImage(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'))).toBeUndefined();
+    expect(sniffImage(Buffer.alloc(0))).toBeUndefined();
   });
 });

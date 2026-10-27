@@ -13,7 +13,7 @@ Steps (all from apps/api's built scripts; each is cheap, the whole cycle takes a
 
 A step that fails is logged and the next one still runs. A lock file stops two cycles from overlapping (a lock older than 25 minutes is
 treated as stale). Logs: logs/news-YYYY-MM-DD.log; the last cycle's result: data/daily/news_last_run.json.
-Needs Docker running with the CHOSN Postgres (the same as the nightly job); if it is not, the cycle is skipped and says so.
+Needs the CHOSN Postgres: if Docker is off the cycle starts Docker Desktop and the containers itself (after a restart, say) and waits up to about six minutes; with DATABASE_URL set it needs no Docker at all. If the database still cannot be reached the cycle is skipped and says so.
 """
 import argparse
 import datetime
@@ -65,6 +65,48 @@ def docker_up():
         return False
 
 
+def postgres_ready():
+    try:
+        return subprocess.run(["docker", "exec", "chosn-postgres-1", "pg_isready", "-U", "postgres"], capture_output=True, timeout=30, creationflags=NO_WINDOW).returncode == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+DOCKER_DESKTOP = r"C:\Program Files\Docker\Docker\Docker Desktop.exe"
+
+
+def ensure_database():
+    """True when the CHOSN database is reachable. With DATABASE_URL set (a job host) nothing local is needed. Otherwise: start Docker Desktop if it is
+    off (after a restart, say), bring the CHOSN containers up, and wait for Postgres, for up to about six minutes."""
+    if os.environ.get("DATABASE_URL"):
+        return True
+    if not docker_up():
+        if sys.platform == "win32" and os.path.exists(DOCKER_DESKTOP):
+            log("Docker is not running: starting Docker Desktop")
+            subprocess.Popen([DOCKER_DESKTOP], creationflags=NO_WINDOW)
+        deadline = time.time() + 240
+        while time.time() < deadline and not docker_up():
+            time.sleep(5)
+            LOCK.touch()  # still alive: do not let another cycle call this lock stale
+        if not docker_up():
+            log("Docker did not start within 4 minutes: cycle skipped")
+            return False
+    if not postgres_ready():
+        log("starting the CHOSN containers (docker compose up -d)")
+        try:
+            subprocess.run(["docker", "compose", "up", "-d"], cwd=ROOT, capture_output=True, timeout=240, creationflags=NO_WINDOW)
+        except Exception as e:  # noqa: BLE001
+            log(f"docker compose up failed: {e}")
+        deadline = time.time() + 120
+        while time.time() < deadline and not postgres_ready():
+            time.sleep(3)
+            LOCK.touch()
+    if not postgres_ready():
+        log("Postgres is not ready: cycle skipped")
+        return False
+    return True
+
+
 def take_lock():
     LOCK.parent.mkdir(parents=True, exist_ok=True)
     if LOCK.exists() and time.time() - LOCK.stat().st_mtime < STALE_AFTER:
@@ -83,9 +125,8 @@ def main():
     started = datetime.datetime.now().isoformat(timespec="seconds")
     results = {}
     try:
-        if not docker_up():
-            log("Docker is not running: cycle skipped")
-            results["skipped"] = "docker is not running"
+        if not ensure_database():
+            results["skipped"] = "the database is not reachable"
             return 0
         node = ["node", "--env-file=.env"]
         for name, script in (("news feeds", "fetch-news-feeds"), ("official news", "fetch-official-news"), ("email news", "fetch-email-news"), ("tags", "tag-news")):
@@ -102,6 +143,13 @@ def main():
         if venv_py.exists():
             ok, head = run("magazine pdf", [str(venv_py), "scripts/render_magazine_pdf.py"], ROOT, timeout=900)
             results["magazine pdf"] = {"ok": ok, "line": head}
+        # X post drafts: written once after 07:00 and refreshed once after 17:00 (so the evening post has the day's story).
+        now = datetime.datetime.now()
+        draft = ROOT / "office" / "social" / "posts" / f"{now.date().isoformat()}.md"
+        stale = draft.exists() and datetime.datetime.fromtimestamp(draft.stat().st_mtime).hour < 17 <= now.hour
+        if now.hour >= 7 and (not draft.exists() or stale):
+            ok, head = run("social posts", [sys.executable, "scripts/social_posts.py"], ROOT, timeout=120)
+            results["social posts"] = {"ok": ok, "line": head}
         return 0 if all(v["ok"] for v in results.values() if isinstance(v, dict)) else 1
     finally:
         SUMMARY.write_text(json.dumps({"started_at": started, "finished_at": datetime.datetime.now().isoformat(timespec="seconds"), "steps": results}, indent=2), encoding="utf-8")

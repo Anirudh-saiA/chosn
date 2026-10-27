@@ -1,0 +1,5 @@
+# TLS and reverse proxy for the API. One proxy hop, which is what the API's `trust proxy` = 1 expects.
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:4000
+}

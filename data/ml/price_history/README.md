@@ -10,7 +10,7 @@ One row per price seen for one shoe, one UK size, one store, each time the night
 - **Not yet an export:** no training CSV has been written. Build it from the join above when there are about 60 days.
 
 ## Columns (price_snapshots)
-`sneaker_variant_id` (shoe + UK size), `retailer_id`, `price` (INR, numeric 12,2), `compare_at_price` (the store's own "was" price, often empty), `shipping_cost`, `currency`, `condition` (always `new` today), `price_type` (always `retail` today, including the marketplaces), `in_stock`, `listing_url`, `is_latest`, `fetched_at`, `image_url`.
+`sneaker_variant_id` (shoe + UK size), `retailer_id`, `price` (INR, numeric 12,2), `compare_at_price` (the store's own "was" price, often empty), `shipping_cost`, `currency`, `condition` (always `new` today), `price_type` (`retail` or `resale`: Mainstreet Marketplace and Culture Circle rows were set to `resale` on 2026-10-27, 3,496,667 rows, backup in `data/proposals/resale-flag/`; before that every row was `retail`), `in_stock`, `listing_url`, `is_latest`, `fetched_at`, `image_url`.
 
 ## Row counts (2026-10-23)
 | | |
@@ -63,7 +63,7 @@ The bulk history starts on 16 to 17 Oct. At one import a day with no missed days
 2. **Stores not read on a given night:** 23 Oct nightly read no Superkicks, Crepdog Crew or Limited Edt (HTTP 429, a 24-hour pause that ends after the next 02:00 start, so 24 Oct may skip them too). A missing day is a gap, not a flat price.
 3. **Test rows:** 1,124 current rows have `FIXTURE` in `listing_url` (all of Ajio, END. Clothing, Flipkart; 177 of Myntra). Exclude with `listing_url NOT LIKE '%FIXTURE%'`. Not deleted; that is the founder's decision.
 4. **Duplicate current rows:** 70 shoe/size/store combinations (Superkicks 65, Limited Edt 5) have 2 or 3 rows with `is_latest = true`. The history itself is not damaged, but "latest" queries double count. Proposal in `data/proposals/2026-10-23-data-proposals.md`.
-5. **Marketplaces are labelled retail:** Mainstreet Marketplace and Culture Circle prices are asking prices stored as `price_type = retail`, `condition = new`. Keep them out of a retail price model or add a flag first.
+5. **Marketplaces are flagged `resale` (since 2026-10-27 ~11:10):** Mainstreet Marketplace and Culture Circle prices are asking prices, `condition` is still `new`. Keep `price_type = resale` out of a retail price model. Daily snapshot files exported before the flag show the old value: the frozen day-1 file (2026-10-27) lists Culture Circle as `retail`; in the database those rows are `resale`.
 6. **Release prices:** `sneakers.retail_price` exists for 153 of 41,000 shoes and is stale for some (Samba OG B75807 shows 9,350; stores charge 10,999). Do not use it as a label.
 7. **Out-of-stock marking:** when a listing disappears the importer writes a new row with `in_stock = false` and the last price. Treat out-of-stock rows as "no price", not a price.
 8. **Several imports a day:** more than one import on the same IST day (21 Oct had two) is counted as one day above; use the latest of the day for daily series.

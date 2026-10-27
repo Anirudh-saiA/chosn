@@ -14,6 +14,9 @@ import { ChatMessagesService } from './chat-messages.service';
 import { ChatRoomsService } from './chat-rooms.service';
 
 const MAX_MESSAGE_LENGTH = 500;
+const MAX_FRAME_BYTES = 16 * 1024;
+const MAX_ROOMS_PER_SOCKET = 20;
+const ROOM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RATE_LIMIT_PER_MINUTE = 10;
 
 /** Same WeakMap-keyed-by-socket identity pattern as DropLiveGateway — see that file's own doc comment, which flagged this exact reuse ("a future user-scoped broadcast... community chat") ahead of it existing. */
@@ -53,7 +56,8 @@ function isIncomingChatFrame(value: unknown): value is IncomingChatFrame {
  * DropNewsAutoPostService as separate single-purpose classes rather than
  * one that does everything.
  */
-@WebSocketGateway({ path: '/ws/chat' })
+// maxPayload: the library default is about 100 MB; a chat frame is a small JSON object (SEC-13).
+@WebSocketGateway({ path: '/ws/chat', maxPayload: MAX_FRAME_BYTES })
 export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChatGateway.name);
   private moderationSubscriber?: Redis;
@@ -159,7 +163,11 @@ export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleD
     client.on('close', () => {
       const joined = socketRooms.get(client);
       if (joined) {
-        for (const roomId of joined) roomMembers.get(roomId)?.delete(client);
+        for (const roomId of joined) {
+          const members = roomMembers.get(roomId);
+          members?.delete(client);
+          if (members?.size === 0) roomMembers.delete(roomId);
+        }
       }
       socketRooms.delete(client);
     });
@@ -184,12 +192,17 @@ export class ChatGateway implements OnGatewayConnection, OnModuleInit, OnModuleD
   }
 
   private join(client: WebSocket, roomId: string): void {
+    // Room ids are UUIDs and a socket can hold only a few rooms, so a client cannot grow the in-memory room map with junk ids (SEC-13).
+    const joined = socketRooms.get(client);
+    if (!ROOM_ID.test(roomId) || !joined || (!joined.has(roomId) && joined.size >= MAX_ROOMS_PER_SOCKET)) return;
     (roomMembers.get(roomId) ?? roomMembers.set(roomId, new Set()).get(roomId)!).add(client);
     socketRooms.get(client)?.add(roomId);
   }
 
   private leave(client: WebSocket, roomId: string): void {
-    roomMembers.get(roomId)?.delete(client);
+    const members = roomMembers.get(roomId);
+    members?.delete(client);
+    if (members?.size === 0) roomMembers.delete(roomId);
     socketRooms.get(client)?.delete(roomId);
   }
 
