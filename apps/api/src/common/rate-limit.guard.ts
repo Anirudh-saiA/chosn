@@ -22,6 +22,11 @@ export interface RateLimitOptions {
    * before it goes into Redis, so no personal data is stored in a key.
    */
   also?: { bodyField: string; limit: number };
+  /**
+   * What to do when Redis cannot be reached. Default is to let the request through (the limiter is a secondary defence and must not take
+   * signups down). Set true on endpoints that send e-mail: without a working counter there is no cap on mail, so answer 503 instead.
+   */
+  failClosed?: boolean;
 }
 
 export const RATE_LIMIT_KEY = 'rate_limit';
@@ -77,6 +82,9 @@ export class RateLimitGuard implements CanActivate {
       }
     } catch (err) {
       if (err instanceof HttpException) throw err;
+      if (options.failClosed) {
+        throw new HttpException({ error: 'unavailable', message: 'This is temporarily unavailable — please try again shortly.' }, HttpStatus.SERVICE_UNAVAILABLE);
+      }
       // Redis unreachable — let the request through rather than block
       // real users because the rate limiter itself is down.
       return true;

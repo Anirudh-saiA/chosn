@@ -34,6 +34,8 @@ class Demo {
   mail() {}
   @RateLimit({ limit: 2, windowSeconds: 60 })
   plain() {}
+  @RateLimit({ limit: 2, windowSeconds: 60, failClosed: true })
+  closed() {}
   other() {}
 }
 
@@ -95,6 +97,12 @@ describe('RateLimitGuard', () => {
     expect(redis.expiries.get('ratelimit:Demo.plain:1.1.1.1')).toBe(60);
   });
 
+  it('fails closed with 503 when the handler asks for it and Redis is down', async () => {
+    const redis = new FakeRedis();
+    redis.down = true;
+    expect(await status(make(redis).canActivate(ctx(Demo.prototype.closed, { ip: '1.1.1.1' })))).toBe(503);
+  });
+
   it('fails open when Redis is down', async () => {
     const redis = new FakeRedis();
     redis.down = true;
@@ -134,6 +142,7 @@ describe('public write endpoints carry a rate limit', () => {
     for (const [c, m] of [[WatchController, 'setEmail'], [WaitlistController, 'join']] as Array<[{ prototype: object }, string]>) {
       const opts = Reflect.getMetadata(RATE_LIMIT_KEY, (c.prototype as Record<string, unknown>)[m] as object) as RateLimitOptions;
       expect(opts.also).toMatchObject({ bodyField: 'email', limit: 3 });
+      expect(opts.failClosed).toBe(true);
     }
   });
 });

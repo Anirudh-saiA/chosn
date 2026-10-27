@@ -106,7 +106,7 @@ export class WatchController {
 
   // Per address as well as per IP: many addresses must not be able to mail one inbox. A repeat of the same address is a resend.
   @UseGuards(RateLimitGuard)
-  @RateLimit({ limit: 5, windowSeconds: 3600, also: { bodyField: 'email', limit: 3 } })
+  @RateLimit({ limit: 5, windowSeconds: 3600, also: { bodyField: 'email', limit: 3 }, failClosed: true })
   @Post(':id/email')
   @HttpCode(204)
   async setEmail(@Param('id') id: string, @Body() body: { email?: unknown }): Promise<void> {

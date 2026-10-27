@@ -14,7 +14,7 @@ export class WaitlistController {
 
   @Post()
   @UseGuards(RateLimitGuard)
-  @RateLimit({ limit: 5, windowSeconds: 3600, also: { bodyField: 'email', limit: 3 } }) // signups are one-shot; 5/hr covers retries, not bots; 3 per address stops one inbox being mailed
+  @RateLimit({ limit: 5, windowSeconds: 3600, also: { bodyField: 'email', limit: 3 }, failClosed: true }) // signups are one-shot; 5/hr covers retries, not bots; 3 per address stops one inbox being mailed
   async join(@Body() dto: JoinWaitlistDto) {
     const result = await this.waitlist.join(dto.name, dto.email, dto.interests, dto.shoes, dto.phone);
 

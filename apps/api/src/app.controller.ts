@@ -10,6 +10,15 @@ export class AppController {
   }
 
   /**
+   * Liveness only: the process is up and serving. No database or Redis call, so a container health check can poll it often and a
+   * database outage does not get the API restarted in a loop. Use GET /health for readiness.
+   */
+  @Get('health/live')
+  live() {
+    return { status: 'ok' };
+  }
+
+  /**
    * Proves the infra pipe end to end without any feature code: confirms
    * DATABASE_URL and REDIS_URL actually resolve to live instances, or
    * reports exactly which one doesn't.
@@ -62,7 +71,7 @@ export class AppController {
       checks,
       // null in local dev / anywhere not deployed through Railway's git
       // integration — never fabricated as "unknown" or a stale default.
-      deployedCommit: process.env.RAILWAY_GIT_COMMIT_SHA ?? null,
+      deployedCommit: process.env.GIT_COMMIT_SHA ?? process.env.RAILWAY_GIT_COMMIT_SHA ?? null,
     };
   }
 }
