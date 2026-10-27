@@ -17,3 +17,6 @@ First assigned 2026-10-21.
 - **Duplicates (task 2):** Superkicks 65 and Limited Edt 5 shoe/size pairs have extra `is_latest` rows; proposal in `data/proposals/`.
 - **Price-history inventory (task 3):** `data/ml/price_history/README.md`.
 - **Resale vs retail:** 1.2 to 1.35x the cheapest store, depending on whether Crepdog counts as retail; 1.30 for 2,947 pairs excluding fixtures.
+
+### Result 2026-10-27 (Data): VegNonVeg prices
+Cause: the scraper took the first price span, which is the struck-through price on a marked-down shoe. 22 of 60 sampled live pages were marked down and all 22 were stored at the old price (37%, about 25% to 49%). Fix and counts: REVIEW to Main, commit 676dc6a; list in `data/proposals/vegnonveg-price-check-2026-10-27.csv`. The fixed read still has to run through the nightly script (Nightly). Other stores, 5 shoes each against the store's own page: Culture Circle 4 of 5 match (1 stale: 5 sizes 8,598 vs live 8,299), Puma India 5 of 5 prices match (sizes that sold out are still in stock in our rows), Myntra not checked by hand, Superkicks / Crepdog / Limited Edt / Mainstreet / Gully Labs paused (HTTP 429 until about 10:25 on 28 Oct) and not touched.
