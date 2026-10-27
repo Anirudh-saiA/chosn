@@ -100,6 +100,9 @@ const nextConfig = {
   // Stops Next.js announcing itself via X-Powered-By — cheap, real fix
   // for the ZAP-flagged "Server Leaks Information" finding (10037).
   poweredByHeader: false,
+  // A build pre-renders hundreds of price, drop and news pages, each calling the API; with the default parallelism that exhausted the API's
+  // database pool ("timeout exceeded when trying to connect" -> 500 -> failed build). Fewer at a time, and retry a page that still fails.
+  experimental: { staticGenerationMaxConcurrency: 3, staticGenerationRetryCount: 3 },
   // Pre-launch: only the landing page is live. Every other route shows the
   // /coming-soon page (the URL stays as typed). Assets, the auth API and the
   // page itself are excluded, as are the four legal/trust documents (footer links). Set COMING_SOON=off to open the whole site again.

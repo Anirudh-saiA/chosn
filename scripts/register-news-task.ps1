@@ -21,7 +21,7 @@ if (-not (Test-Path $pythonw)) { $pythonw = $python }
 
 $action = New-ScheduledTaskAction -Execute $pythonw -Argument "scripts\news_update.py" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes $EveryMinutes) -RepetitionDuration (New-TimeSpan -Days 3650)
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings `
   -Description 'CHOSN: news feeds, official news, newsletters, tags and pictures every 30 minutes (scripts\news_update.py).' -Force | Out-Null
 
