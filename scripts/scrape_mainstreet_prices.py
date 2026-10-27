@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "webscraper"))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import core  # noqa: E402
-from scrape_shopify_prices import normalize_brand  # noqa: E402
+from scrape_shopify_prices import normalize_brand, is_non_sneaker_footwear  # noqa: E402
 
 BASE = "https://marketplace.mainstreet.co.in"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
@@ -37,6 +37,8 @@ COLLECTIONS = ["sneakers", "all-sneakers", "nike", "adidas", "new-balance", "air
 
 
 def is_footwear(p):
+    if is_non_sneaker_footwear(p):  # sneakers only (founder decision 2026-10-27): no slides, sandals, flip-flops, slippers, clogs
+        return False
     tags = [t.lower() for t in p.get("tags", [])]
     ptype = (p.get("product_type") or "")
     if NOT_FOOT.search(p["title"]) and "sneakers" not in tags:

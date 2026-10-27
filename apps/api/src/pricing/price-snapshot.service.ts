@@ -4,6 +4,22 @@ import { DRIZZLE, type Db } from '../db/drizzle.provider';
 import { priceSnapshots } from '../db/schema';
 import type { PriceSnapshotInput } from '../retailers/retailer-adapter.interface';
 
+/** A placeholder listing from a seed or a fixture adapter (its URL contains FIXTURE): it is stored as history, never as current. */
+export const isFixtureListing = (listingUrl: string | null | undefined): boolean => (listingUrl ?? '').includes('FIXTURE');
+
+/**
+ * Which inputs of a bulk write end up with is_latest = true: the last REAL input per variant/retailer.
+ * A FIXTURE input never gets the flag and never displaces a real current row.
+ */
+export function latestFlags(inputs: PriceSnapshotInput[]): boolean[] {
+  const key = (s: PriceSnapshotInput) => `${s.sneakerVariantId}|${s.retailerId}`;
+  const lastIndex = new Map<string, number>();
+  inputs.forEach((s, i) => {
+    if (!isFixtureListing(s.listingUrl)) lastIndex.set(key(s), i);
+  });
+  return inputs.map((s, i) => lastIndex.get(key(s)) === i);
+}
+
 @Injectable()
 export class PriceSnapshotService {
   private readonly logger = new Logger(PriceSnapshotService.name);
@@ -21,21 +37,25 @@ export class PriceSnapshotService {
    * price and timestamp, it just stops being current.
    */
   async record(input: PriceSnapshotInput): Promise<{ id: string }> {
+    const fixture = isFixtureListing(input.listingUrl);
     return this.db.transaction(async (tx) => {
-      await tx
-        .update(priceSnapshots)
-        .set({ isLatest: false })
-        .where(
-          and(
-            eq(priceSnapshots.sneakerVariantId, input.sneakerVariantId),
-            eq(priceSnapshots.retailerId, input.retailerId),
-            eq(priceSnapshots.isLatest, true),
-          ),
-        );
+      // A FIXTURE placeholder is kept as history only: it neither becomes current nor knocks a real current row off.
+      if (!fixture) {
+        await tx
+          .update(priceSnapshots)
+          .set({ isLatest: false })
+          .where(
+            and(
+              eq(priceSnapshots.sneakerVariantId, input.sneakerVariantId),
+              eq(priceSnapshots.retailerId, input.retailerId),
+              eq(priceSnapshots.isLatest, true),
+            ),
+          );
+      }
 
       const [row] = await tx
         .insert(priceSnapshots)
-        .values({ ...input, isLatest: true })
+        .values({ ...input, isLatest: !fixture })
         .returning({ id: priceSnapshots.id });
 
       // An INSERT ... RETURNING that comes back empty means the row went
@@ -61,14 +81,14 @@ export class PriceSnapshotService {
   async recordMany(inputs: PriceSnapshotInput[], batchSize = 1000): Promise<number> {
     if (inputs.length === 0) return 0;
     const key = (s: PriceSnapshotInput) => `${s.sneakerVariantId}|${s.retailerId}`;
-    const lastIndex = new Map<string, number>();
-    inputs.forEach((s, i) => lastIndex.set(key(s), i));
+    const flags = latestFlags(inputs);
 
     await this.db.transaction(async (tx) => {
       for (let start = 0; start < inputs.length; start += batchSize) {
         const batch = inputs.slice(start, start + batchSize);
-        const pairs = [...new Map(batch.map((s) => [key(s), s])).values()];
-        await tx.execute(sql`
+        // Only pairs that get a new real current row release the old one; FIXTURE-only pairs leave it alone.
+        const pairs = [...new Map(batch.filter((_, j) => flags[start + j]).map((s) => [key(s), s])).values()];
+        if (pairs.length > 0) await tx.execute(sql`
           UPDATE price_snapshots ps SET is_latest = false
           FROM (VALUES ${sql.join(
             pairs.map((p) => sql`(${p.sneakerVariantId}::uuid, ${p.retailerId}::uuid)`),
@@ -78,7 +98,7 @@ export class PriceSnapshotService {
         `);
         const rows = await tx
           .insert(priceSnapshots)
-          .values(batch.map((s, j) => ({ ...s, isLatest: lastIndex.get(key(s)) === start + j })))
+          .values(batch.map((s, j) => ({ ...s, isLatest: flags[start + j] })))
           .returning({ id: priceSnapshots.id });
         // Same guard as record(): rows that no partition accepted must fail the import, not vanish.
         if (rows.length !== batch.length) {

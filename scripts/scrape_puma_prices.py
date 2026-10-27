@@ -33,7 +33,9 @@ CHECKPOINT = os.path.join(ROOT, "data", "webscraper", "puma-checkpoint.jsonl")
 NOT_SHOES = re.compile(r"(^|-)(tee|t-shirt|tshirt|shirt|polo|jersey|shorts?|jacket|hoodie|sweatshirt|sweatpants|pants|trousers|"
                        r"tights|leggings|joggers?|track|tracksuit|vest|bra|dress|skirt|cap|beanie|hat|bag|backpack|socks?|"
                        r"gloves?|bottle|ball|towel|wristband|headband|sleeve|jacket|windbreaker|fleece|top|tank|singlet|"
-                       r"bodysuit|romper|cover|mask|keyring|sunglasses|watch|belt|scarf|duffel|wallet|pouch|backpack)(-|$)")
+                       r"bodysuit|romper|cover|mask|keyring|sunglasses|watch|belt|scarf|duffel|wallet|pouch|backpack|"
+                       # Sneakers only (founder decision 2026-10-27, card data-scope-slides): open-toe and slip-on footwear.
+                       r"slides?|sliders?|sandals?|slippers?|clogs?|flops?|flipflops?|mules?|thongs?|floaters?|leadcat|popcat|adilette)(-|$)")
 DAY = datetime.date.today().isoformat()
 
 
