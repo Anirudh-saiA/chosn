@@ -6,6 +6,8 @@ Every row has `as_of`, a `label` and a source (`source_url`, and `source_file` =
 |---|---|---|---|
 | `mrp_india.csv` | 32 | india-mrp-and-specs | India MRP per shoe, style code and scope (brand pages checked 2026-10-23). Low and high when a shoe has several prices by colourway |
 | `specs_origin.csv` | 18 | india-mrp-and-specs | Materials and country of origin per style code. Origin is per style code, not per shoe |
+| `mrp_india_rnd.csv` | 59 | R&D hand-off (team/rnd) | R&D's per-row MRP list with gender and sale price. **An MRP is per colourway: only rows with a style_code are exact**; the rest are prices seen across colourways, never one number per model. `data_check` flags rows that disagree with the note |
+| `origin_materials_rnd.csv` | 13 | R&D hand-off | upper, midsole, outsole, country of origin and manufacturer per style code (origin differs by style code and even by page) |
 | `corrections.csv` | 3 | india-mrp-and-specs | Values in our files that the research found wrong: Dunk Low MRP, Campus 00s upper, Samba OG B75807 `sneakers.retail_price` (9,350 vs 10,999) |
 | `resale_vs_retail_ratios.csv` | 19 | resale-vs-retail-prices + Data's re-check | Marketplace (Mainstreet, Culture Circle) price over cheapest store price, same style code and UK size. `measured_by` says R&D or Data. See "Reading the ratios" |
 | `resale_vs_retail_examples.csv` | 4 | resale-vs-retail-prices | Four worked style codes. All Unconfirmed: the store side may include test rows |
@@ -15,6 +17,8 @@ Every row has `as_of`, a `label` and a source (`source_url`, and `source_file` =
 | `hosting_costs.csv` | 9 | deployment, nightly-job-hosting | Monthly cost per hosting option, in rupees, with the basis and caveat. Estimates are marked Unconfirmed |
 | `authenticity_checks.csv` | 21 | real-vs-fake-basics | What each brand publishes about telling real from fake, and which common claims are only from blogs |
 | `dpdp_points.csv` | 14 | dpdp-obligations | The legal points (dates, rights, penalties) with labels |
+
+See `rnd_handoff_comparison.md` for how R&D's six hand-off CSVs differ from the files above.
 
 ## Not turned into data
 - `dpdp-obligations`: the part on what CHOSN collects and what to build is a to-do list for Back end and the lawyer, not data. Only the legal points are in `dpdp_points.csv`.
