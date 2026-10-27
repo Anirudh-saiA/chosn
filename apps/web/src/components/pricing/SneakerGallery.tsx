@@ -48,7 +48,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               type="button"
               onClick={() => go(-1)}
               aria-label="Previous photo"
-              className="absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+              className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
@@ -56,7 +56,7 @@ export function SneakerGallery({ images, alt }: { images: string[]; alt: string 
               type="button"
               onClick={() => go(1)}
               aria-label="Next photo"
-              className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+              className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-text/10 bg-white/90 text-text opacity-100 transition-opacity hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>

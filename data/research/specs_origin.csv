@@ -1,0 +1,19 @@
+shoe,style_code,attribute,value,as_of,label,source_url,source_file
+Nike Air Force 1 '07,CW2288-111,country_of_origin,"China, India, Vietnam",2026-10-23,Confirmed,https://nike.com/ro/t/air-force-1-07-shoes-rWtqPn/CW2288-111,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 '07,FJ4146-137,country_of_origin,"Vietnam (Dona Pacific, Dong Nai)",2026-10-23,Confirmed,https://www.nike.in/nike-air-force-1-07-men-s-shoes/p/29403441,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 '07,,materials,leather upper with perforated toe; foam midsole; rubber outsole with pivot circles,2026-10-23,Confirmed,https://nike.com/ro/t/air-force-1-07-shoes-rWtqPn/CW2288-111,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,HF5441-105,country_of_origin,"Vietnam (Ching Luh, Ben Luc); importer Nike India Pvt Ltd",2026-10-23,Confirmed,https://www.nike.in/nike-dunk-low-retro-men-s-shoes/p/24948349,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,HF5441-105,materials,India page says only 'premium materials and plush padding'; no breakdown,2026-10-23,Unconfirmed,https://www.nike.in/nike-dunk-low-retro-men-s-shoes/p/24948349,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,DC0774-001,country_of_origin,Vietnam,2026-10-23,Confirmed,https://nike.com/sg/t/air-jordan-1-low-shoes-459b4T/DC0774-050,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,DC0774-160,country_of_origin,Indonesia (PT Adis Gelora Gemilang),2026-10-23,Confirmed,https://www.nike.in/nike-air-jordan-1-low-women-s-shoes/p/29403336,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,DC0774,materials,"leather and synthetic mix upper, foam midsole, rubber traction (women's, Singapore page)",2026-10-23,Confirmed,https://nike.com/sg/t/air-jordan-1-low-shoes-459b4T/DC0774-050,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,B75807,materials,"soft leather upper, suede overlays and gum sole",2026-10-23,Confirmed,https://www.adidas.co.in/samba-og-shoes/B75807.html,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,B75807,country_of_origin,not shown on the page text read,2026-10-23,Unconfirmed,https://www.adidas.co.in/samba-og-shoes/B75807.html,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Campus 00s,HQ8708,materials,"premium leather upper, textile terry lining, off-white midsole",2026-10-23,Confirmed,https://www.adidas.co.in/campus-00s-shoes/HQ8708.html,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Campus 00s,JR8163,materials,suede upper,2026-10-23,Confirmed,https://www.adidas.co.in/campus-00s-shoes/JR8163.html,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat,406004,materials,India page lists none; the fact bank's Moldova listing (97.82% cow leather) is the only composition source,2026-10-23,Unconfirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat,406004,country_of_origin,page does not state origin (a stray 'India' text line may be a site label; do not use it),2026-10-23,Unconfirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Superstar II,,materials_and_origin,adidas India does not list it; adidas UK returned 403,2026-10-23,Unconfirmed,,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Yeezy Boost 350 V2,,materials_and_origin,adidas India does not list it; adidas UK returned 403,2026-10-23,Unconfirmed,,office/research/2026-10-23-india-mrp-and-specs.md
+New Balance 550,,materials_and_origin,brand page returned 403 or did not load,2026-10-23,Unconfirmed,,office/research/2026-10-23-india-mrp-and-specs.md
+ASICS Gel-1130,,materials_and_origin,brand page returned 403 or did not load,2026-10-23,Unconfirmed,,office/research/2026-10-23-india-mrp-and-specs.md

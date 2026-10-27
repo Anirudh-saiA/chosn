@@ -35,7 +35,7 @@ export function CompareToggle({
         aria-pressed={added}
         aria-label={`${label}: ${entry.brand} ${entry.model}`}
         title={label}
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+        className={`relative grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-colors before:absolute before:-inset-1.5 before:content-['']  disabled:cursor-not-allowed disabled:opacity-40 ${
           added ? 'border-text bg-text text-white' : 'border-text/20 bg-white text-text hover:border-text'
         } ${className}`}
       >

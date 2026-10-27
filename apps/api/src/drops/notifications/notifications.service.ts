@@ -26,27 +26,19 @@ export class NotificationsService {
   constructor(@Inject(DRIZZLE) private readonly db: Db) {}
 
   /**
-   * Reuses an existing subscriber row for a known email rather than
-   * minting a duplicate identity every time the same person re-visits
-   * and re-identifies — email is the only natural key this bare
-   * identity model has.
+   * Mints a subscriber identity. An e-mail address is stored on the new row when it is not taken yet, but it is never used to look up and
+   * hand back someone else's id: without e-mail verification, typing an address is not proof of owning it (SEC-1). A known address
+   * therefore gets a fresh anonymous row, and the address stays with its first owner.
    */
   async identify(email?: string): Promise<{ subscriberId: string }> {
     if (email) {
       const normalized = email.toLowerCase().trim();
-      const [existing] = await this.db
-        .select({ id: subscribers.id })
-        .from(subscribers)
-        .where(eq(subscribers.email, normalized))
-        .limit(1);
-      if (existing) return { subscriberId: existing.id };
-
       const [created] = await this.db
         .insert(subscribers)
         .values({ email: normalized })
+        .onConflictDoNothing({ target: subscribers.email })
         .returning({ id: subscribers.id });
-      if (!created) throw new Error('subscriber insert returned no row');
-      return { subscriberId: created.id };
+      if (created) return { subscriberId: created.id };
     }
 
     const [created] = await this.db.insert(subscribers).values({}).returning({ id: subscribers.id });

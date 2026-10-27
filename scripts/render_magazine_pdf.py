@@ -11,6 +11,7 @@ Photos are the publishers' and carry their credit lines on the pages.
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,7 +47,22 @@ def render(slug):
     return path
 
 
+def reachable(name, url):
+    """True when something answers at url (any HTTP status counts); otherwise say plainly which service is down."""
+    try:
+        urllib.request.urlopen(url, timeout=10).close()
+    except urllib.error.HTTPError:
+        return True
+    except OSError as e:
+        print(f"[magazine-pdf] skipped: the {name} is not reachable at {url} ({getattr(e, 'reason', e)}); the PDF is made on the next run once it is up")
+        return False
+    return True
+
+
 def main():
+    # The site or the API being off is a normal state on a laptop: skip cleanly (exit 0, one clear line), never a crash.
+    if not (reachable("API", f"{API}/magazine") and reachable("website", WEB)):
+        return 0
     wanted = sys.argv[1:]
     todo = wanted or [i["slug"] for i in issues() if not i.get("hasPdf")]
     for slug in todo:

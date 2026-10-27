@@ -1,0 +1,33 @@
+shoe,style_code,variant_or_scope,mrp_inr_low,mrp_inr_high,note,as_of,label,source_url,source_file
+Nike Dunk Low,HF5441-105,"Dunk Low Retro (men), standard",8295,8295,"India MRP incl. GST, brand page",2026-10-23,Confirmed,https://www.nike.in/nike-dunk-low-retro-men-s-shoes/p/24948349,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,,"Dunk Low Retro (men), some colourways",9995,9995,,2026-10-23,Confirmed,https://www.nike.in/dunk/c/94027,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,,Dunk Low Retro Premium,10795,10995,,2026-10-23,Confirmed,https://www.nike.in/dunk/c/94027,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,,Dunk Low Retro SE,10795,10795,,2026-10-23,Confirmed,https://www.nike.in/dunk/c/94027,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,,Dunk Low (women),8295,9695,,2026-10-23,Confirmed,https://www.nike.in/dunk/c/94027,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Dunk Low,,Dunk Low GORE-TEX,14995,14995,,2026-10-23,Confirmed,https://www.nike.in/dunk/c/94027,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 '07,,"men, by colourway",7495,11895,first page of 115 results only,2026-10-23,Confirmed,https://www.nike.in/air-force-1/c/94020,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 '07,FJ4146-137,men,9695,9695,,2026-10-23,Confirmed,https://www.nike.in/nike-air-force-1-07-men-s-shoes/p/29403441,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 LV8,,LV8,10995,10995,,2026-10-23,Confirmed,https://www.nike.in/air-force-1/c/94020,office/research/2026-10-23-india-mrp-and-specs.md
+Nike Air Force 1 '07,,women,8195,10995,,2026-10-23,Confirmed,https://www.nike.in/air-force-1/c/94020,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,,men,8995,8995,,2026-10-23,Confirmed,https://www.nike.in/air-jordan-1/c/94019,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,,women,8295,8295,,2026-10-23,Confirmed,https://www.nike.in/air-jordan-1/c/94019,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,,kids,7295,7295,,2026-10-23,Confirmed,https://www.nike.in/air-jordan-1/c/94019,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low,,SE,11495,11495,,2026-10-23,Confirmed,https://www.nike.in/air-jordan-1/c/94019,office/research/2026-10-23-india-mrp-and-specs.md
+Air Jordan 1 Low OG,,OG Banned,14995,14995,,2026-10-23,Confirmed,https://www.nike.in/air-jordan-1/c/94019,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Yeezy Boost 350 V2,,not sold on adidas India,,,the /yeezy page redirects to the Originals list; a direct product address returned an empty page,2026-10-23,Unconfirmed,https://www.adidas.co.in/yeezy,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,B75807,men,10999,10999,MRP in Indian currency per pair; some pairs show a sale price,2026-10-23,Confirmed,https://www.adidas.co.in/samba-og-shoes/B75807.html,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,,"men, some colourways",11999,11999,"e.g. sale price 7,199.50 on an 11,999 pair",2026-10-23,Confirmed,https://www.adidas.co.in/samba,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,,women,10999,13999,,2026-10-23,Confirmed,https://www.adidas.co.in/samba,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Samba OG,,kids,5999,6999,,2026-10-23,Confirmed,https://www.adidas.co.in/samba,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Campus 00s,,men,10999,10999,"sale prices from 7,699.50 down to 4,950 on some colourways",2026-10-23,Confirmed,https://www.adidas.co.in/campus,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Campus 00s,,kids,5999,9999,,2026-10-23,Confirmed,https://www.adidas.co.in/campus,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Superstar II,,Pokemon edition,11999,11999,the plain Superstar II address returned an empty page,2026-10-23,Confirmed,https://www.adidas.co.in/superstar,office/research/2026-10-23-india-mrp-and-specs.md
+adidas Superstar II,,plain shoe,,,not found on adidas India,2026-10-23,Unconfirmed,https://www.adidas.co.in/superstar,office/research/2026-10-23-india-mrp-and-specs.md
+New Balance 550,,Amazon.in listing MRP,14999,14999,"official India site could not be opened; price-tracker page, late Sep 2026; selling price lower",2026-10-23,Reported,https://pricehistory.app/p/new-balance-men-bb550-sneaker-IwJIUKSj,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat,406004,Speedcat Sneakers,9999,9999,prices include GST,2026-10-23,Confirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat OG,,Speedcat OG,9999,9999,,2026-10-23,Confirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat Plus,,Speedcat Plus,10999,10999,,2026-10-23,Confirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat Ballet,,Speedcat Ballet,6999,6999,,2026-10-23,Confirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+Puma Speedcat Go,,Speedcat Go,7999,7999,"list price 7,999; marked down to 5,999 on the check date (sale price in mrp_india_rnd.csv)",2026-10-23,Confirmed,https://in.puma.com/in/en/pd/speedcat-sneakers/406004,office/research/2026-10-23-india-mrp-and-specs.md
+ASICS ATMOS x GEL-1130 RE,,collaboration,14999,14999,the plain GEL-1130 is not on asics.co.in today,2026-10-23,Confirmed,https://www.asics.co.in/all-sportstyle.html,office/research/2026-10-23-india-mrp-and-specs.md
+ASICS Gel-1130,,"plain shoe, women, Nykaa",8999,8999,"regular price on Nykaa, sold by ASICS India",2026-10-23,Reported,https://www.nykaa.com/asics-gel-1130-women-beige-sneakers/p/21310012,office/research/2026-10-23-india-mrp-and-specs.md

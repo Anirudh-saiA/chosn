@@ -149,9 +149,9 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                 if (lenis) lenis.scrollTo(0, { duration: 1.4 });
                 else window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`inline-flex transition-colors duration-500 ${menuOpen || !pastHero ? 'text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]' : 'text-[#0A0A0A]'}`}
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center transition-colors duration-500 ${menuOpen || !pastHero ? 'text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]' : 'text-[#0A0A0A]'}`}
             >
-              <Logo markOnly asLink={false} className="!text-inherit" />
+              <Logo asLink={false} className="!text-inherit" />
             </Link>
           </span>
         </header>
@@ -210,7 +210,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8">
-          <Logo markOnly />
+          <Logo />
 
           <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
             {NAV.map((item) => {
@@ -221,7 +221,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={`relative px-4 py-2 font-sans text-[0.72rem] font-bold uppercase tracking-[0.2em] transition-colors duration-200 ${
-                    active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/55 hover:text-[#0A0A0A]'
+                    active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/70 hover:text-[#0A0A0A]'
                   }`}
                 >
                   {item.label}
@@ -247,7 +247,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                 setPaletteOpen(true);
               }}
               aria-label="Search sneakers"
-              className="flex h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
+              className="flex h-11 w-11 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60"
             >
               <Search className="h-[20px] w-[20px]" strokeWidth={2.2} aria-hidden />
             </button>
@@ -255,7 +255,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
             <Link
               href="/notifications"
               aria-label="Notifications"
-              className="relative hidden h-10 w-10 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
+              className="relative hidden h-11 w-11 items-center justify-center text-[#0A0A0A] transition-opacity hover:opacity-60 sm:flex"
             >
               <Bell className="h-[20px] w-[20px]" strokeWidth={2.2} />
               <BellBadge />
@@ -265,7 +265,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
-              className="flex h-10 w-10 items-center justify-center text-text md:hidden"
+              className="flex h-11 w-11 items-center justify-center text-text md:hidden"
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

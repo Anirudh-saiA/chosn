@@ -111,6 +111,7 @@ async def crawl(urls, done, limit):
     out = open(CHECKPOINT, "a", encoding="utf-8")
     todo = [u for u in urls if u not in done][:limit]
     started = time.time()
+    failed_in_a_row = 0
     async with AsyncWebCrawler(config=BrowserConfig(headless=True, verbose=False)) as crawler:
         for i, url in enumerate(todo, 1):
             if not core.allowed(url):
@@ -120,8 +121,21 @@ async def crawl(urls, done, limit):
                 res = await crawler.arun(url, config=cfg)
             except Exception as e:  # one bad page must not stop the run
                 print(f"  skip {url}: {type(e).__name__}", flush=True)
+                failed_in_a_row += 1
+                if failed_in_a_row >= 10:
+                    print("STOPPED: 10 pages in a row failed to load (network down or the machine slept); rows so far are kept.", flush=True)
+                    break
                 continue
-            core.check_page(url, getattr(res, "status_code", 200) or 200, res.html or "")  # raises SiteBlocked
+            if not getattr(res, "success", True) or not (res.html or "").strip():
+                # navigation timed out (e.g. the laptop slept mid-run): not a block and not "needs rendering"; leave it for the next run
+                print(f"  skip {url}: no page returned", flush=True)
+                failed_in_a_row += 1
+                if failed_in_a_row >= 10:
+                    print("STOPPED: 10 pages in a row failed to load; rows so far are kept.", flush=True)
+                    break
+                continue
+            failed_in_a_row = 0
+            core.check_page(url, getattr(res, "status_code", 200) or 200, res.html or "")  # raises SiteBlocked / NeedsRendering
             rows = parse(url, res.html or "")
             done[url] = rows if rows is not None else []
             out.write(json.dumps({"day": DAY, "url": url, "rows": done[url]}) + "\n")

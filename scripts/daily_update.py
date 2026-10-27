@@ -38,9 +38,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TODAY = datetime.date.today().isoformat()
-RUN_DIR = ROOT / "data" / "daily" / TODAY
+# The second shift (--midday, 14:00): the four light stores only, prices + new arrivals + wishlist alerts. It has its own folder, log
+# and summary so it never wipes or overwrites the 02:00 run's files.
+MIDDAY = "--midday" in sys.argv
+RUN_DIR = ROOT / "data" / "daily" / (TODAY + ("-midday" if MIDDAY else ""))
 STATE = ROOT / "data" / "daily" / "last_run.json"
-LOG_FILE = ROOT / "logs" / f"daily-{TODAY}.log"
+LOG_FILE = ROOT / "logs" / f"{'midday' if MIDDAY else 'daily'}-{TODAY}.log"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
            "image_url", "size_system", "condition", "gallery_urls", "compare_at_price"]
 MIN_RATIO = 0.7
@@ -51,7 +54,7 @@ NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 NODE = "node"
 
 
-SUMMARY_FILE = ROOT / "data" / "daily" / "last_run_summary.json"
+SUMMARY_FILE = ROOT / "data" / "daily" / ("midday_run_summary.json" if MIDDAY else "last_run_summary.json")
 _summary = {}
 
 
@@ -94,6 +97,74 @@ def run(name, cmd, cwd=ROOT):
     return tail
 
 
+# A site that says no (HTTP 429/403) is paused for 24 h by scripts/webscraper/core.py (data/webscraper/state.json). The pause runs
+# 24 h from the moment of the refusal, which is always minutes AFTER the job started, so a job that starts at the same time the next
+# day finds the pause still on for a few minutes and skips the store: one 429 cost two days of that store. At the end of the scrape
+# stage the job asks once more for a store whose pause has ended by then. A pause that is still on, or a fresh refusal, is left alone:
+# the pause is never cleared, shortened or bypassed here, and a store is retried at most once per run.
+PAUSE_STATE = ROOT / "data" / "webscraper" / "state.json"
+DOMAINS_OF = {"Superkicks + Crepdog Crew": ["www.superkicks.in", "crepdogcrew.com"], "Mainstreet Marketplace": ["marketplace.mainstreet.co.in"],
+              "Limited Edt": ["limitededt.in"], "Gully Labs": ["gullylabs.com"], "Culture Circle": ["www.culture-circle.com"]}
+BLOCKED_EXIT = "exit 3"  # the scrapers exit 3 when the site refused or is paused
+
+
+def pause_ended(label, now=None):
+    """True if every site this store reads has an earlier pause that has now run out (so a retry is allowed). False when a pause is
+    still on, when the store was never paused, or when the pause file cannot be read."""
+    domains = DOMAINS_OF.get(label)
+    if not domains:
+        return False
+    try:
+        state = json.loads(PAUSE_STATE.read_text(encoding="utf-8")).get("domains", {})
+    except (OSError, ValueError):
+        return False
+    now = time.time() if now is None else now
+    untils = [state.get(d, {}).get("until", 0) for d in domains]
+    return all(u <= now for u in untils) and any(u > 0 for u in untils)
+
+
+def keep_awake(on=True):
+    """Ask Windows not to sleep while the job runs (the screen may still turn off). Without this a laptop in Modern Standby froze
+    the Puma scrape on 21 Oct. It changes no system setting: the request ends with this process."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000001 if on else 0x80000000)  # ES_CONTINUOUS (| ES_SYSTEM_REQUIRED)
+    except (OSError, AttributeError):
+        pass
+
+
+NL = chr(10)
+DATA_RUN_LOG = ROOT / "office" / "data-run" / "LOG.md"
+
+
+def export_day_row(failed):
+    """60-day data run: export today's price snapshots (scripts/export_daily_snapshot.py, read-only) and put its row into
+    office/data-run/LOG.md, replacing an earlier row of the same date. A store that failed this run makes the day PARTIAL. Best effort."""
+    p = subprocess.run([sys.executable, "scripts/export_daily_snapshot.py"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    lines = [l for l in p.stdout.splitlines() if l.strip()]
+    for l in lines:
+        log("   " + l[:300])
+    row = next((l for l in lines if l.startswith("| ")), None)
+    if row is None:
+        raise RuntimeError(f"snapshot export gave no log row (exit {p.returncode}): {(p.stderr or '')[:200]}")
+    if failed:
+        cells = row.split(" | ")
+        if len(cells) > 2 and cells[2].strip() == "OK":
+            cells[2] = "PARTIAL"
+        row = " | ".join(cells).rstrip(" |") + f"; not scraped this run (site refused or failed): {', '.join(sorted(failed))} |"
+    date = row.split("|")[1].strip()
+    text = DATA_RUN_LOG.read_text(encoding="utf-8-sig") if DATA_RUN_LOG.exists() else ""
+    earlier = next((l for l in text.splitlines() if l.startswith(f"| {date} |")), "")
+    if MIDDAY and "| PARTIAL |" in earlier and "| OK |" in row:  # the day is still partial: the morning shift's stores are missing
+        row = row.replace("| OK |", "| PARTIAL |", 1)
+    kept = [l for l in text.splitlines() if not l.startswith(f"| {date} |")]
+    DATA_RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
+    DATA_RUN_LOG.write_text(NL.join(kept).rstrip(NL) + NL + row + NL, encoding="utf-8")
+    log(f"data-run log row written for {date}")
+
+
 def read_rows(path):
     with open(path, encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -118,13 +189,17 @@ def main():
     ap.add_argument("--skip-limitededt", action="store_true", help="leave Limited Edt out")
     ap.add_argument("--skip-mainstreet", action="store_true", help="leave Mainstreet Marketplace out")
     ap.add_argument("--skip-myntra", action="store_true", help="leave Myntra out (it is the slowest step)")
+    ap.add_argument("--midday", action="store_true", help="second daily shift: Superkicks, Crepdog, Limited Edt and Gully Labs only; prices, new arrivals, wishlist alerts")
     ap.add_argument("--reuse", action="store_true", help="reuse today's already-scraped files instead of scraping again")
     args = ap.parse_args()
+    if args.midday:
+        args.quick = args.skip_mainstreet = args.skip_culturecircle = True  # the heavy stores wait for the 02:00 shift
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     log(f"CHOSN daily update {TODAY} (dry-run={args.dry_run}, only={args.only}, force={args.force})")
     started = time.time()
-    mode = "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
+    mode = "midday" if args.midday else "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
+    keep_awake(True)
     _summary.clear()
     write_summary(status="running", mode=mode, dry_run=args.dry_run, started_at=datetime.datetime.now().isoformat(timespec="seconds"))
 
@@ -190,7 +265,20 @@ def main():
 
         with ThreadPoolExecutor(max_workers=len(selected)) as pool:
             results = list(pool.map(scrape, selected))
-        write_summary(scrape=[{"store": n, "minutes": round(t / 60, 1), "error": err} for n, err, t in results], not_scraped=sorted(skipped))
+        retried = []
+        for i, (n, err, t) in enumerate(results):
+            if err and BLOCKED_EXIT in err and pause_ended(n):
+                item = next(it for it in selected if it[1] == n)
+                log(f"{n}: its pause has ended since this run started; asking once more (never retried again, pause rules unchanged)")
+                t1 = time.time()
+                try:
+                    run(n + " (retry after pause)", item[2], cwd=item[3])
+                    results[i] = (n, None, t + time.time() - t1)
+                    retried.append(n + ": ok")
+                except RuntimeError as e:
+                    results[i] = (n, str(e), t + time.time() - t1)
+                    retried.append(n + ": still failed")
+        write_summary(scrape=[{"store": n, "minutes": round(t / 60, 1), "error": err} for n, err, t in results], not_scraped=sorted(skipped), retried_after_pause=retried)
         log("scrape timings: " + ", ".join(f"{n} {t / 60:.1f} min{' (FAILED)' if err else ''}" for n, err, t in results))
         for n, err, _ in results:
             if err:
@@ -261,6 +349,21 @@ def main():
             run("Save Myntra ratings", [NODE, "--env-file=.env", "dist/scripts/import-product-ratings.js", str(myntra_ratings)], cwd=api)
         except RuntimeError as e:
             log(f"Myntra ratings skipped: {e}")
+
+    if args.midday:
+        for name, script in (("New arrivals", "dist/scripts/track-new-arrivals.js"), ("Wishlist alerts", "dist/scripts/send-watch-alerts.js")):
+            try:
+                run(name, [NODE, "--env-file=.env", script], cwd=api)
+            except RuntimeError as e:
+                log(f"{name} skipped: {e}")
+        STATE.write_text(json.dumps({**last, **today_counts}, indent=2))
+        log(f"Midday shift done in {(time.time() - started) / 60:.1f} minutes.")
+        write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))
+        try:
+            export_day_row(failed_retailers)
+        except (RuntimeError, OSError) as e:
+            log(f"Snapshot export / data-run log skipped: {e}")
+        return 0
 
     # Live offers from each store's banner. Best effort: a failure here never undoes the price import.
     try:
@@ -344,6 +447,11 @@ def main():
     STATE.write_text(json.dumps(merged_state, indent=2))
     log(f"Done in {(time.time() - started) / 60:.1f} minutes.")
     write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))
+    # 60-day data run: today's snapshot file and its LOG.md row. Best effort: a failure here never fails the run.
+    try:
+        export_day_row(failed_retailers)
+    except (RuntimeError, OSError) as e:
+        log(f"Snapshot export / data-run log skipped: {e}")
     return 0
 
 
@@ -393,4 +501,5 @@ if __name__ == "__main__":
         write_summary(status="failed", error=str(e)[:500])
         sys.exit(1)
     finally:
+        keep_awake(False)
         LOCK.unlink(missing_ok=True)

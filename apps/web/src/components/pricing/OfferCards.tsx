@@ -74,7 +74,7 @@ export function OfferCards({
         </>
       ) : (
         <details className="group">
-          <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint transition-colors hover:border-text/25 [&::-webkit-details-marker]:hidden">
+          <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-2 rounded-full border border-text/10 bg-text/[0.05] px-3.5 py-1.5 text-[0.82rem] text-text-faint transition-colors hover:border-text/25 [&::-webkit-details-marker]:hidden">
             <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
             Not available at {live.length > 0 ? `${without.length} other` : `all ${without.length}`} stores in UK {size}
             <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden />
@@ -165,7 +165,7 @@ export function OfferCards({
                   type="button"
                   aria-pressed={sortBy === id}
                   onClick={() => setSortBy(id)}
-                  className={`min-h-[34px] px-3.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors ${sortBy === id ? 'bg-[#14213D] text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
+                  className={`min-h-[44px] px-3.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors ${sortBy === id ? 'bg-[#14213D] text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
                 >
                   {label}
                 </button>
@@ -173,7 +173,7 @@ export function OfferCards({
             </div>
           </div>
           <details className="mt-2 text-[0.8rem] text-text-soft">
-            <summary className="cursor-pointer select-none font-semibold text-text-soft hover:text-text">How the Value score works</summary>
+            <summary className="inline-flex min-h-[44px] cursor-pointer select-none items-center font-semibold text-text-soft hover:text-text">How the Value score works</summary>
             <p className="mt-2 max-w-3xl leading-relaxed">
               It weighs what matters to a shopper: the total price with shipping (55%), how soon it arrives by the store&apos;s own published estimate (30%) and how
               easy returns are by the store&apos;s own policy (15%). Where a store has reviews we can cite, reviews count 20% and the others shrink to fit. Only

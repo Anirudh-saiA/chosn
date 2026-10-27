@@ -1,0 +1,3 @@
+style_code,brand,model,current_retail_price_inr,current_row_updated,proposed_inr,stores_charging_it,store_slugs,basis
+162053C,Converse,Chuck 70,8500.00,2026-09-12,6399.00,2,limited-edt superkicks,"most common in-stock price at >=2 retail stores, last 4 days, test rows excluded; not checked against the brand page"
+B75807,adidas,Samba OG,9350.00,2026-09-12,10999.00,3,limited-edt superkicks vegnonveg,"most common in-stock price at >=2 retail stores, last 4 days, test rows excluded; not checked against the brand page"

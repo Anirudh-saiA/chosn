@@ -20,7 +20,7 @@ export function BrandLoader({ label = 'Curating your edit…' }: { label?: strin
         <span
           aria-hidden
           className="logo-mask w-[58%] animate-pulse text-text [animation-duration:2s]"
-          style={{ ['--m' as string]: 'url(/images/logo-full.png)', aspectRatio: 1.36 }}
+          style={{ ['--m' as string]: 'url(/images/logo-full.png)', aspectRatio: 1.219 }}
         />
       </div>
       <p className="font-sans text-lg font-medium tracking-wide text-text-soft">{label}</p>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Flame, MessageSquare, ShieldCheck } from 'lucide-react';
+import { LazyVideo } from '@/components/fx/LazyVideo';
 import { Reveal } from '@/components/fx/Reveal';
 import { ScrollHighlight } from './ScrollHighlight';
 import { shoeById, type LandingShoe, type ShoePrice } from './shoes';
@@ -180,10 +181,15 @@ export function CommunityStrip() {
         <Reveal>
           {/* square black-and-white video (public/hero/community.*) */}
           <div className="relative mx-auto aspect-square w-full max-w-[28rem] overflow-hidden rounded-[1.75rem] bg-[#d5e4ef] lg:mx-0 lg:h-[var(--v)] lg:w-auto lg:max-w-none">
-            <video className="absolute inset-0 h-full w-full object-cover mix-blend-multiply" autoPlay muted loop playsInline preload="metadata" poster="/hero/community-poster.jpg" aria-label="Community video">
-              <source src="/hero/community.webm" type="video/webm" />
-              <source src="/hero/community.mp4" type="video/mp4" />
-            </video>
+            <LazyVideo
+              className="absolute inset-0 h-full w-full object-cover mix-blend-multiply"
+              poster="/hero/community-poster.jpg"
+              ariaLabel="Community video"
+              sources={[
+                { src: '/hero/community.webm', type: 'video/webm' },
+                { src: '/hero/community.mp4', type: 'video/mp4' },
+              ]}
+            />
           </div>
         </Reveal>
       </div>

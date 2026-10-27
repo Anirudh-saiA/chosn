@@ -1,0 +1,23 @@
+diff --git a/apps/api/src/pricing/price-import/price-import.service.ts b/apps/api/src/pricing/price-import/price-import.service.ts
+index b4a2d4e..b245120 100644
+--- a/apps/api/src/pricing/price-import/price-import.service.ts
++++ b/apps/api/src/pricing/price-import/price-import.service.ts
+@@ -8,6 +8,9 @@ import { parsePriceCsv, slugify, type PriceRow, type RowError } from './price-cs
+ 
+ /** Rows per batched statement: well under Postgres's 65535-parameter limit for the widest insert here (~11 columns). */
+ const BATCH = 1000;
++// Marketplaces where sellers set the price (asking prices, not store prices). Their snapshots are stored as 'resale' so the Compare
++// "best price" can keep them in a separate lane. Names are matched case-insensitively against the CSV's retailer column.
++const RESALE_RETAILERS = new Set(['mainstreet marketplace', 'culture circle']);
+ 
+ function chunk<T>(items: T[], size: number): T[][] {
+   const out: T[][] = [];
+@@ -231,7 +234,7 @@ export class PriceImportService {
+           shippingCost: String(r.shipping),
+           currency: 'INR',
+           condition: r.condition,
+-          priceType: 'retail',
++          priceType: RESALE_RETAILERS.has(r.retailer.toLowerCase()) ? 'resale' : 'retail',
+           inStock: r.inStock,
+           listingUrl: r.url,
+           imageUrl: r.imageUrl,

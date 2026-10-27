@@ -39,10 +39,10 @@ export function DropStatusBadge({ dropEventId, initialStatus, className = '' }: 
       className={
         'inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-wider transition-colors duration-200 ease-chosn motion-reduce:transition-none ' +
         (status === 'live'
-          ? 'border-signal/50 bg-signal/10 text-signal'
+          ? 'border-signal/50 bg-signal/10 text-[#0A6B44]'
           : status === 'sold_out'
             ? 'border-text/15 bg-vault-deep/70 text-text-faint'
-            : 'border-brass/50 bg-brass/10 text-brass-bright') +
+            : 'border-brass/50 bg-brass/10 text-[#7A4B00]') +
         (justFlipped ? ' motion-reduce:bg-transparent shadow-glow-signal' : '') +
         (className ? ` ${className}` : '')
       }

@@ -2,11 +2,60 @@
 
 Newest first. Format and severity guide in office/roles/security.md. Never put a secret value here; say where it is.
 
+## Patches ready (2026-10-27, founder approved)
+Not applied; owners apply, Main merges. Back end: handoff/security-backend/ (SEC-1, SEC-12, SEC-13, SEC-14, the file-type part of SEC-6, untrack .pyc from SEC-11, and the dependency upgrade plan). Drops and News desk: handoff/security-news-drops/ (news feed limits, SEC-11). Still founder-only: rotate secrets and reset the Railway password (SEC-2). Not yet prepared: SEC-9 calendar token (needs a database migration and a web change), SEC-4, SEC-5, SEC-7, SEC-10.
+
+### SEC-14  Rate limits can be dodged by changing X-Forwarded-For; counters shared between routes    Severity: medium    Status: open
+Where: apps/api/src/common/rate-limit.guard.ts:45 and :50; apps/web/src/lib/auth/rate-limit.ts (clientIp)        Found: 2026-10-27        Owner: Back end
+What: the limiter keys on the first X-Forwarded-For value from the request, which the caller controls, and on the handler name, which is shared by four handlers called create (comments, posts, feedback, reports).
+Proof: localhost, POST /notifications/subscriptions x34 (limit 30): fixed header gave 429 from call 31; 34 different header values gave no 429.
+Fix: use req.ip (trust proxy is already set); key on controller plus handler name.        Verified fixed: not yet
+
+### SEC-13  WebSocket gateways accept oversized frames and unbounded room joins    Severity: medium    Status: open
+Where: apps/api/src/chat/chat.gateway.ts:56 and :186, apps/api/src/drops/drop-live.gateway.ts:59        Found: 2026-10-27        Owner: Back end
+What: no maxPayload (ws default about 100 MB); chat:join accepts any string and adds it to an in-memory map.
+Proof: localhost, an anonymous connection to /ws/chat sent a 5 MB frame and stayed open.
+Fix: maxPayload 16 KB, roomId must be a UUID, cap rooms per socket and connections per IP.        Verified fixed: not yet
+
+### SEC-12  Database, Redis, API and web listen on all interfaces; default DB password; Redis without password    Severity: high    Status: open
+Where: docker-compose.yml:7, :14, :25        Found: 2026-10-27        Owner: Back end (compose) / Founder (machine)
+What: Anyone on the same network can reach Postgres as postgres with the default password and Redis with none. Windows Firewall not tested.
+Proof: netstat on this PC shows 55432, 6380, 4000 and 3000 on 0.0.0.0 and [::].
+Fix: bind to 127.0.0.1 in compose, change the password, set requirepass.        Verified fixed: not yet
+
+### SEC-11  Smaller items from the whole-project check    Severity: low    Status: open
+Where: see office/security/bug-check-2026-10-27.md items 9, 10 and 15 (tracked .pyc files, news feed fetch without timeout, sign-up enumeration, plain reset tokens, secret compare)        Found: 2026-10-27        Owner: Main / News desk / Front end / Back end
+What and Fix: listed one by one in the bug check.        Verified fixed: not yet
+
+### SEC-10  Wishlist e-mail can be reset by anyone holding the watch id, switching off the owner's alerts    Severity: low    Status: open
+Where: POST /watch/:id/email, PUT /watch/:id/items, apps/api/src/catalog/watch.controller.ts        Found: 2026-10-22        Owner: Back end
+What: With only the watch id, a caller can replace the stored e-mail (the owner's `email_confirmed` flips to false at once, so their alerts stop until a new confirmation), replace the whole wishlist, or send a confirmation e-mail to any address (see SEC-4). No account, so the id is the only barrier. The id is a random v4 UUID from `gen_random_uuid()` (122 bits), so it cannot be guessed or enumerated; the risk is leakage only (see SEC-9).
+Proof: logic read in the controller; the prefs call in SEC-9 shows the id alone authorises writes. I did not overwrite a real e-mail; the e-mail route sends mail, so I did not call it.
+Fix: when an e-mail is already confirmed, keep it until the new address is confirmed (store the new one as pending). Rate-limit per watch id as well as per IP.        Verified fixed: not yet
+
+### SEC-9  The personal calendar link contains the master watch id    Severity: medium    Status: open
+Where: GET /drops/my.ics?watch=<id> (apps/api/src/drops/drops.controller.ts:73); link built in apps/web/src/components/drops/MyDrops.tsx:37        Found: 2026-10-22        Owner: Back end + Front end
+What: The link is meant to be pasted into Google, Apple or Outlook calendar, so it is handed to third-party servers and appears in their settings, logs and any shared screenshot. The same id is the credential for the wishlist, alerts, e-mail binding and preferences. Anyone who sees the calendar link can therefore also change the owner's settings (SEC-10), and the path `/watch/<id>` appears in host logs and Sentry (SEC-7). A calendar feed should be read-only and revocable.
+Proof: on localhost, created a test watch; `GET /drops/my.ics?watch=<id>` returned 200 text/calendar; `PATCH /watch/<id>/prefs {"instant":false}` with the same id returned 204 and `GET /watch/<id>` then showed `instant:false`. The calendar response sets no Cache-Control. An unknown id also returns 200 (empty feed), so the endpoint is not an oracle for valid ids.
+Fix: add a separate random `calendar_token` per watch (read-only, regenerable) and use it in the feed URL; keep the watch id out of any shareable link. Add `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer` on the feed.        Verified fixed: not yet
+
+### SEC-8  Newsletter reader trusts any SPF/DKIM pass, not one that matches the From address    Severity: medium    Status: fixed
+Where: apps/api/src/scripts/fetch-email-news.ts (`authenticated()`, line 79; used at line 196)        Found: 2026-10-22        Owner: Drops and News desk
+What: A mail is accepted if its Authentication-Results header contains `dkim=pass` or `spf=pass` for any domain. An attacker who owns a domain with valid SPF/DKIM can send mail with a forged From (a brand such as nike.com, or googlealerts-noreply@google.com) and it passes. Impact: made-up headlines on the public news page (fake "drops"), and for Google Alert mail, links to any https site shown as news. The attacker needs the address of the news mailbox. Output is limited: https links only, tags stripped, and React escapes text, so no script injection.
+Proof: code read and a unit-level reading of the regex; I did not send mail (outward action). A duplicated Authentication-Results header makes mailparser return an array, which the code treats as failed, so that path fails closed.
+Fix: accept only when the passing domain matches the From domain (`header.from=` / `header.d=` equals or is a subdomain of the sender's domain, or `dmarc=pass`); add a spec with a forged-From sample. Until then keep the email reader off (NEWS_IMAP_* unset).        Verified fixed: 2026-10-27 by reading commit 135ea09 (authenticated() now needs the passing domain to match the From domain) and the 105 API tests passing; not re-proven with a forged mail
+
+### SEC-7  Error reports and logs can carry personal data and the watch id    Severity: low    Status: open
+Where: apps/api/src/instrument.ts (Sentry.init with no scrubbing), apps/api/src/email/email.service.ts:25,51 and waitlist.service.ts (e-mail addresses in log lines)        Found: 2026-10-21        Owner: Back end
+What: The watch id (the only credential for wishlist, alerts and e-mail binding) sits in URL paths like `/watch/<id>/email`, and the API's Sentry setup has no `beforeSend` or URL/body scrubbing, so an error or a traced request (10% sampled) can ship that id, and request bodies containing e-mail addresses, to Sentry. Log lines also print recipient e-mail addresses. The web side is better: no replay, no tracing, and no server-only env var is read in any client component (checked all 'use client' files; the only NEXT_PUBLIC values are the API/WS URLs, Sentry DSN, PostHog key and host, which are meant to be public).
+Proof: code read only; I did not send a test event to Sentry (that would leave our machine).
+Fix: add a `beforeSend` that replaces UUIDs in `request.url` and strips `request.data`; log a masked address or the row id instead of the address.        Verified fixed: not yet
+
 ### SEC-6  Dependency advisories (npm audit, production deps): 2 critical, 9 high    Severity: medium    Status: open
 Where: root lockfile; next 16.3.4, proxy-addr, multer, @nestjs/platform-express, sharp, nodemailer, @auth/core        Found: 2026-10-21        Owner: Back end / Front end
 What: `npm audit --omit=dev` reports 16 (1 low, 4 moderate, 9 high, 2 critical). The two criticals: Next.js RCE in `next/og` ImageResponse (installed 16.3.4, fixed in 16.3.6+) and proxy-addr IP spoofing via IPv4-mapped IPv6 (fixed in 2.0.8). Rated medium, not critical, because grep finds no ImageResponse / next/og use in apps/web/src, so the Next RCE is not reachable today. The proxy-addr one matters more: the API sets `trust proxy` and the rate limiters key on `req.ip`.
 Proof: npm audit output from the repo root, 2026-10-21; grep for ImageResponse in apps/web/src returned nothing.
-Fix: upgrade next to a patched 16.3.x, proxy-addr >=2.0.8, sharp >=0.35.5, multer >=2.3.0 (via @nestjs/platform-express), nodemailer. One branch, tests run. Not yet reviewed: dev-only dependencies and the new packages imapflow, mailparser, page-flip.        Verified fixed: not yet
+Fix: upgrade next to a patched 16.3.x, proxy-addr >=2.0.8, sharp >=0.35.5, multer >=2.3.0 (via @nestjs/platform-express), file-type. One branch, tests run. Full triage with reachability, dev-tool noise and the new packages: office/security/dependency-triage.md.        Verified fixed: not yet
 
 ### SEC-5  API sends no security headers; X-Powered-By is on    Severity: low    Status: open
 Where: apps/api/src/main.ts        Found: 2026-10-21        Owner: Back end
@@ -37,10 +86,15 @@ What: identify() looks up an existing subscriber by e-mail and returns its `subs
 Proof: on localhost, two calls with the same test address (different letter case) returned the identical subscriberId, and `GET /notifications/subscriptions?subscriberId=<id>` answered for it. The address was made up; no real data touched.
 Fix: handoff/security-backend/SEC-1-identify.patch (never return an existing row for an e-mail), plus a spec.        Verified fixed: not yet
 
+## Rotation list (task 1; no values)
+Rotate if the earlier print of `.env.local` left this PC or its session logs: VERCEL_OIDC_TOKEN (first; confirm in Vercel), AUTH_SECRET (signs all web sessions), API_JWT_SECRET (used by both apps), TOTP_ENCRYPTION_KEY (rotating needs a re-encrypt of stored 2FA secrets, ask Back end first). Not known to be exposed but worth rotating before a public host: RESEND_API_KEY, VAPID_PRIVATE_KEY (breaks existing push subscriptions), the affiliate tokens (Flipkart, Admitad, INRDeals, Awin), and the local database password. Use new values on the host; never reuse the local ones.
+
 ## Checked and found fine (2026-10-21)
 - No `.env*` file tracked or ever added to git history; no key, JWT or Resend-pattern strings in any commit.
 - Every admin, community, moderation, report and block mutation route returned 401 without a token on localhost.
 - Admin drops raw SQL: column names come from a fixed whitelist in `check()`, regions are checked against a fixed set before `sql.raw`. Not injectable as written.
 - `/media/:folder/:file`: strict filename regex and folder whitelist; traversal attempts returned 404.
+- Admin (2026-10-22): the web `/admin`, `/admin/drops`, `/admin/prices`, `/admin/moderation`, `/admin/catalog` return 404 for an anonymous visitor (page code calls `notFound()` unless the session role is admin and has an API token). The API rejects missing, garbage, `alg:none` and wrong-secret tokens with 401 on `/admin/drops`; `AdminGuard` re-reads the role from the database on every request, so removing admin takes effect at once. Not tested: a valid non-admin token (I will not read the signing secret), and admin pages with a real admin session.
+- Security headers on the web app (dev server): CSP, X-Frame-Options DENY, nosniff, Referrer-Policy and Permissions-Policy all present. `unsafe-eval` in the CSP is dev-mode only per the config; check a production build before launch.
 - CORS: a request with a foreign Origin got no allow header.
 - Web: the only `dangerouslySetInnerHTML` is a constant CSS string in global-error.tsx.

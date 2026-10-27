@@ -4,10 +4,14 @@ Owner: the security team. Main assigns; the team updates this file and reports e
 First assigned 2026-10-21.
 
 ## Open
-1. **Secrets audit.** Search the repo history and working tree for committed keys; check `.env`, `.env.local` and `apps/api/.env` handling and `.gitignore`; check nothing secret reaches the browser or logs. A `VERCEL_OIDC_TOKEN` in `.env.local` was printed once earlier and must be treated as exposed. *Done when:* findings in `office/security/findings.md` and a list of what to rotate (without any values).
-2. **The two credentials.** (a) The anonymous watch id and the personal calendar link `/drops/my.ics?watch=`: guessability, leakage, what an attacker could do. (b) Admin routes `/admin/drops`, `/admin/prices` and moderation: guards, token handling, the web 404 for non-admins. Test on localhost only. *Done when:* each has findings with proof.
-3. **Dependency audit.** `npm audit` for the root, `apps/api` and `apps/web`; separate real risks from noise; check the new packages (`imapflow`, `mailparser`, `page-flip`). *Done when:* a triage list with severity and the fix.
+4. **Verify SEC-1** once Back end applies the patch: same request must return two different ids.
+5. **Inputs and abuse.** CSV price importer, Playwright PDF renderer, magazine PDF route, community posts, chat, comments (injection, size, rate limits). Localhost only.
+6. **Web accounts.** Password reset, 2FA, account enumeration, rate limits; needs a test admin session from the founder.
+7. **Privacy (technical).** What personal data we store, retention, deletion path, PostHog consent.
 
 ## Doing
 
 ## Done
+2. **The two credentials** (2026-10-22): SEC-9, SEC-10 (watch id and calendar link), admin checks recorded in findings.md. Open follow-up: test with a real admin session and a valid non-admin token.
+3. **Dependency audit** (2026-10-22): office/security/dependency-triage.md, SEC-6 updated, SEC-8 (email reader) added.
+1. **Secrets audit** (2026-10-21): SEC-2, SEC-3, SEC-7 and the rotation list in `office/security/findings.md`.
