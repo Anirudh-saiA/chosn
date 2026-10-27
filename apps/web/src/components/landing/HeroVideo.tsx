@@ -10,6 +10,12 @@ export function HeroVideo() {
   // The poster photo is on screen from the first paint; the video fades in over it once it is really playing, so there is no black flash or jump.
   useEffect(() => {
     const v = ref.current;
+    // Reduced motion: no moving background. Stop the video and leave the poster photo showing.
+    if (v && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      v.pause();
+      v.removeAttribute('autoplay');
+      return;
+    }
     if (v && !v.paused && v.readyState >= 3) setReady(true);
   }, []);
   return (
@@ -19,7 +25,9 @@ export function HeroVideo() {
         <video
           ref={ref}
           data-ready={ready}
-          onPlaying={() => setReady(true)}
+          onPlaying={() => {
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setReady(true);
+          }}
           className="hero-video absolute inset-0 h-full w-full object-cover"
           autoPlay
           muted

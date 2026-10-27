@@ -221,7 +221,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={`relative px-4 py-2 font-sans text-[0.72rem] font-bold uppercase tracking-[0.2em] transition-colors duration-200 ${
-                    active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/55 hover:text-[#0A0A0A]'
+                    active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/70 hover:text-[#0A0A0A]'
                   }`}
                 >
                   {item.label}

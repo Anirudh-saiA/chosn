@@ -225,9 +225,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
           {bestPrice !== null ? (
             <span className="font-sans text-[1rem] font-extrabold sm:text-[clamp(1.1rem,1.5vw,1.3rem)] leading-none tabular-nums text-[#0A0A0A]">{formatInr(bestPrice)}</span>
           ) : (
-            <span className="text-[0.8rem] font-bold text-[#0A0A0A]/50 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
+            <span className="text-[0.8rem] font-bold text-[#0A0A0A]/60 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
           )}
-          {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/45 line-through">{formatInr(was)}</span>}
+          {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/60 line-through">{formatInr(was)}</span>}
           {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
         </div>
       </div>
@@ -304,9 +304,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   </button>
                 </li>
               ))}
-              {extra > 0 && <li className="font-mono text-[0.72rem] font-bold text-[#0A0A0A]/50">+{extra}</li>}
+              {extra > 0 && <li className="font-mono text-[0.72rem] font-bold text-[#0A0A0A]/60">+{extra}</li>}
             </ul>
-            <span className="ml-auto hidden font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/40 sm:inline">{colours.length} colours</span>
+            <span className="ml-auto hidden font-mono text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/60 sm:inline">{colours.length} colours</span>
           </div>
         )}
 
@@ -314,7 +314,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-[0.7rem] font-bold text-[#0A0A0A] sm:text-[0.78rem]">Sizes</h3>
-            <span className={`flex items-center gap-1.5 text-[0.68rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/40'}`}>
+            <span className={`flex items-center gap-1.5 text-[0.68rem] font-semibold ${anyStock ? 'text-[#0A0A0A]/65' : 'text-[#0A0A0A]/60'}`}>
               <span className={`h-2 w-2 rounded-full ${anyStock ? 'bg-[#1FA34A]' : 'bg-[#0A0A0A]/25'}`} aria-hidden />
               {anyStock ? 'In Stock' : 'Sold out'}
             </span>
@@ -336,7 +336,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                           ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
                           : s.available
                             ? 'border-[#0A0A0A]/12 bg-white text-[#0A0A0A] hover:border-[#0A0A0A]/50'
-                            : 'border-[#0A0A0A]/8 bg-[#0A0A0A]/[0.03] text-[#0A0A0A]/30 after:pointer-events-none after:absolute after:inset-x-1.5 after:top-1/2 after:h-px after:-rotate-[22deg] after:bg-[#0A0A0A]/35 after:content-[\'\']'
+                            : 'border-[#0A0A0A]/8 bg-[#0A0A0A]/[0.03] text-[#0A0A0A]/60 after:pointer-events-none after:absolute after:inset-x-1.5 after:top-1/2 after:h-px after:-rotate-[22deg] after:bg-[#0A0A0A]/35 after:content-[\'\']'
                       }`}
                     >
                       {idx === 0 ? `UK ${formatSize(s.size)}` : formatSize(s.size)}
@@ -346,7 +346,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
               })}
             </ul>
           ) : (
-            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/45">{data === null ? 'Loading sizes…' : 'No sizes listed'}</p>
+            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/60">{data === null ? 'Loading sizes…' : 'No sizes listed'}</p>
           )}
         </div>
 
@@ -359,7 +359,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
         <div className="mt-auto hidden sm:block">
           <div className="flex items-center justify-between">
             <h3 className="text-[0.78rem] font-bold text-[#0A0A0A]">Compare Prices</h3>
-            <span className="text-[0.68rem] text-[#0A0A0A]/45">
+            <span className="text-[0.68rem] text-[#0A0A0A]/60">
               {storeCount} {storeCount === 1 ? 'Store' : 'Stores'}
             </span>
           </div>
@@ -381,10 +381,10 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                         <span className="max-w-[3.4rem] truncate text-[0.6rem] font-bold text-[#0A0A0A]/70">{st?.name ?? o.slug}</span>
                       )}
                     </span>
-                    <span className={`text-[0.76rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/40 line-through'}`}>{formatInr(o.price)}</span>
+                    <span className={`text-[0.76rem] font-extrabold tabular-nums ${o.inStock ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]/60 line-through'}`}>{formatInr(o.price)}</span>
                     <span
                       className={`rounded-full px-1.5 py-px text-[0.56rem] font-semibold ${
-                        lowest ? 'bg-[#C9EDD3] text-[#1B7A34]' : o.inStock ? 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/55' : 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/45'
+                        lowest ? 'bg-[#C9EDD3] text-[#14662A]' : o.inStock ? 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/70' : 'bg-[#0A0A0A]/[0.06] text-[#0A0A0A]/60'
                       }`}
                     >
                       {lowest ? 'Lowest' : o.inStock ? 'In Stock' : 'Sold out'}
@@ -394,7 +394,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
               })}
             </ul>
           ) : (
-            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/45">{offers === null ? (data === null ? 'Loading prices…' : 'Loading prices for this size…') : 'No store lists this size right now.'}</p>
+            <p className="mt-2.5 text-[0.85rem] text-[#0A0A0A]/60">{offers === null ? (data === null ? 'Loading prices…' : 'Loading prices for this size…') : 'No store lists this size right now.'}</p>
           )}
         </div>
       </div>

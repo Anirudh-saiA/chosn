@@ -294,7 +294,7 @@ html.lenis body {
   }
 
   .eyebrow {
-    @apply font-mono text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-brass;
+    @apply font-mono text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[#9A5A00]; /* darker amber: brass #D97E00 is only 2.7:1 on the light page */
   }
 
   /* -------- Loading -------- */
