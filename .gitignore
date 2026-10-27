@@ -51,3 +51,7 @@ backups/
 
 # n8n workflow with the control token and email key inside
 automation/n8n/*.generated.json
+
+# Python bytecode
+__pycache__/
+*.pyc
