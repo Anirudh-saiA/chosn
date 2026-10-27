@@ -43,6 +43,7 @@ apps/api/uploads/
 data/
 logs/
 scripts/run-daily.cmd
+scripts/run-midday.cmd
 
 # local scraping toolkit environment
 tools/webscraper-venv/
