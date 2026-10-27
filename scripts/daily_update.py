@@ -38,9 +38,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TODAY = datetime.date.today().isoformat()
-RUN_DIR = ROOT / "data" / "daily" / TODAY
+# The second shift (--midday, 14:00): the four light stores only, prices + new arrivals + wishlist alerts. It has its own folder, log
+# and summary so it never wipes or overwrites the 02:00 run's files.
+MIDDAY = "--midday" in sys.argv
+RUN_DIR = ROOT / "data" / "daily" / (TODAY + ("-midday" if MIDDAY else ""))
 STATE = ROOT / "data" / "daily" / "last_run.json"
-LOG_FILE = ROOT / "logs" / f"daily-{TODAY}.log"
+LOG_FILE = ROOT / "logs" / f"{'midday' if MIDDAY else 'daily'}-{TODAY}.log"
 COLUMNS = ["brand", "model", "colorway", "style_code", "size", "retailer", "price", "shipping", "url", "in_stock",
            "image_url", "size_system", "condition", "gallery_urls", "compare_at_price"]
 MIN_RATIO = 0.7
@@ -51,7 +54,7 @@ NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 NODE = "node"
 
 
-SUMMARY_FILE = ROOT / "data" / "daily" / "last_run_summary.json"
+SUMMARY_FILE = ROOT / "data" / "daily" / ("midday_run_summary.json" if MIDDAY else "last_run_summary.json")
 _summary = {}
 
 
@@ -153,6 +156,9 @@ def export_day_row(failed):
         row = " | ".join(cells).rstrip(" |") + f"; not scraped this run (site refused or failed): {', '.join(sorted(failed))} |"
     date = row.split("|")[1].strip()
     text = DATA_RUN_LOG.read_text(encoding="utf-8-sig") if DATA_RUN_LOG.exists() else ""
+    earlier = next((l for l in text.splitlines() if l.startswith(f"| {date} |")), "")
+    if MIDDAY and "| PARTIAL |" in earlier and "| OK |" in row:  # the day is still partial: the morning shift's stores are missing
+        row = row.replace("| OK |", "| PARTIAL |", 1)
     kept = [l for l in text.splitlines() if not l.startswith(f"| {date} |")]
     DATA_RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
     DATA_RUN_LOG.write_text(NL.join(kept).rstrip(NL) + NL + row + NL, encoding="utf-8")
@@ -183,13 +189,16 @@ def main():
     ap.add_argument("--skip-limitededt", action="store_true", help="leave Limited Edt out")
     ap.add_argument("--skip-mainstreet", action="store_true", help="leave Mainstreet Marketplace out")
     ap.add_argument("--skip-myntra", action="store_true", help="leave Myntra out (it is the slowest step)")
+    ap.add_argument("--midday", action="store_true", help="second daily shift: Superkicks, Crepdog, Limited Edt and Gully Labs only; prices, new arrivals, wishlist alerts")
     ap.add_argument("--reuse", action="store_true", help="reuse today's already-scraped files instead of scraping again")
     args = ap.parse_args()
+    if args.midday:
+        args.quick = args.skip_mainstreet = args.skip_culturecircle = True  # the heavy stores wait for the 02:00 shift
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     log(f"CHOSN daily update {TODAY} (dry-run={args.dry_run}, only={args.only}, force={args.force})")
     started = time.time()
-    mode = "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
+    mode = "midday" if args.midday else "quick" if args.quick else (f"only:{args.only}" if args.only else "full")
     keep_awake(True)
     _summary.clear()
     write_summary(status="running", mode=mode, dry_run=args.dry_run, started_at=datetime.datetime.now().isoformat(timespec="seconds"))
@@ -340,6 +349,21 @@ def main():
             run("Save Myntra ratings", [NODE, "--env-file=.env", "dist/scripts/import-product-ratings.js", str(myntra_ratings)], cwd=api)
         except RuntimeError as e:
             log(f"Myntra ratings skipped: {e}")
+
+    if args.midday:
+        for name, script in (("New arrivals", "dist/scripts/track-new-arrivals.js"), ("Wishlist alerts", "dist/scripts/send-watch-alerts.js")):
+            try:
+                run(name, [NODE, "--env-file=.env", script], cwd=api)
+            except RuntimeError as e:
+                log(f"{name} skipped: {e}")
+        STATE.write_text(json.dumps({**last, **today_counts}, indent=2))
+        log(f"Midday shift done in {(time.time() - started) / 60:.1f} minutes.")
+        write_summary(status="ok", minutes=round((time.time() - started) / 60, 1))
+        try:
+            export_day_row(failed_retailers)
+        except (RuntimeError, OSError) as e:
+            log(f"Snapshot export / data-run log skipped: {e}")
+        return 0
 
     # Live offers from each store's banner. Best effort: a failure here never undoes the price import.
     try:

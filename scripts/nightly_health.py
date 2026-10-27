@@ -155,6 +155,23 @@ def daily_section(date, now, summary):
     return lines
 
 
+def midday_section(now):
+    """The 14:00 second shift (light stores). Reported only once it has ever run; a missing run after 15:30 is amber."""
+    summ = read_json(DATA / "data" / "daily" / "midday_run_summary.json")
+    lines = ["## Second shift (14:00, light stores)"]
+    if not summ:
+        return lines + ["- Not registered or never run yet."]
+    started = parse_ts(summ.get("started_at"))
+    lines.append(f"- Last run started {started:%Y-%m-%d %H:%M} ({ago(started, now)}): status **{summ.get('status')}**, {summ.get('minutes', '?')} min")
+    for st in summ.get("scrape") or []:
+        lines.append(f"- {st['store']}: " + ("ok" if not st.get("error") else "FAILED " + st["error"][:100]))
+    if summ.get("status") not in ("ok", "running"):
+        red.append(f"The midday shift {summ.get('status')}.")
+    if started and started.date() < now.date() and now.hour >= 16:
+        amber.append("The midday shift has not run today (last run " + ago(started, now) + ").")
+    return lines
+
+
 def news_section(now):
     lines = ["## News cycle (every 10 minutes)"]
     n = read_json(DATA / "data" / "daily" / "news_last_run.json")
@@ -319,7 +336,7 @@ def main():
     now = datetime.datetime.now()
     summary = read_json(DATA / "data" / "daily" / "last_run_summary.json")
 
-    body = daily_section(args.date, now, summary) + [""] + news_section(now) + [""] + freshness_section(now) + [""] + history_section(now) + [""] + system_section()
+    body = daily_section(args.date, now, summary) + [""] + midday_section(now) + [""] + news_section(now) + [""] + freshness_section(now) + [""] + history_section(now) + [""] + system_section()
     head = [f"# Nightly health report {args.date}", f"Generated {now:%Y-%m-%d %H:%M} by scripts/nightly_health.py (read-only).", ""]
     if red:
         head += ["## RED (needs action)"] + [f"- {r}" for r in red] + [""]
