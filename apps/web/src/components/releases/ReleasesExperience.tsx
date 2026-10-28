@@ -190,7 +190,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   disabled={anim !== null}
                   onClick={() => open(k)}
                   aria-label={`Open ${LOOK[k].title}`}
-                  className="group relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-colors duration-300"
+                  className="group relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-none transition-colors duration-300"
                   style={{ background: LOOK[k].bg }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = LOOK[k].hover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = LOOK[k].bg)}

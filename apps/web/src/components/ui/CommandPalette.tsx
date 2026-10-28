@@ -149,7 +149,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
           <motion.button
             type="button"
             aria-label="Close search"
-            className="absolute inset-0 cursor-default bg-[#FAFAFA]/70"
+            className="absolute inset-0 cursor-default rounded-none bg-[#FAFAFA]/70"
             initial={{ backdropFilter: 'blur(0px)' }}
             animate={{ backdropFilter: 'blur(14px)' }}
             exit={{ backdropFilter: 'blur(0px)' }}

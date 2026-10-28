@@ -95,8 +95,9 @@
   }
 
   /* Rounded, never sharp: every control and floating surface gets the scale (:where keeps specificity at zero, so a component class still wins). */
-  :where(button, [role='button'], .btn) {
-    border-radius: var(--radius-pill);
+  /* 28px caps at a full pill for any normal button height, but a big block-sized button stays a rounded rectangle, never an oval. */
+  :where(button, [role='button']) {
+    border-radius: var(--radius-2xl);
   }
   :where(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea) {
     border-radius: var(--radius-md);

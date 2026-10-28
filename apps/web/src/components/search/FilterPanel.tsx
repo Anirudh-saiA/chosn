@@ -260,7 +260,7 @@ export function FilterDrawer({ facets, total }: { facets: SearchFacets; total: n
 
       {open && (
         <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Filters">
-          <button type="button" aria-label="Close filters" className="absolute inset-0 bg-[#0A0A0A]/50" onClick={() => setOpen(false)} />
+          <button type="button" aria-label="Close filters" className="absolute inset-0 rounded-none bg-[#0A0A0A]/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-end px-4 pt-3">
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full border border-text/15">

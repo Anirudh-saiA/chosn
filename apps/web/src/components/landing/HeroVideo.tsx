@@ -44,12 +44,12 @@ export function HeroVideo() {
         </video>
         <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-        <h1 className="hero-wordmark relative z-10 text-center font-display text-[clamp(5rem,20vw,18rem)] uppercase leading-none tracking-[0.02em] text-white [text-shadow:0_4px_40px_rgba(0,0,0,0.35)]">
+        <h1 className="hero-wordmark relative z-10 text-center font-display text-[clamp(4rem,19vw,16rem)] uppercase leading-none tracking-[-0.04em] text-white [text-shadow:0_4px_40px_rgba(0,0,0,0.35)]">
           Chosn
         </h1>
 
         {/* tagline: each line slides up out of a mask once the wordmark has landed */}
-        <p className="hero-tagline relative z-10 mt-[clamp(1rem,3vw,2.25rem)] px-6 text-center font-sans text-[clamp(1.05rem,2.4vw,2rem)] font-bold leading-snug tracking-tight text-[#FF7A1A] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)]">
+        <p className="hero-tagline relative z-10 mt-[clamp(1rem,3vw,2.25rem)] px-6 text-center font-sans text-[clamp(1.05rem,2.4vw,2rem)] font-bold leading-snug tracking-tight text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.5)]">
           <span className="hero-line block overflow-hidden">
             <span className="block" style={{ ['--d' as string]: '0.9s' }}>&ldquo;You don&apos;t join <span className="text-white">CHOSN</span>.</span>
           </span>

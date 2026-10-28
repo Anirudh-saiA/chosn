@@ -26,7 +26,7 @@ function ShoeOnColour({ shoe, className = '', size = 'w-[88%]', glass = true }: 
 }
 
 const eyebrow = 'font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em]';
-const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]';
+const bigTitle = 'font-display text-[clamp(2.25rem,6vw,5rem)] leading-[1] tracking-[-0.03em]';
 
 /* ---------------------------------------------------------------- compare tiles */
 

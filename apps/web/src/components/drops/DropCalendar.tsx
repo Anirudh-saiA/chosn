@@ -186,7 +186,7 @@ export function DropCalendar({
                         whileTap={reduce ? undefined : { scale: 0.96 }}
                         transition={{ type: 'spring', stiffness: 420, damping: 24 }}
                         className={cx(
-                          'relative flex h-11 w-11 items-center justify-center rounded-full bg-[#0A0A0A] font-mono text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] focus-visible:ring-offset-2 sm:h-12 sm:w-12',
+                          'relative flex h-11 min-w-[44px] items-center justify-center rounded-full bg-[#0A0A0A] font-mono text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] focus-visible:ring-offset-2 sm:h-12 sm:w-12',
                           isToday && 'ring-2 ring-[#9A5A00] ring-offset-2',
                         )}
                       >

@@ -157,7 +157,7 @@ function Row({ item, rank }: { item: BudgetItem; rank: number }) {
         )}
         <p className="mt-2 text-[0.72rem] text-black/65">
           Offers are as the store lists them and can change at checkout. We do not work out a price after the offer.{' '}
-          <Link href={href} className="font-semibold text-black underline underline-offset-4">
+          <Link href={href} className="whitespace-nowrap font-semibold text-black underline underline-offset-4">
             Compare all stores
           </Link>
         </p>

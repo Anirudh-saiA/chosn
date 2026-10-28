@@ -55,7 +55,7 @@ function Kicker({ item }: { item: NewsListItem }) {
 
 /** The links a story carries: the shoe to compare, the drop it is about, and other sites that ran it. */
 function Extras({ item }: { item: NewsListItem }) {
-  const chip = 'relative z-10 rounded-full border border-[#0A0A0A]/15 bg-white px-2.5 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#0A0A0A] transition-colors hover:border-[#0A0A0A]';
+  const chip = 'relative z-10 inline-flex min-h-[44px] items-center rounded-full border border-[#0A0A0A]/15 bg-white px-3.5 py-1 font-mono text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#0A0A0A] transition-colors hover:border-[#0A0A0A]';
   const also = item.alsoCoveredBy ?? [];
   if (!item.shoeQuery && !item.dropEventId && also.length === 0) return null;
   return (
