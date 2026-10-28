@@ -128,8 +128,8 @@ export function FilterBar({ facets }: { facets: SearchFacets }) {
           { v: '3', label: 'At 3 or more stores' },
           { v: '4', label: 'At 4 or more stores' },
         ].map((o) => (
-          <label key={o.v} className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem]">
-            <input type="radio" name="min-stores-bar" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#14213D]" />
+          <label key={o.v} className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.92rem]">
+            <input type="radio" name="min-stores-bar" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#0A0A0A]" />
             {o.label}
           </label>
         ))}

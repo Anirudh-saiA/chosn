@@ -40,7 +40,7 @@ function CopyCode({ code }: { code: string }) {
       className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-text/30 px-2 py-0.5 font-mono text-[0.75rem] font-bold tracking-[0.08em] text-text hover:bg-text/5"
       aria-label={`Copy code ${code}`}
     >
-      {code} <Copy className="h-3 w-3" aria-hidden /> {done && <span className="text-[0.66rem] text-[#1F8A4C]">copied</span>}
+      {code} <Copy className="h-3 w-3" aria-hidden /> {done && <span className="text-[0.66rem] text-[#0A6B44]">copied</span>}
     </button>
   );
 }
@@ -159,7 +159,7 @@ export function StoreRow({
   const pays = acceptedPayments(offer);
 
   return (
-    <li className={`overflow-hidden rounded-2xl bg-white ${isBest ? 'border-2 border-[#14213D]' : 'border border-text/12'}`}>
+    <li className={`overflow-hidden rounded-2xl bg-white ${isBest ? 'border-2 border-[#0A0A0A]' : 'border border-text/12'}`}>
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
         <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex min-w-0 basis-full items-center gap-4 text-left sm:flex-1 sm:basis-0">
           {offer.retailerLogoUrl ? (
@@ -170,13 +170,13 @@ export function StoreRow({
               <span className="font-display text-[1.45rem] font-bold leading-none text-text">{offer.retailerName}</span>
               {labels
                 ? labels.map((l, i) => (
-                    <span key={l} className={`rounded-full px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] ${i === 0 && isBest ? 'bg-[#14213D] text-white' : 'border border-text/20 text-text-soft'}`}>
+                    <span key={l} className={`rounded-full px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] ${i === 0 && isBest ? 'bg-[#0A0A0A] text-white' : 'border border-text/20 text-text-soft'}`}>
                       {l}
                     </span>
                   ))
                 : (
                   <>
-                    {isBest && <span className="rounded-full bg-[#14213D] px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">Lowest price</span>}
+                    {isBest && <span className="rounded-full bg-[#0A0A0A] px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">Lowest price</span>}
                     {fastest && <span className="rounded-full border border-text/20 px-2 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text-soft">Fastest</span>}
                   </>
                 )}
@@ -214,7 +214,7 @@ export function StoreRow({
               </p>
             ) : (
               <p className="mt-1" title={`Trust ${offer.trustScore}/100 (${offer.trustConfidence ?? 'low'} confidence). ${(offer.trustDetail?.why ?? []).join(' ')}`}>
-                <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#1B7A34]/10 px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#1B7A34]">
+                <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#0A6B44]/10 px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#0A6B44]">
                   Trust {offer.trustScore}
                   <span className="font-semibold normal-case opacity-70">· {offer.trustConfidence ?? 'low'} confidence</span>
                 </span>
@@ -222,7 +222,7 @@ export function StoreRow({
             ))}
           {value && (
             <p className="mt-1" title={value.note}>
-              <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#14213D]/[0.07] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#14213D]">Value {value.score}/100</span>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-[#0A0A0A]/[0.07] px-2 py-0.5 font-mono text-[0.66rem] font-bold text-[#0A0A0A]">Value {value.score}/100</span>
             </p>
           )}
         </div>
@@ -233,7 +233,7 @@ export function StoreRow({
           aria-label={`Buy at ${offer.retailerName} for ${formatInr(price)} (opens in a new tab)`}
           onClick={() => trackInfo && (rememberPurchase({ styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, storeName: offer.retailerName, shoeName: trackInfo.shoeName ?? trackInfo.styleCode, promisedMaxDays: offer.deliveryMaxDays }), trackClick({ event: 'click', styleCode: trackInfo.styleCode, size: trackInfo.size, store: offer.retailerSlug, price, position: trackInfo.position, sort: trackInfo.sort }))}
           className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-5 font-mono text-[0.74rem] font-bold uppercase tracking-[0.14em] transition-colors ${
-            isBest ? 'bg-[#14213D] text-white hover:bg-[#0A0A0A]' : 'border-2 border-[#14213D] text-[#14213D] hover:bg-[#14213D]/5'
+            isBest ? 'bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]' : 'border-2 border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A]/5'
           }`}
         >
           Buy <ArrowUpRight className="h-4 w-4" aria-hidden />
@@ -241,7 +241,7 @@ export function StoreRow({
       </div>
 
       {open && (
-        <div className="grid gap-x-10 gap-y-6 border-t border-text/10 bg-[#F1F7FB]/60 p-4 sm:grid-cols-2 sm:p-5">
+        <div className="grid gap-x-10 gap-y-6 border-t border-text/10 bg-[#FAFAFA]/60 p-4 sm:grid-cols-2 sm:p-5">
           <div>
             <p className={label}>Pay with</p>
             <div className="mt-2.5">

@@ -54,7 +54,7 @@ export default async function NotificationsSettingsPage({ searchParams }: { sear
         ) : (
           <section className="panel ticks flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6" aria-labelledby="comm-h">
             <div className="flex items-center gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
                 <Lock className="h-5 w-5" aria-hidden />
               </span>
               <div>

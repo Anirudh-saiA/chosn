@@ -24,7 +24,7 @@ export function GoogleGlyph({ className = 'h-[18px] w-[18px]' }: { className?: s
 /** Rust alert row, announced immediately (role=alert). */
 export function FormAlert({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <p id={id} role="alert" className="flex items-start gap-2 border border-rust/40 bg-rust/[0.08] px-3 py-2.5 text-data-inline text-rust">
+    <p id={id} role="alert" className="flex items-start gap-2 border border-rust/40 bg-rust/[0.08] px-3 py-2.5 text-data-inline text-rust rounded-[20px]">
       <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{children}</span>
     </p>
@@ -34,7 +34,7 @@ export function FormAlert({ children, id }: { children: ReactNode; id?: string }
 /** Signal success row, polite live region. */
 export function FormSuccess({ children }: { children: ReactNode }) {
   return (
-    <p role="status" className="flex items-start gap-2 border border-signal/40 bg-signal/[0.08] px-3 py-2.5 text-data-inline text-signal">
+    <p role="status" className="flex items-start gap-2 border border-signal/40 bg-signal/[0.08] px-3 py-2.5 text-data-inline text-signal rounded-[20px]">
       <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{children}</span>
     </p>

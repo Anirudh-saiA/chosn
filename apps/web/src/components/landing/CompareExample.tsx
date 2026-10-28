@@ -27,12 +27,12 @@ const REVALIDATE = { next: { revalidate: 600 } } as const;
 /** The shoe the landing example shows when it can be found at two stores; otherwise the most-compared shoe that can. */
 const FEATURED = 'samba';
 /** One flat colour behind the whole example (the page's own base colour), so none of the page's colour glow shows through. */
-const FLAT = 'bg-[#EAF3FA]';
+const FLAT = 'bg-[#FFFFFF]';
 
 const VERDICT = {
-  buy_now: { label: 'Buy now', pill: 'bg-[#1F8A4C] text-white' },
-  wait: { label: 'Wait', pill: 'bg-[#D97706] text-white' },
-  fair: { label: 'Fair price', pill: 'bg-[#14213D] text-white' },
+  buy_now: { label: 'Buy now', pill: 'bg-[#0A6B44] text-white' },
+  wait: { label: 'Wait', pill: 'bg-[#9A5A00] text-white' },
+  fair: { label: 'Fair price', pill: 'bg-[#0A0A0A] text-white' },
   unclear: { label: 'Too early to say', pill: 'bg-[#0A0A0A]/10 text-[#0A0A0A]' },
 } as const;
 
@@ -107,7 +107,7 @@ interface Row {
 
 function BestBadge({ text }: { text: string }) {
   return (
-    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#1F8A4C] px-2.5 py-0.5 font-mono text-[0.6rem] font-extrabold uppercase tracking-[0.14em] text-white">
+    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#0A6B44] px-2.5 py-0.5 font-mono text-[0.6rem] font-extrabold uppercase tracking-[0.14em] text-white">
       <Check className="h-3 w-3" aria-hidden /> {text}
     </span>
   );
@@ -139,7 +139,7 @@ function Cell({ side }: { side: Side }) {
 
 function StoreHead({ offer, best }: { offer: CatalogOffer; best?: string }) {
   return (
-    <th scope="col" className="bg-[#14213D] px-3 py-4 text-left align-middle text-white md:px-6 md:py-5">
+    <th scope="col" className="bg-[#0A0A0A] px-3 py-4 text-left align-middle text-white md:px-6 md:py-5">
       <span className="flex flex-wrap items-center gap-2.5">
         {offer.retailerLogoUrl ? (
           <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md bg-white px-1">
@@ -296,10 +296,10 @@ export async function CompareExample() {
               </colgroup>
               <thead>
                 <tr>
-                  <td className="bg-[#14213D]" />
+                  <td className="bg-[#0A0A0A]" />
                   <StoreHead offer={a} />
                   <StoreHead offer={b} />
-                  <th scope="col" className="hidden bg-[#14213D] px-6 py-5 text-left font-mono text-[0.62rem] font-bold uppercase tracking-[0.22em] text-white/70 md:table-cell">
+                  <th scope="col" className="hidden bg-[#0A0A0A] px-6 py-5 text-left font-mono text-[0.62rem] font-bold uppercase tracking-[0.22em] text-white/70 md:table-cell">
                     The difference
                   </th>
                 </tr>
@@ -334,8 +334,8 @@ export async function CompareExample() {
               {reasons.length > 0 ? (
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {reasons.map((f) => (
-                    <li key={f.label} className="flex items-center gap-2 rounded-full border border-[#0A0A0A]/12 bg-[#EAF3FA] px-3.5 py-1.5 text-[0.85rem] font-bold text-[#0A0A0A]">
-                      <span aria-hidden className={`flex h-4 w-4 items-center justify-center rounded-full text-[0.65rem] text-white ${f.effect === 'buy' ? 'bg-[#1F8A4C]' : 'bg-[#D97706]'}`}>
+                    <li key={f.label} className="flex items-center gap-2 rounded-full border border-[#0A0A0A]/12 bg-[#FFFFFF] px-3.5 py-1.5 text-[0.85rem] font-bold text-[#0A0A0A]">
+                      <span aria-hidden className={`flex h-4 w-4 items-center justify-center rounded-full text-[0.65rem] text-white ${f.effect === 'buy' ? 'bg-[#0A6B44]' : 'bg-[#9A5A00]'}`}>
                         {f.effect === 'buy' ? '+' : '−'}
                       </span>
                       {f.label}

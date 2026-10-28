@@ -75,7 +75,7 @@ export default async function BrandsPage() {
                     <li key={b.value}>
                       <Link
                         href={`/sneakers?brand=${encodeURIComponent(b.value)}`}
-                        className="flex h-28 flex-col justify-between rounded-2xl border border-text/10 bg-white p-4 transition-colors hover:border-[#D97E00]/60 hover:bg-[#FFFBF3]"
+                        className="flex h-28 flex-col justify-between rounded-2xl border border-text/10 bg-white p-4 transition-colors hover:border-[#9A5A00]/60 hover:bg-[#FFFBF3]"
                       >
                         <span className="line-clamp-2 font-display text-lg font-bold leading-tight text-text">{b.value}</span>
                         <span className="font-mono text-[0.74rem] font-bold uppercase tracking-[0.12em] text-text-soft">

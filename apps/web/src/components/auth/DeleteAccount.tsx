@@ -77,7 +77,7 @@ export function DeleteAccount() {
           type="button"
           onClick={handleDelete}
           disabled={busy || confirm !== 'DELETE'}
-          className="inline-flex min-h-[44px] items-center justify-center gap-2 border border-rust bg-rust px-5 py-[11px] text-ui-label font-semibold text-vault-deep transition-all hover:shadow-glow-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex min-h-[44px] items-center justify-center gap-2 border border-rust bg-rust px-5 py-[11px] text-ui-label font-semibold text-vault-deep transition-all hover:shadow-glow-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-vault-deep disabled:pointer-events-none disabled:opacity-40 rounded-[20px]"
         >
           {busy && <Spinner />}
           {busy ? 'Deleting…' : 'Permanently delete'}

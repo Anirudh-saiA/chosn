@@ -46,7 +46,7 @@ export function MotionDemo() {
         <div className="mt-4 space-y-2">
           {[0, 1, 2].map((i) => (
             <Reveal key={`${n}-${i}`} delay={i * 0.1} y={16} once={false}>
-              <div className="border border-text/10 bg-vault-raised px-4 py-2.5 font-mono text-data-inline text-text">Row {i + 1}</div>
+              <div className="border border-text/10 bg-vault-raised px-4 py-2.5 font-mono text-data-inline text-text rounded-[20px]">Row {i + 1}</div>
             </Reveal>
           ))}
         </div>

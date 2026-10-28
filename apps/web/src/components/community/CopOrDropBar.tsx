@@ -37,7 +37,7 @@ export function CopOrDropBar({ postId, initial }: CopOrDropBarProps) {
   const choice = results.viewerChoice;
 
   const btn =
-    'group flex min-h-11 items-center justify-center gap-2 border font-sans text-ui-label font-semibold uppercase tracking-[0.08em] transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50';
+    'group flex min-h-11 items-center justify-center gap-2 border font-sans text-ui-label font-semibold uppercase tracking-[0.08em] transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 rounded-[20px]';
 
   return (
     <div className="mt-1">
@@ -78,7 +78,7 @@ export function CopOrDropBar({ postId, initial }: CopOrDropBarProps) {
         ref={barRef}
         role="img"
         aria-label={hasVotes ? `Community: ${copPct}% cop (${results.cop}), ${dropPct}% drop (${results.drop})` : 'No votes yet'}
-        className="mt-3 flex h-9 overflow-hidden border border-text/15 bg-vault-deep"
+        className="mt-3 flex h-9 overflow-hidden border border-text/15 bg-vault-deep rounded-[20px]"
       >
         {hasVotes ? (
           <>

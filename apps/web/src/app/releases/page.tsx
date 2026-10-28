@@ -49,7 +49,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
   const dropsView = (
     <div className="flex flex-col gap-16">
       <section aria-labelledby="drops-h">
-        <h2 id="drops-h" className="font-display text-[clamp(2.5rem,6vw,4.5rem)] uppercase leading-[0.95] text-[#0A0A0A]">Drop calendar</h2>
+        <h2 id="drops-h" className="font-display text-[clamp(2rem,6vw,4rem)] leading-[1] tracking-[-0.03em] text-[#0A0A0A]">Drop calendar</h2>
         <div className="mb-6 mt-3">
           <ScrollHighlight
             before="Release dates from brands, retailers and trackers. Every drop says"
@@ -62,7 +62,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
           />
         </div>
         <p className="mb-6 flex flex-wrap items-center gap-3 text-sm">
-          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex items-center gap-2 rounded-full bg-[#14213D] px-5 py-2.5 font-display text-base uppercase tracking-[0.06em] text-white">
+          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#0A0A0A] px-6 py-2.5 font-sans text-[0.95rem] font-semibold text-white transition-colors hover:bg-[#333]">
             Add every drop to your calendar
           </a>
           <span className="text-text-soft">Downloads a calendar file (.ics) that opens in Google, Apple or Outlook calendar.</span>

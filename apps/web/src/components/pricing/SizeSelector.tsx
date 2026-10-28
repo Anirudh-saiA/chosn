@@ -31,7 +31,7 @@ export function SizeSelector({ sizes, currentSize, pendingSize, onSelect, onPref
             onFocus={() => onPrefetch(s.size)}
             onClick={() => onSelect(s.size)}
             className={cx(
-              'relative flex min-h-[44px] min-w-[3.5rem] items-center justify-center border px-3 font-mono text-data-inline tabular-nums transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright',
+              'relative flex min-h-[44px] min-w-[3.5rem] items-center justify-center border px-3 font-mono text-data-inline tabular-nums transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright rounded-[20px]',
               active
                 ? 'cursor-default border-brass-bright/60 bg-brass-gradient font-semibold text-vault-deep shadow-glow-brass'
                 : soldOut

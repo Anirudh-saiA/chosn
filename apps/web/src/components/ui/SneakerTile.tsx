@@ -27,7 +27,7 @@ export function SneakerTile({ item, priority = false }: { item: SearchResultItem
           <div
             aria-hidden
             className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-100"
-            style={{ background: `radial-gradient(60% 60% at 50% 62%, ${palette.glow}55, transparent 72%)` }}
+            style={{ background: '#F5F5F5' }}
           />
           <div aria-hidden className="grid-lines !opacity-40" />
           <SneakerArt
@@ -43,7 +43,7 @@ export function SneakerTile({ item, priority = false }: { item: SearchResultItem
               </Badge>
             </span>
           )}
-          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:opacity-100 group-hover:text-brass-bright">
+          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:opacity-100 group-hover:text-brass-bright rounded-full">
             <ArrowUpRight className="h-4 w-4" aria-hidden />
           </span>
         </div>

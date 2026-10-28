@@ -57,7 +57,7 @@ export function SubscriptionList() {
       {subs.map((item) => (
         <li key={item.id} className="panel flex items-center justify-between gap-4 p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
               <BellRing className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
@@ -69,7 +69,7 @@ export function SubscriptionList() {
             type="button"
             onClick={() => handleRemove(item)}
             disabled={removingId === item.id}
-            className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 border border-text/[0.15] px-3 font-mono text-data-delta font-semibold text-text-soft transition-colors duration-200 hover:border-rust/60 hover:text-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60"
+            className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 border border-text/[0.15] px-3 font-mono text-data-delta font-semibold text-text-soft transition-colors duration-200 hover:border-rust/60 hover:text-rust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60 rounded-full"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
             {removingId === item.id ? 'Removing…' : 'Unsubscribe'}

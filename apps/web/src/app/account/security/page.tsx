@@ -45,7 +45,7 @@ export default async function AccountSecurityPage() {
           <TotpSetup />
         </AccountSection>
 
-        <section aria-labelledby="danger-zone" className="border border-rust/40 bg-rust/[0.04] p-6 sm:p-8">
+        <section aria-labelledby="danger-zone" className="border border-rust/40 bg-rust/[0.04] p-6 sm:p-8 rounded-[20px]">
           <h2 id="danger-zone" className="flex items-center gap-2 font-mono text-ui-label font-semibold uppercase tracking-[0.18em] text-rust">
             <TriangleAlert aria-hidden className="h-4 w-4" />
             Danger zone
@@ -65,7 +65,7 @@ function AccountSection({ icon, title, note, children }: { icon: ReactNode; titl
   return (
     <section aria-labelledby={id} className="panel ticks p-6 sm:p-8">
       <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">{icon}</span>
+        <span className="flex h-9 w-9 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">{icon}</span>
         <div>
           <h2 id={id} className="font-display text-2xl font-bold leading-none text-text">
             {title}

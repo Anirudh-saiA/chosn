@@ -88,7 +88,7 @@ function StatCell({
   return (
     <div className="min-w-0 px-3 py-4 sm:px-5">
       <dt className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-text-faint sm:text-[0.68rem]">{label}</dt>
-      <dd className={`mt-1.5 font-mono text-base font-medium tabular-nums sm:text-xl ${highlight ? 'text-brass-bright' : 'text-text'}`}>
+      <dd className={`mt-1.5 font-mono text-base font-medium tabular-nums sm:text-xl ${highlight ? 'inline-block rounded-full bg-[#FFF3BF] px-3 py-0.5 text-[#0A0A0A]' : 'text-text'}`}>
         <TweenedPrice value={value} formatter={formatInr} size="inline" unavailableLabel="—" className="[&>span:first-child]:!text-inherit [&>span:first-child]:!text-[length:inherit]" />
       </dd>
       {sub && <dd className="mt-0.5 truncate font-mono text-meta text-text-soft">{sub}</dd>}

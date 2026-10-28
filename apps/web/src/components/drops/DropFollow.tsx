@@ -27,7 +27,7 @@ interface Mine {
 }
 
 const BTN =
-  'inline-flex min-h-[38px] items-center gap-1.5 rounded-full border px-3.5 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60';
+  'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3.5 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60';
 const ACTIVE = 'border-[#0A0A0A] bg-[#0A0A0A] text-white';
 const IDLE = 'border-[#0A0A0A]/15 bg-white text-[#0A0A0A] hover:border-[#0A0A0A]';
 

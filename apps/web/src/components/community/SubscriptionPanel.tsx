@@ -51,7 +51,7 @@ export function SubscriptionPanel() {
   if (!getStoredSubscriberId() || subs.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
-        <span className="flex h-12 w-12 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+        <span className="flex h-12 w-12 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
           <BellOff className="h-6 w-6" aria-hidden />
         </span>
         <p className="font-display text-xl font-semibold text-text">No active alerts</p>
@@ -73,7 +73,7 @@ export function SubscriptionPanel() {
         return (
           <li key={item.id} className="flex items-center justify-between gap-4 py-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-text/15 text-brass">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-text/15 text-brass rounded-full">
                 <Icon className="h-4 w-4" aria-hidden />
               </span>
               <div className="min-w-0">
@@ -86,7 +86,7 @@ export function SubscriptionPanel() {
               onClick={() => handleRemove(item)}
               disabled={removing}
               aria-label={`Unsubscribe from ${item.label}`}
-              className="inline-flex min-h-11 shrink-0 items-center gap-2 border border-text/15 px-3.5 font-sans text-ui-label font-semibold text-text-soft transition-colors hover:border-rust/60 hover:bg-rust/[0.07] hover:text-rust disabled:opacity-60"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 border border-text/15 px-3.5 font-sans text-ui-label font-semibold text-text-soft transition-colors hover:border-rust/60 hover:bg-rust/[0.07] hover:text-rust disabled:opacity-60 rounded-[20px]"
             >
               {removing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Trash2 className="h-4 w-4" aria-hidden />}
               <span className="hidden sm:inline">{removing ? 'Removing…' : 'Unsubscribe'}</span>

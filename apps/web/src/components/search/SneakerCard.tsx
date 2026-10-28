@@ -45,9 +45,9 @@ const MAX_TILES = 5;
 
 type Verdict = 'buy_now' | 'wait' | 'fair' | 'unclear';
 const VERDICT_LOOK: Record<Verdict, { label: string; cls: string; tip: string }> = {
-  buy_now: { label: 'Buy now', cls: 'bg-[#1F8A4C] text-white', tip: 'Good price to buy now for this size' },
-  wait: { label: 'Wait', cls: 'bg-[#D97706] text-white', tip: 'Worth waiting: the price is above its usual level' },
-  fair: { label: 'Fair price', cls: 'bg-[#14213D] text-white', tip: 'A fair price: no strong reason to rush or wait' },
+  buy_now: { label: 'Buy now', cls: 'bg-[#0A6B44] text-white', tip: 'Good price to buy now for this size' },
+  wait: { label: 'Wait', cls: 'bg-[#9A5A00] text-white', tip: 'Worth waiting: the price is above its usual level' },
+  fair: { label: 'Fair price', cls: 'bg-[#0A0A0A] text-white', tip: 'A fair price: no strong reason to rush or wait' },
   unclear: { label: 'Too early', cls: 'bg-[#0A0A0A]/10 text-[#0A0A0A]/60', tip: 'Not enough price history to call it yet' },
 };
 
@@ -197,12 +197,12 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
 
   return (
     <div
-      className="group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-[#0A0A0A]/10 bg-white transition-colors duration-300 hover:border-[#0A0A0A]"
       onMouseEnter={() => void loadPhotos(cur.styleCode)}
     >
       {/* One link over the whole card so a click anywhere opens the shoe. The colour, size and photo buttons and the wishlist/compare
           icons sit above it (z-10 / z-20). */}
-      <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[1.4rem]" />
+      <Link href={href} aria-hidden tabIndex={-1} className="absolute inset-0 z-[5] rounded-[2rem]" />
 
       {/* Header: brand logo, discount badge, name, colour, price. */}
       <div className="relative z-10 px-2.5 pt-2.5 sm:px-3.5 sm:pt-3.5">
@@ -228,7 +228,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             <span className="text-[0.8rem] font-bold text-[#0A0A0A]/60 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
           )}
           {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/60 line-through">{formatInr(was)}</span>}
-          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
+          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#0A6B44]">{pct}% off</span>}
         </div>
       </div>
 
@@ -292,9 +292,9 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                     onMouseEnter={() => pickColour(i)}
                     onFocus={() => pickColour(i)}
                     onClick={() => pickColour(i)}
-                    className={`relative h-6 w-6 rounded-md bg-[#F3F5F8] transition-shadow before:absolute before:-inset-x-[3px] before:-inset-y-2.5 before:content-[''] ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
+                    className={`relative h-6 w-6 rounded-lg bg-[#F3F5F8] transition-shadow before:absolute before:-inset-x-[3px] before:-inset-y-2.5 before:content-[''] ${i === selected ? 'ring-2 ring-[#0A0A0A]' : 'ring-1 ring-[#0A0A0A]/15 hover:ring-[#0A0A0A]/50'}`}
                   >
-                    <span className="block h-full w-full overflow-hidden rounded-md">
+                    <span className="block h-full w-full overflow-hidden rounded-lg">
                     {c.primaryImageUrl ? (
                       <ShoePhoto key={c.primaryImageUrl} src={c.primaryImageUrl} alt="" className="h-full w-full object-contain p-0.5" fallback={<span className="block h-full w-full" style={{ background: paletteFor(c.colorway, item.brand).glow }} />} />
                     ) : (
@@ -331,7 +331,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                       aria-pressed={active}
                       aria-label={`UK ${formatSize(s.size)}${s.available ? '' : ', sold out everywhere'}`}
                       title={s.available ? undefined : 'Sold out at every store we compare'}
-                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-md border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors before:absolute before:-inset-x-0.5 before:-inset-y-2.5 before:content-[''] ${
+                      className={`relative flex h-6 min-w-[1.9rem] items-center justify-center rounded-lg border px-1.5 text-[0.72rem] font-semibold tabular-nums transition-colors before:absolute before:-inset-x-0.5 before:-inset-y-2.5 before:content-[''] ${
                         active
                           ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
                           : s.available
@@ -372,7 +372,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
                   <li
                     key={o.slug}
                     title={st?.name ?? o.slug}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} `}
+                    className={`flex flex-col items-center gap-0.5 rounded-xl border px-1 py-1.5 text-center ${lowest ? 'border-[#8FD6A2] bg-[#E9F8EE]' : 'border-[#0A0A0A]/10 bg-white'} `}
                   >
                     <span className="flex h-4 items-center justify-center">
                       {st?.logoUrl ? (
@@ -405,7 +405,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
 /** Skeleton twin of SneakerCard, for loading states. */
 export function SneakerCardSkeleton() {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#0A0A0A]/10 p-5" aria-hidden>
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-[#0A0A0A]/10 p-5" aria-hidden>
       <div className="skeleton h-9 w-24" />
       <div className="skeleton mt-4 h-9 w-2/3" />
       <div className="skeleton mt-3 h-8 w-32" />

@@ -94,7 +94,7 @@ export default async function CommunityHealthPage() {
           Posts per day, by type (last 14 days)
         </h2>
         {days.length === 0 ? (
-          <p className="mt-4 border border-dashed border-text/15 px-4 py-8 text-center text-meta text-text-faint">No posts yet.</p>
+          <p className="mt-4 border border-dashed border-text/15 px-4 py-8 text-center text-meta text-text-faint rounded-[20px]">No posts yet.</p>
         ) : (
           <div className="panel mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse">
@@ -141,7 +141,7 @@ export default async function CommunityHealthPage() {
           Early-warning signal — a room accumulating message reports fast, most likely during a hyped drop.
         </p>
         {health.highReportRooms.length === 0 ? (
-          <p className="mt-4 border border-dashed border-signal/25 px-4 py-8 text-center text-meta text-text-soft">
+          <p className="mt-4 border border-dashed border-signal/25 px-4 py-8 text-center text-meta text-text-soft rounded-[20px]">
             None — nothing above the threshold right now.
           </p>
         ) : (
@@ -151,7 +151,7 @@ export default async function CommunityHealthPage() {
                 <Link href={`/drops/${room.dropEventId}`} className="text-body text-text hover:text-brass-bright">
                   {room.sneakerLabel ?? room.roomId}
                 </Link>
-                <span className="border border-rust/40 bg-rust/10 px-2 py-0.5 font-mono text-meta text-rust">{room.reportCount} reports</span>
+                <span className="border border-rust/40 bg-rust/10 px-2 py-0.5 font-mono text-meta text-rust rounded-[20px]">{room.reportCount} reports</span>
               </li>
             ))}
           </ul>

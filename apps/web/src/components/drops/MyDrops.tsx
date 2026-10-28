@@ -64,7 +64,7 @@ export function MyDrops() {
           <h2 id="mine-brands" className="mb-3 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-brass">Brands and collabs you follow</h2>
           <ul className="flex flex-wrap gap-2">
             {brands.map((b) => (
-              <li key={`${b.kind}:${b.ref}`} className="border border-text/[0.15] px-3 py-1.5 font-mono text-meta text-text">{b.ref}</li>
+              <li key={`${b.kind}:${b.ref}`} className="border border-text/[0.15] px-3 py-1.5 font-mono text-meta text-text rounded-[20px]">{b.ref}</li>
             ))}
           </ul>
         </section>
@@ -101,8 +101,8 @@ export function MyDrops() {
             Subscribe to this link in Google Calendar (Other calendars, From URL), Apple Calendar or Outlook. It lists the drops you follow and updates itself when dates change. Keep the link private: it is tied to you.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <input readOnly value={feed} aria-label="Personal calendar link" className="min-h-[40px] min-w-0 flex-1 border border-text/[0.15] bg-vault-deep px-3 font-mono text-meta text-text" onFocus={(e) => e.currentTarget.select()} />
-            <button type="button" onClick={copy} className="inline-flex min-h-[40px] items-center gap-1.5 border border-text/[0.15] px-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-text hover:border-brass">
+            <input readOnly value={feed} aria-label="Personal calendar link" className="min-h-[44px] min-w-0 flex-1 border border-text/[0.15] bg-vault-deep px-3 font-mono text-meta text-text rounded-[20px]" onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" onClick={copy} className="inline-flex min-h-[44px] items-center gap-1.5 border border-text/[0.15] px-3 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-text hover:border-brass rounded-full">
               <Copy className="h-3.5 w-3.5" aria-hidden /> {copied ? 'Copied' : 'Copy'}
             </button>
           </div>

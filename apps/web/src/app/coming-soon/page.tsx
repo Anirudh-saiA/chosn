@@ -14,7 +14,7 @@ export default function ComingSoonPage() {
       <Masthead />
       <main id="main" className="flex flex-1 flex-col items-center justify-center px-5 pb-24 text-center">
         <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#0A0A0A]/60">This page is</p>
-        <h1 className="mt-4 font-display text-[clamp(4.5rem,15vw,11rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">
+        <h1 className="mt-4 font-display text-[clamp(2.75rem,11vw,7rem)] leading-[0.95] tracking-[-0.035em] text-[#0A0A0A]">
           Coming
           <br />
           soon.

@@ -14,7 +14,7 @@ function when(i: IssueSummary): string {
 
 function Cover({ i, label }: { i: IssueSummary; label: string }) {
   return (
-    <Link href={`/magazine/${i.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-sm bg-[#C8102E] shadow-[0_30px_60px_-30px_rgba(10,10,10,0.6)] transition-transform duration-300 hover:-translate-y-1">
+    <Link href={`/magazine/${i.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-[#C8102E] shadow-[0_30px_60px_-30px_rgba(10,10,10,0.6)] transition-transform duration-300 hover:-translate-y-1">
       {i.coverImage ? (
         <img src={i.coverImage} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
       ) : null}
@@ -29,7 +29,7 @@ function Cover({ i, label }: { i: IssueSummary; label: string }) {
           </p>
         </div>
         <div>
-          <span className="bg-[#FFD84A] px-2 py-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]">Read the issue</span>
+          <span className="rounded-full bg-white px-3 py-1.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]">Read the issue</span>
           <p style={SERIF} className="mt-3 text-xl font-black leading-tight">
             {i.coverHeadline}
           </p>

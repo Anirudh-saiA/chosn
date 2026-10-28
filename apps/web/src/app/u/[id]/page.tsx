@@ -80,7 +80,7 @@ export default async function ProfilePage({ params }: PageProps) {
           <div
             aria-hidden
             className="absolute inset-0"
-            style={{ background: 'radial-gradient(60% 90% at 12% 0%, rgba(255,168,0,.22), transparent 70%), radial-gradient(50% 80% at 100% 100%, rgba(46,242,166,.10), transparent 70%)' }}
+            style={{ background: '#F5F5F5' }}
           />
           <div className="relative flex flex-col items-start gap-6 p-6 sm:flex-row sm:items-center sm:p-10">
             <AvatarIdenticon seed={user.avatarSeed} size={120} ring />

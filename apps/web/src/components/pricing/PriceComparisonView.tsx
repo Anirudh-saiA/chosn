@@ -7,7 +7,6 @@ import { Reveal } from '@/components/fx/Reveal';
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
 import { track } from '@/lib/track';
 import { fetchCatalogVariant, formatInr, formatSize, type CatalogResponse, type ColourOption, type SearchResultItem } from '@/lib/catalog';
-import { paletteFor } from '@/lib/sneaker/palette';
 import { AffiliateDisclosure } from './AffiliateDisclosure';
 import { MarketIntelligenceCard } from './MarketIntelligenceCard';
 import { PriceOutlookCard } from './PriceOutlookCard';
@@ -129,7 +128,6 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
     () => [...new Set([imageUrl, ...(sneaker.galleryImageUrls ?? [])].filter((u): u is string => Boolean(u)))],
     [imageUrl, sneaker.galleryImageUrls],
   );
-  const palette = useMemo(() => paletteFor(sneaker.colorway, sneaker.brand), [sneaker.colorway, sneaker.brand]);
   const bestOffer = findBestOffer(data.offers);
   return (
     <div className="flex flex-col gap-10 pb-24 md:pb-0 lg:gap-14">
@@ -148,7 +146,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
             <div
               aria-hidden
               className="absolute inset-0"
-              style={{ background: `radial-gradient(55% 50% at 50% 58%, ${palette.glow}40, transparent 72%)` }}
+              style={{ background: '#F5F5F5' }}
             />
             <div aria-hidden className="grid-lines !opacity-40" />
             <span className="absolute left-4 top-4 z-10 font-mono text-[0.65rem] uppercase tracking-[0.2em] text-text-faint">
@@ -168,7 +166,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
           <Reveal y={16}>
             <div className="flex flex-wrap items-center gap-3">
               <p className="eyebrow">{sneaker.brand}</p>
-              <span className="border border-text/15 bg-vault-raised/70 px-2.5 py-1 font-mono text-meta tracking-[0.06em] text-text-soft">
+              <span className="border border-text/15 bg-vault-raised/70 px-2.5 py-1 font-mono text-meta tracking-[0.06em] text-text-soft rounded-[20px]">
                 {sneaker.styleCode}
               </span>
               {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}

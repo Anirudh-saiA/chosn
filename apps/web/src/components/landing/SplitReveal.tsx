@@ -50,11 +50,11 @@ export function SplitReveal({ index, eyebrow, title, children }: { index: string
       <div ref={stage} aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-30 h-[150svh] motion-reduce:hidden">
         <div className="sticky top-0 h-svh w-full">
           <div ref={sheet} className="absolute inset-0 bg-white">
-            <div className="flex h-full w-full items-center justify-center gap-[clamp(1rem,3vw,3rem)]">
-              <span className="font-display text-[clamp(7rem,24vw,22rem)] leading-[0.8] text-[#0A0A0A]">{index}</span>
+            <div className="flex h-full w-full items-center justify-center gap-[clamp(0.6rem,2vw,3rem)] px-4">
+              <span className="font-display text-[clamp(2.75rem,13vw,20rem)] leading-[0.85] tracking-[-0.05em] text-[#0A0A0A]">{index}</span>
               <div>
                 {eyebrow && <p className="font-mono text-[clamp(0.6rem,1.2vw,0.9rem)] font-bold uppercase tracking-[0.24em] text-[#0A0A0A]/60">{eyebrow}</p>}
-                <p className="font-display text-[clamp(4rem,15vw,14rem)] uppercase leading-[0.9] tracking-[0.01em] text-[#0A0A0A]">{title}</p>
+                <p className="font-display text-[clamp(2.25rem,10.5vw,13rem)] leading-[0.95] tracking-[-0.04em] text-[#0A0A0A]">{title}</p>
               </div>
             </div>
           </div>

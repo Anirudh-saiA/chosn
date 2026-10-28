@@ -38,7 +38,7 @@ export function DropListView({ drops }: { drops: DropListItem[] }) {
       </ul>
       {shown < sorted.length ? (
         <div className="mt-8 flex justify-center">
-          <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#14213D] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#14213D] hover:bg-[#EAF3FA]">
+          <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#0A0A0A] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#0A0A0A] hover:bg-[#FFFFFF]">
             Show more ({sorted.length - shown} left)
           </button>
         </div>

@@ -108,7 +108,7 @@ export function HeroSlider() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={`/sneakers?q=${encodeURIComponent(s.keyword)}`}
-              className="btn-shine btn-shine-idle [--shine:255_190_70] rounded-full bg-white px-8 py-3.5 font-sans text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-[#14213D] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_16px_30px_-10px_rgba(0,0,0,0.6)]"
+              className="btn-shine btn-shine-idle [--shine:255_190_70] rounded-full bg-white px-8 py-3.5 font-sans text-[0.72rem] font-extrabold uppercase tracking-[0.2em] text-[#0A0A0A] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_16px_30px_-10px_rgba(0,0,0,0.6)]"
             >
               Compare now
             </Link>

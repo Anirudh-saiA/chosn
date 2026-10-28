@@ -50,8 +50,8 @@ export function Countdown({ iso, size = 'sm' }: { iso: string; size?: 'sm' | 'lg
           key={l}
           className={
             lg
-              ? 'min-w-[4.25rem] flex-1 border border-brass/25 bg-vault-deep/70 px-2 py-3 text-center sm:min-w-[5.5rem] sm:py-4'
-              : 'min-w-[3rem] border border-text/[0.12] bg-vault-deep/70 px-2 py-1.5 text-center'
+              ? 'min-w-[4.25rem] flex-1 border border-brass/25 bg-vault-deep/70 px-2 py-3 text-center sm:min-w-[5.5rem] sm:py-4 rounded-[20px]'
+              : 'min-w-[3rem] border border-text/[0.12] bg-vault-deep/70 px-2 py-1.5 text-center rounded-[20px]'
           }
         >
           <span

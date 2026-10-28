@@ -47,7 +47,7 @@ export function LegalToc({ articleId }: { articleId: string }) {
             <a
               href={`#${it.id}`}
               aria-current={on ? 'location' : undefined}
-              className={`-ml-px flex min-h-[36px] items-center border-l-2 py-1.5 pl-4 pr-2 text-[0.8125rem] leading-snug transition-colors ${
+              className={`-ml-px flex min-h-[44px] items-center border-l-2 py-1.5 pl-4 pr-2 text-[0.8125rem] leading-snug transition-colors ${
                 on ? 'border-brass-bright font-semibold text-brass-bright' : 'border-transparent text-text-soft hover:border-text/30 hover:text-text'
               }`}
             >

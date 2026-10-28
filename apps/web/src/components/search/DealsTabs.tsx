@@ -61,7 +61,7 @@ export function DealsTabs({ falls, sale }: { falls: Deal[]; sale: Deal[] }) {
     <section aria-labelledby="falls-h" className="mb-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div>
-          <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#D97E00]">Biggest cuts</p>
+          <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#9A5A00]">Biggest cuts</p>
           <h2 id="falls-h" className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] uppercase leading-none tracking-[0.01em] text-[#0A0A0A]">
             Crazy falls
           </h2>
