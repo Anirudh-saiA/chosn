@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 import { cx } from '@chosn/ui';
+import { SelectMenu } from '@/components/ui/SelectMenu';
 import { ShoePhoto } from '@/components/ui/ShoePhoto';
 import { relativeTime } from '@/lib/catalog';
 import { API_URL } from '@/lib/watch';
@@ -131,9 +132,6 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
   const more = others.length - 4 - columns.length;
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const select =
-    'min-h-[44px] cursor-pointer appearance-none rounded-full border border-[#0A0A0A]/12 bg-white px-4 pr-8 font-mono text-[0.72rem] text-[#0A0A0A] [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-[#0A0A0A]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
-
   return (
     <div className="text-[#0A0A0A]">
       {/* Masthead. */}
@@ -189,12 +187,16 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
           ))}
         </div>
         {brands.length > 0 && (
-          <select aria-label="Filter by brand" value={brand} onChange={(e) => { setBrand(e.target.value); setShown(PAGE); }} className={select}>
-            <option value="">All brands</option>
-            {brands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+          <SelectMenu
+            label="Filter by brand"
+            align="left-on-phone"
+            value={brand}
+            options={[{ value: '', label: 'All brands' }, ...brands.map((b) => ({ value: b, label: b }))]}
+            onChange={(v) => {
+              setBrand(v);
+              setShown(PAGE);
+            }}
+          />
         )}
       </div>
 

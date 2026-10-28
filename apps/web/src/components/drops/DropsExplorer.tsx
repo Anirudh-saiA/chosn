@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { DropListItem } from '@/lib/drops';
 import { API_URL } from '@/lib/watch';
+import { SelectMenu } from '@/components/ui/SelectMenu';
 import { DropCalendar } from './DropCalendar';
 
 const REGION_CHIPS: Array<[string | null, string]> = [
@@ -40,25 +41,24 @@ export function DropsExplorer({ drops: all }: { drops: DropListItem[] }) {
     [filtered, selectedDate],
   );
 
-  const select =
-    'min-h-[44px] cursor-pointer appearance-none rounded-full border border-text/10 bg-white px-4 pr-8 font-mono text-[0.72rem] text-text transition-colors [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-text/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
-
   return (
     <div className="flex flex-col gap-6">
       <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-end gap-3">
         <div className="flex flex-wrap gap-2">
-          <select aria-label="Filter by region" value={region ?? ''} onChange={(e) => setRegion(e.target.value || null)} className={select}>
-            {REGION_CHIPS.map(([v, l]) => (
-              <option key={String(v)} value={v ?? ''}>{l}</option>
-            ))}
-          </select>
+          <SelectMenu
+            label="Filter by region"
+            align="left"
+            value={region ?? ''}
+            options={REGION_CHIPS.map(([v, l]) => ({ value: v ?? '', label: l }))}
+            onChange={(v) => setRegion(v || null)}
+          />
           {brands.length > 1 && (
-            <select aria-label="Filter by brand" value={brand ?? ''} onChange={(e) => setBrand(e.target.value || null)} className={select}>
-              <option value="">All brands</option>
-              {brands.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+            <SelectMenu
+              label="Filter by brand"
+              value={brand ?? ''}
+              options={[{ value: '', label: 'All brands' }, ...brands.map((b) => ({ value: b, label: b }))]}
+              onChange={(v) => setBrand(v || null)}
+            />
           )}
         </div>
       </div>

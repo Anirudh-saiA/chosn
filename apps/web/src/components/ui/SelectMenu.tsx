@@ -26,8 +26,8 @@ export function SelectMenu({
   value: string;
   options: readonly SelectMenuOption[];
   onChange: (value: string) => void;
-  /** Which edge of the button the open menu lines up with. */
-  align?: 'left' | 'right';
+  /** Which edge of the button the open menu lines up with ('left-on-phone': left on phones, right from the sm breakpoint up). */
+  align?: 'left' | 'right' | 'left-on-phone';
   className?: string;
 }) {
   const uid = useId();
@@ -141,7 +141,7 @@ export function SelectMenu({
           aria-label={label}
           aria-activedescendant={`${uid}-o${active}`}
           onKeyDown={onListKey}
-          className={`absolute top-full z-40 mt-2 max-h-[min(26rem,70vh)] w-max min-w-full overflow-auto rounded-[var(--radius-md)] border border-text/15 bg-white p-1.5 shadow-[0_14px_36px_-12px_rgba(10,10,10,0.28)] outline-none motion-safe:animate-[select-menu-in_140ms_ease-out] ${align === 'right' ? 'right-0' : 'left-0'}`}
+          className={`absolute top-full z-40 mt-2 max-h-[min(26rem,70vh)] w-max min-w-full overflow-auto rounded-[var(--radius-md)] border border-text/15 bg-white p-1.5 shadow-[0_14px_36px_-12px_rgba(10,10,10,0.28)] outline-none motion-safe:animate-[select-menu-in_140ms_ease-out] ${align === 'right' ? 'right-0' : align === 'left-on-phone' ? 'left-0 sm:left-auto sm:right-0' : 'left-0'}`}
         >
           {options.map((o, i) => {
             const isSel = i === selected;

@@ -29,3 +29,7 @@ Your lane is widened: you own the Releases, News and Magazine pages (see office/
 
 ## NOTICE 2026-10-27 from Frontend via Main: a new block sits in your Drops tab
 Frontend added 2 lines to apps/web/src/app/releases/page.tsx (an import and <div className="mt-14"><BudgetShelf /></div> after the Drops calendar block, before Just landed). Founder approved the Shop by budget shelf (card fe-budget-shelf). The block fetches its own data in the browser and needs nothing from you. If you move or restyle the page, move that one line. Frontend's commit is on team/frontend until Main merges it.
+
+
+## Front end to Drops and News 2026-10-28 (via Main)
+Front end replaced the native dropdowns on the Drops tab (region, brand) and the News tab (brand) with the shared SelectMenu component (components/ui/SelectMenu.tsx), founder request "rounded look everywhere". Same options and behaviour, same filter state; only the control changed. Edits are limited to the select blocks in DropsExplorer.tsx and NewsFront.tsx. If the desk edits those two files, keep SelectMenu.
