@@ -167,7 +167,7 @@ export function CommandPalette({ open, onClose, origin }: { open: boolean; onClo
             animate={{ opacity: 1, x: 0, y: 0, scale: 1, borderRadius: 28 }}
             exit={{ opacity: 0, ...from, borderRadius: 999 }}
             transition={reduce ? { duration: 0.15 } : { type: 'spring', stiffness: 230, damping: 25, mass: 0.9, opacity: { duration: 0.18 } }}
-            className="relative w-full max-w-[40rem] overflow-hidden border border-[#0A0A0A]/10 bg-white/95 shadow-[0_40px_120px_-30px_rgba(10,10,10,0.45)] backdrop-blur-xl"
+            className="relative w-full max-w-[40rem] overflow-hidden rounded-[28px] border border-[#0A0A0A]/10 bg-white/95 shadow-[0_40px_120px_-30px_rgba(10,10,10,0.45)] backdrop-blur-xl"
           >
             <div className="flex items-center gap-3 px-5">
               <Search className="h-5 w-5 shrink-0 text-[#0A0A0A]" strokeWidth={2.2} aria-hidden />

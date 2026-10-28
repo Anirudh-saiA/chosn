@@ -109,7 +109,7 @@ function OfferRow({ offer, rank, isBest, isPick, showRatings }: { offer: Catalog
       <td className={cx('whitespace-nowrap py-4 pl-3 pr-1 sm:pl-4 sm:pr-2', isBest && 'shadow-[inset_3px_0_0_0_#ffa800]')}>
         <span
           className={cx(
-            'inline-flex h-7 w-7 items-center sm:h-8 sm:w-8 justify-center border font-mono text-sm font-semibold tabular-nums',
+            'inline-flex h-7 w-7 items-center sm:h-8 sm:w-8 justify-center border font-mono text-sm font-semibold tabular-nums rounded-full',
             isBest
               ? 'border-brass-bright/60 bg-brass-gradient text-vault-deep'
               : 'border-text/15 bg-vault-deep/60 text-text-soft',

@@ -55,7 +55,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 export function CheckRow({ checked, onChange, label, count }: { checked: boolean; onChange: () => void; label: string; count?: number }) {
   return (
-    <label className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
+    <label className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
       <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0A0A0A]" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {count !== undefined && <span className="font-mono text-[0.72rem] tabular-nums text-text-faint">{count}</span>}
@@ -211,7 +211,7 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
           { v: '3', label: 'At 3 or more stores' },
           { v: '4', label: 'At 4 or more stores' },
         ].map((o) => (
-          <label key={o.v} className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
+          <label key={o.v} className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
             <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#0A0A0A]" />
             {o.label}
           </label>

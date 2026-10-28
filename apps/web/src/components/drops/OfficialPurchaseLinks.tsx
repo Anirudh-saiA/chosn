@@ -27,7 +27,7 @@ export function OfficialPurchaseLinks({ links }: { links: PurchaseLink[] }) {
                 href={link.url}
                 target="_blank"
                 rel="noopener"
-                className="group flex min-h-[56px] items-center justify-between gap-4 border border-text/[0.12] bg-vault-deep/60 px-4 py-3 transition-all duration-300 hover:border-brass/60 hover:bg-vault-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                className="group flex min-h-[56px] items-center justify-between gap-4 border border-text/[0.12] bg-vault-deep/60 px-4 py-3 transition-all duration-300 hover:border-brass/60 hover:bg-vault-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice rounded-[20px]"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate font-display text-lg font-semibold text-text">{name}</span>

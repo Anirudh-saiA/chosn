@@ -43,7 +43,7 @@ export function SneakerTile({ item, priority = false }: { item: SearchResultItem
               </Badge>
             </span>
           )}
-          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:opacity-100 group-hover:text-brass-bright">
+          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-text/15 bg-vault-deep/70 text-text-soft opacity-0 backdrop-blur transition-all duration-300 group-hover:opacity-100 group-hover:text-brass-bright rounded-full">
             <ArrowUpRight className="h-4 w-4" aria-hidden />
           </span>
         </div>

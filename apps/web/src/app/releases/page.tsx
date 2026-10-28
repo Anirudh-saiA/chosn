@@ -62,7 +62,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
           />
         </div>
         <p className="mb-6 flex flex-wrap items-center gap-3 text-sm">
-          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-2.5 font-display text-base uppercase tracking-[0.06em] text-white">
+          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#0A0A0A] px-6 py-2.5 font-sans text-[0.95rem] font-semibold text-white transition-colors hover:bg-[#333]">
             Add every drop to your calendar
           </a>
           <span className="text-text-soft">Downloads a calendar file (.ics) that opens in Google, Apple or Outlook calendar.</span>

@@ -79,7 +79,7 @@ export function FeedbackForm() {
   if (status === 'sent') {
     return (
       <div role="status" className="flex flex-col items-start gap-4 py-4">
-        <span className="flex h-14 w-14 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal">
+        <span className="flex h-14 w-14 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal rounded-[20px]">
           <Check aria-hidden className="h-7 w-7" />
         </span>
         <p className="font-display text-3xl font-bold text-text">Got it — thank you.</p>
@@ -125,7 +125,7 @@ export function FeedbackForm() {
           onChange={(e) => setMessage(e.target.value)}
           maxLength={4000}
           aria-describedby={`${messageId}-count`}
-          className="mt-3 w-full border border-text/15 bg-vault-deep/70 px-4 py-3 text-body text-text outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus:border-ice focus:bg-vault-deep focus:shadow-[0_0_0_3px_rgba(143,214,255,.18)]"
+          className="mt-3 w-full border border-text/15 bg-vault-deep/70 px-4 py-3 text-body text-text outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus:border-ice focus:bg-vault-deep focus:shadow-[0_0_0_3px_rgba(143,214,255,.18)] rounded-[20px]"
           placeholder="Be blunt."
         />
         <p id={`${messageId}-count`} className="mt-1.5 text-right font-mono text-meta text-text-faint">

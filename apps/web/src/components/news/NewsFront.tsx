@@ -132,7 +132,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const select =
-    'min-h-[40px] cursor-pointer appearance-none rounded-full border border-[#0A0A0A]/12 bg-white px-4 pr-8 font-mono text-[0.72rem] text-[#0A0A0A] [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-[#0A0A0A]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
+    'min-h-[44px] cursor-pointer appearance-none rounded-full border border-[#0A0A0A]/12 bg-white px-4 pr-8 font-mono text-[0.72rem] text-[#0A0A0A] [background-image:linear-gradient(45deg,transparent_50%,currentColor_50%),linear-gradient(135deg,currentColor_50%,transparent_50%)] [background-position:calc(100%-16px)_52%,calc(100%-11px)_52%] [background-size:5px_5px] [background-repeat:no-repeat] hover:border-[#0A0A0A]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
 
   return (
     <div className="text-[#0A0A0A]">
@@ -148,7 +148,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
           <span aria-hidden>·</span>
           <span>{list.length} stories</span>
         </p>
-        <Link href="/magazine" className="mt-3 inline-flex min-h-[40px] items-center gap-2 rounded-full bg-[#FFD84A] px-5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors hover:bg-[#FFC400]">
+        <Link href="/magazine" className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-2 text-center font-sans text-[0.8rem] font-semibold text-white transition-colors hover:bg-[#333]">
           Read it as a magazine: turn the pages, download the PDF <span aria-hidden>→</span>
         </Link>
       </header>
@@ -160,16 +160,16 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
             setFresh(0);
             router.refresh();
           }}
-          className="sticky top-20 z-20 mx-auto mt-4 flex items-center gap-2 rounded-full bg-[#C8102E] px-5 py-2.5 font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg transition-colors hover:bg-[#A60C24]"
+          className="sticky top-20 z-20 mx-auto mt-4 flex items-center gap-2 min-h-[44px] rounded-full bg-[#0A0A0A] px-5 py-2.5 font-sans text-[0.85rem] font-semibold text-white shadow-lg transition-colors hover:bg-[#333]"
         >
-          <span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-[#FFD84A]" />
+          <span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-white" />
           {fresh} new {fresh === 1 ? 'story' : 'stories'} · Tap to refresh
         </button>
       )}
 
       {/* Filters. */}
       <div className="my-5 flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Kind of story" className="inline-flex flex-wrap rounded-full border border-[#0A0A0A]/12 bg-white p-1">
+        <div role="group" aria-label="Kind of story" className="-mx-5 flex max-w-[100vw] gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:max-w-full sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -180,8 +180,8 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
                 setShown(PAGE);
               }}
               className={cx(
-                'min-h-[34px] rounded-full px-3.5 font-mono text-[0.72rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice',
-                filter === f.value ? 'bg-[#0A0A0A] text-white' : 'text-[#0A0A0A]/60 hover:text-[#0A0A0A]',
+                'min-h-[44px] shrink-0 whitespace-nowrap rounded-full border px-4 font-sans text-[0.85rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] focus-visible:ring-offset-2',
+                filter === f.value ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white' : 'border-[#0A0A0A]/20 bg-white text-[#0A0A0A]/70 hover:border-[#0A0A0A] hover:text-[#0A0A0A]',
               )}
             >
               {f.label}
@@ -199,7 +199,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
       </div>
 
       {!lead ? (
-        <p className="border border-[#0A0A0A]/12 bg-white px-5 py-8 text-center text-[0.95rem] text-[#0A0A0A]/60">No stories match. Try another kind or brand.</p>
+        <p className="rounded-[24px] border border-[#0A0A0A]/12 bg-white px-5 py-8 text-center text-[0.95rem] text-[#0A0A0A]/60">No stories match. Try another kind or brand.</p>
       ) : (
         <>
           {/* Front page: lead story and the "also today" column. */}
@@ -233,7 +233,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
                       </h4>
                       <Extras item={s} />
                     </div>
-                    <Pic item={s} className="h-20 w-24 shrink-0 self-start rounded-sm" />
+                    <Pic item={s} className="h-20 w-24 shrink-0 self-start rounded-xl" />
                   </li>
                 ))}
               </ol>

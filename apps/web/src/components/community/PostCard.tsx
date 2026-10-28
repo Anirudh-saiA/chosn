@@ -57,7 +57,7 @@ export function PostCard({ post, variant = 'feed', preview = false }: PostCardPr
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <span className="inline-flex items-center gap-1.5 border border-brass/30 bg-brass/[0.07] px-2.5 py-1.5 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-brass-bright">
+            <span className="inline-flex items-center gap-1.5 border border-brass/30 bg-brass/[0.07] px-2.5 py-1.5 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-brass-bright rounded-full">
               <Icon className="h-3.5 w-3.5" aria-hidden />
               {meta.label}
             </span>
@@ -125,7 +125,7 @@ function SneakerChip({ post, detail }: { post: Post; detail: boolean }) {
     <div className="border border-text/10 bg-vault-deep/60">
       <div className="flex flex-wrap items-center gap-4 p-3 sm:flex-nowrap">
         <div
-          className="relative flex h-[4.5rem] w-28 shrink-0 items-center justify-center overflow-hidden border border-text/[0.06]"
+          className="relative flex h-[4.5rem] w-28 shrink-0 items-center justify-center overflow-hidden border border-text/[0.06] rounded-[20px]"
           style={{ background: `radial-gradient(75% 90% at 50% 45%, ${p.glow}38, transparent 80%), #0A0F0C` }}
         >
           <SneakerArt colorway={s.colorway} brand={s.brand} palette={p} className="h-full w-full p-1.5" />
@@ -231,7 +231,7 @@ function PostBody({ post, detail }: { post: Post; detail: boolean }) {
                   ? `Legit Check photo: ${checklistLabel}`
                   : `Legit Check photo${post.title ? ` for ${post.title}` : ''}`;
                 return (
-                  <figure key={img.id} className="relative aspect-square overflow-hidden border border-text/10 bg-vault-recessed">
+                  <figure key={img.id} className="relative aspect-square overflow-hidden border border-text/10 bg-vault-recessed rounded-[20px]">
                     {img.classifierStatus === 'flagged' ? (
                       <div className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center font-mono text-meta text-rust">
                         <ImageOff className="h-5 w-5" aria-hidden />
@@ -259,7 +259,7 @@ function PostBody({ post, detail }: { post: Post; detail: boolean }) {
         <div className="flex flex-col gap-4">
           {post.sneaker && <SneakerChip post={post} detail={false} />}
           {post.dropEvent && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-text/10 bg-vault-deep/60 px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-text/10 bg-vault-deep/60 px-3 py-2.5 rounded-[20px]">
               <span className="inline-flex items-center gap-2 font-mono text-meta text-text-soft">
                 {post.dropEvent.status === 'live' ? (
                   <span className="inline-flex items-center gap-2 font-semibold text-signal">
@@ -276,7 +276,7 @@ function PostBody({ post, detail }: { post: Post; detail: boolean }) {
               </span>
               <Link
                 href={`/drops/${post.dropEvent.id}`}
-                className="inline-flex min-h-9 items-center gap-1.5 font-mono text-meta font-semibold text-brass-bright hover:underline"
+                className="inline-flex min-h-11 items-center gap-1.5 font-mono text-meta font-semibold text-brass-bright hover:underline"
               >
                 View drop <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>

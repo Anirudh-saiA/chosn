@@ -50,8 +50,8 @@ export default function FeedbackPage() {
         <aside aria-label="What we most want to hear" className="space-y-3">
           <p className="eyebrow">What we most want to hear</p>
           {WANTED.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex gap-3 border border-text/10 bg-vault-raised/50 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+            <div key={title} className="flex gap-3 border border-text/10 bg-vault-raised/50 p-4 rounded-[20px]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
                 <Icon aria-hidden className="h-4 w-4" />
               </span>
               <div>

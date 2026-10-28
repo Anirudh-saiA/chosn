@@ -74,7 +74,7 @@ export function ReportButton({ entityType, entityId, variant = 'inline' }: Repor
         id={`${uid}-reason`}
         value={reason}
         onChange={(e) => setReason(e.target.value as ReportReason)}
-        className="min-h-9 border border-text/20 bg-vault-deep px-2 text-text"
+        className="min-h-11 border border-text/20 bg-vault-deep px-2 text-text rounded-[20px]"
       >
         {REPORT_REASONS.map((r) => (
           <option key={r.value} value={r.value}>
@@ -86,11 +86,11 @@ export function ReportButton({ entityType, entityId, variant = 'inline' }: Repor
         type="button"
         onClick={submit}
         disabled={status === 'submitting'}
-        className="min-h-9 border border-rust/50 bg-rust/10 px-3 font-semibold text-rust hover:bg-rust/20 disabled:opacity-50"
+        className="min-h-11 border border-rust/50 bg-rust/10 px-3 font-semibold text-rust hover:bg-rust/20 disabled:opacity-50 rounded-[20px]"
       >
         {status === 'submitting' ? 'Sending…' : 'Submit'}
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="min-h-9 px-2 text-text-soft hover:text-text">
+      <button type="button" onClick={() => setOpen(false)} className="min-h-11 px-2 text-text-soft hover:text-text">
         Cancel
       </button>
     </span>
@@ -125,7 +125,7 @@ export function ReportButton({ entityType, entityId, variant = 'inline' }: Repor
         <MoreHorizontal className="h-5 w-5" aria-hidden />
       </button>
       {open && (
-        <span className="absolute right-0 top-full z-30 mt-1 flex w-max max-w-[calc(100vw-2.5rem)] flex-col gap-2 border border-text/15 bg-vault-raised p-3 shadow-lift">
+        <span className="absolute right-0 top-full z-30 mt-1 flex w-max max-w-[calc(100vw-2.5rem)] flex-col gap-2 border border-text/15 bg-vault-raised p-3 shadow-lift rounded-[20px]">
           <span className="inline-flex items-center gap-1.5 font-mono text-meta font-semibold uppercase tracking-[0.1em] text-text-soft">
             <Flag className="h-3 w-3" aria-hidden /> Report this {entityType}
           </span>

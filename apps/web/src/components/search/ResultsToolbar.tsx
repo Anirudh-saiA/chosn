@@ -67,7 +67,7 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
                 type="button"
                 onClick={chip.remove}
                 aria-label={`Remove filter ${chip.label}`}
-                className="inline-flex min-h-[34px] items-center gap-1.5 rounded-full bg-text px-3.5 font-mono text-[0.72rem] text-white transition-opacity hover:opacity-80"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-text px-3.5 font-mono text-[0.72rem] text-white transition-opacity hover:opacity-80"
               >
                 {chip.label} <X className="h-3.5 w-3.5" aria-hidden />
               </button>

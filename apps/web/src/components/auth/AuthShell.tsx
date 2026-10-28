@@ -51,7 +51,7 @@ export function AuthShell({
             <ul className="mt-7 space-y-3.5">
               {TRUST.map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-3 text-[0.9375rem] text-text-soft">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
                     <Icon aria-hidden className="h-3.5 w-3.5" />
                   </span>
                   {text}

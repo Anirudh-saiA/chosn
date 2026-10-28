@@ -32,7 +32,7 @@ export default function TransparencyPage() {
     <PageShell width="4xl">
       <PageHeader eyebrow="Trust &amp; safety" title="Transparency" />
 
-      <dl className="mb-12 grid grid-cols-2 gap-px border border-text/10 bg-text/10 lg:grid-cols-4">
+      <dl className="mb-12 grid grid-cols-2 gap-px border border-text/10 bg-text/10 lg:grid-cols-4 rounded-[20px] overflow-hidden">
         {STATS.map((s) => (
           <div key={s.label} className="bg-vault px-5 py-6">
             <dt className="font-mono text-meta uppercase tracking-[0.14em] text-text-soft">{s.label}</dt>
@@ -59,7 +59,7 @@ export default function TransparencyPage() {
           {PUBLISHED.map(({ icon: Icon, text }, i) => (
             <Reveal key={text} as="li" delay={i * 0.05}>
               <div className="panel flex items-start gap-4 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
                   <Icon aria-hidden className="h-4 w-4" />
                 </span>
                 <span className="text-[0.9375rem] leading-relaxed">{text}</span>
@@ -68,7 +68,7 @@ export default function TransparencyPage() {
           ))}
         </ul>
 
-        <aside className="flex gap-3 border border-brass/30 bg-brass/[0.06] p-5">
+        <aside className="flex gap-3 border border-brass/30 bg-brass/[0.06] p-5 rounded-[20px]">
           <EyeOff aria-hidden className="mt-1 h-5 w-5 shrink-0 text-brass-bright" />
           <p>
             <strong>What this will never include:</strong> anything that identifies an individual reporter or

@@ -114,7 +114,7 @@ export function DropCalendar({
 
   const dayDrops = selectedDate ? (byDate.get(selectedDate) ?? []) : [];
   const turn = reduce ? { duration: 0 } : { duration: 0.32, ease: [0.4, 0, 0.2, 1] as const };
-  const nav = 'flex h-10 w-10 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
+  const nav = 'flex h-11 w-11 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice';
 
   return (
     <div ref={root} className="mx-auto w-full max-w-3xl scroll-mt-24 [perspective:1400px]">
@@ -225,7 +225,7 @@ export function DropCalendar({
                 type="button"
                 onClick={() => onSelectDay(null)}
                 aria-label="Back to the calendar"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-text-soft transition-colors hover:bg-text/[0.06] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
                 <ArrowLeft className="h-5 w-5" aria-hidden />
               </button>

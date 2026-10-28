@@ -37,7 +37,7 @@ export function DropStatusBadge({ dropEventId, initialStatus, className = '' }: 
     <span
       role="status"
       className={
-        'inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-wider transition-colors duration-200 ease-chosn motion-reduce:transition-none ' +
+        'inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-wider transition-colors duration-200 ease-chosn motion-reduce:transition-none  rounded-full' +
         (status === 'live'
           ? 'border-signal/50 bg-signal/10 text-[#0A6B44]'
           : status === 'sold_out'

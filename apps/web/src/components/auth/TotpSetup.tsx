@@ -94,7 +94,7 @@ export function TotpSetup() {
     return (
       <div className="flex flex-col gap-4">
         <p className="flex items-center gap-3 text-body text-text">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal rounded-full">
             <ShieldCheck aria-hidden className="h-4 w-4" />
           </span>
           Two-factor authentication is on for this account.
@@ -126,7 +126,7 @@ export function TotpSetup() {
           {secretBase32 && (
             <div>
               <p className="font-mono text-meta uppercase tracking-[0.18em] text-text-soft">Can&apos;t scan it? Enter this key</p>
-              <div className="mt-2 flex max-w-md items-stretch border border-text/15 bg-vault-deep/70">
+              <div className="mt-2 flex max-w-md items-stretch border border-text/15 bg-vault-deep/70 rounded-[20px]">
                 <code className="min-w-0 flex-1 break-all px-3 py-2.5 font-mono text-data-inline tracking-wider text-text">{secretBase32}</code>
                 <button
                   type="button"

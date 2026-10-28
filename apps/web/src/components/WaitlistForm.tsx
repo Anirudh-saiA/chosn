@@ -95,7 +95,7 @@ export function WaitlistForm() {
   if (joined) {
     return (
       <div role="status" id={statusId} className="panel ticks flex max-w-[46ch] items-start gap-4 px-6 py-5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-signal/40 bg-signal/10 text-signal rounded-full">
           <Check aria-hidden className="h-5 w-5" />
         </span>
         <div>
@@ -208,7 +208,7 @@ export function WaitlistForm() {
       {/* Live region stays mounted (empty) so screen readers announce the message when it appears. */}
       <div id={statusId} role="alert" className="mt-4 min-h-[1.25em]">
         {status === 'error' && (
-          <p className="flex items-start gap-2 border border-rust/40 bg-rust/[0.08] px-3 py-2.5 text-data-inline text-rust">
+          <p className="flex items-start gap-2 border border-rust/40 bg-rust/[0.08] px-3 py-2.5 text-data-inline text-rust rounded-[20px]">
             <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{errorMessage}</span>
           </p>

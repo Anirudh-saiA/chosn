@@ -166,7 +166,7 @@ export default async function DropDetailPage({ params }: PageProps) {
             )}
 
             <Reveal delay={0.12}>
-              <dl className="grid grid-cols-2 gap-px border border-text/[0.08] bg-text/[0.08]">
+              <dl className="grid grid-cols-2 gap-px border border-text/[0.08] bg-text/[0.08] rounded-[20px] overflow-hidden">
                 {specs.map(({ icon: Icon, label, value }) => (
                   <div key={label} className="bg-vault-raised p-4">
                     <dt className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
@@ -257,7 +257,7 @@ export default async function DropDetailPage({ params }: PageProps) {
                       >
                         <span className="group-hover:text-brass-bright">{n.title}</span>
                         {n.isBreaking && (
-                          <span className="inline-flex shrink-0 items-center gap-1.5 border border-rust/50 bg-rust/10 px-2 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-wider text-rust">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 border border-rust/50 bg-rust/10 px-2 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-wider text-rust rounded-full">
                             <span className="live-dot !h-1.5 !w-1.5" aria-hidden /> Breaking
                           </span>
                         )}

@@ -70,7 +70,7 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
   if (reports.length === 0) {
     return (
       <div className="panel ticks flex flex-col items-center gap-3 px-6 py-14 text-center">
-        <span className="flex h-12 w-12 items-center justify-center border border-signal/40 bg-signal/10 text-signal">
+        <span className="flex h-12 w-12 items-center justify-center border border-signal/40 bg-signal/10 text-signal rounded-full">
           <Inbox aria-hidden className="h-6 w-6" />
         </span>
         <p className="font-display text-2xl font-semibold text-text">Queue is clear</p>
@@ -81,7 +81,7 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
 
   return (
     <div>
-      <dl className="mb-6 grid grid-cols-2 gap-px border border-text/10 bg-text/10 sm:grid-cols-4">
+      <dl className="mb-6 grid grid-cols-2 gap-px border border-text/10 bg-text/10 sm:grid-cols-4 rounded-[20px] overflow-hidden">
         {FILTERS.map((f) => (
           <div key={f} className="bg-vault px-4 py-4">
             <dt className="font-mono text-meta uppercase tracking-[0.16em] text-text-soft">{f}</dt>
@@ -111,7 +111,7 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
       </div>
 
       {shown.length === 0 ? (
-        <p className="border border-dashed border-text/15 px-4 py-10 text-center text-meta text-text-faint">Nothing with status “{filter}”.</p>
+        <p className="border border-dashed border-text/15 px-4 py-10 text-center text-meta text-text-faint rounded-[20px]">Nothing with status “{filter}”.</p>
       ) : (
         <ul className="panel flex flex-col divide-y divide-text/[0.07]">
           {shown.map((report) => (
@@ -127,7 +127,7 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   {report.isHidden && (
-                    <span className="inline-flex items-center gap-1 border border-signal/40 bg-signal/10 px-2 py-0.5 font-mono text-meta uppercase tracking-[0.12em] text-signal">
+                    <span className="inline-flex items-center gap-1 border border-signal/40 bg-signal/10 px-2 py-0.5 font-mono text-meta uppercase tracking-[0.12em] text-signal rounded-full">
                       <EyeOff aria-hidden className="h-3 w-3" /> Hidden
                     </span>
                   )}
@@ -161,7 +161,7 @@ export function ReportsQueue({ initialReports, apiToken }: ReportsQueueProps) {
                     placeholder="Note (optional)"
                     value={noteDraft[report.id] ?? ''}
                     onChange={(e) => setNoteDraft((prev) => ({ ...prev, [report.id]: e.target.value }))}
-                    className="min-h-[44px] min-w-[14rem] flex-1 border border-text/15 bg-vault-deep/70 px-3 py-1.5 text-body text-text outline-none transition-all placeholder:text-text-faint hover:border-text/30 focus:border-ice focus:shadow-[0_0_0_3px_rgba(143,214,255,.18)]"
+                    className="min-h-[44px] min-w-[14rem] flex-1 border border-text/15 bg-vault-deep/70 px-3 py-1.5 text-body text-text outline-none transition-all placeholder:text-text-faint hover:border-text/30 focus:border-ice focus:shadow-[0_0_0_3px_rgba(143,214,255,.18)] rounded-[20px]"
                   />
                   <button
                     type="button"

@@ -37,7 +37,7 @@ export function DropAgenda({ drops, mode }: { drops: DropListItem[]; mode: 'week
   if (days.length === 0) return <p className="panel px-5 py-6 text-body text-text-soft">Nothing is scheduled with these filters.</p>;
 
   return (
-    <ol className="flex flex-col gap-px border border-text/[0.08] bg-text/[0.08]">
+    <ol className="flex flex-col gap-px border border-text/[0.08] bg-text/[0.08] rounded-[20px] overflow-hidden">
       {days.map(([date, list]) => (
         <li key={date} className="grid gap-3 bg-vault-raised p-4 sm:grid-cols-[11rem_1fr]">
           <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-brass">{dayLabel(date)}</p>

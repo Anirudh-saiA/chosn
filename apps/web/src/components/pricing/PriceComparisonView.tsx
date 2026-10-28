@@ -166,7 +166,7 @@ export function PriceComparisonView({ styleCode, initialData, imageUrl, drop, co
           <Reveal y={16}>
             <div className="flex flex-wrap items-center gap-3">
               <p className="eyebrow">{sneaker.brand}</p>
-              <span className="border border-text/15 bg-vault-raised/70 px-2.5 py-1 font-mono text-meta tracking-[0.06em] text-text-soft">
+              <span className="border border-text/15 bg-vault-raised/70 px-2.5 py-1 font-mono text-meta tracking-[0.06em] text-text-soft rounded-[20px]">
                 {sneaker.styleCode}
               </span>
               {drop && <DropStatusBadge dropEventId={drop.id} initialStatus={drop.status} />}

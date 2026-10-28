@@ -40,7 +40,7 @@ export function VoteButtons({ votableType, votableId, initialScore, initialViewe
       role="group"
       aria-label="Vote"
       title={apiToken ? undefined : 'Sign in to vote'}
-      className="inline-flex items-center border border-text/10 bg-vault-deep/60 font-mono"
+      className="inline-flex items-center border border-text/10 bg-vault-deep/60 font-mono rounded-[20px]"
     >
       <button
         type="button"
