@@ -808,3 +808,15 @@ html[data-menu-open] .hero-wordmark, html[data-menu-open] .hero-tagline { opacit
 .btn-shine {
   min-height: 44px;
 }
+
+/* SelectMenu (components/ui/SelectMenu.tsx): the open list fades and drops in a few pixels. Skipped for reduced motion. */
+@keyframes select-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
