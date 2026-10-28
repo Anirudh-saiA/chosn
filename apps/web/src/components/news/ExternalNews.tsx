@@ -18,7 +18,7 @@ export function ExternalNews({ items }: { items: NewsListItem[] }) {
       <ul className="divide-y divide-text/10 overflow-hidden rounded-2xl border border-text/12 bg-white">
         {items.slice(0, shown).map((it) => (
           <li key={it.id}>
-            <a href={it.sourceUrl ?? '#'} target="_blank" rel="noopener noreferrer nofollow" className="group flex items-start justify-between gap-4 px-5 py-4 hover:bg-[#EAF3FA]">
+            <a href={it.sourceUrl ?? '#'} target="_blank" rel="noopener noreferrer nofollow" className="group flex items-start justify-between gap-4 px-5 py-4 hover:bg-[#FFFFFF]">
               <span className="min-w-0">
                 <span className="block font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-brass">
                   {it.source} · <time dateTime={it.publishedAt}>{relativeTime(it.publishedAt)}</time>
@@ -35,7 +35,7 @@ export function ExternalNews({ items }: { items: NewsListItem[] }) {
       </ul>
       {shown < items.length ? (
         <div className="mt-6 flex justify-center">
-          <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#14213D] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#14213D] hover:bg-[#EAF3FA]">
+          <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#0A0A0A] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#0A0A0A] hover:bg-[#FFFFFF]">
             Show more ({items.length - shown} left)
           </button>
         </div>

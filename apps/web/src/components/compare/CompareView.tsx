@@ -77,7 +77,7 @@ export function CompareView({ items }: { items: CompareItem[] }) {
                   <p className="font-mono text-[1.7rem] font-extrabold leading-none tabular-nums text-text">{formatInr(item.bestPrice)}</p>
                   <p className="mt-1.5 text-[0.82rem] text-text-soft">at {item.bestRetailerName}</p>
                   {isLowest ? (
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#14213D] px-2.5 py-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#0A0A0A] px-2.5 py-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white">
                       <Check className="h-3 w-3" aria-hidden /> Lowest
                     </span>
                   ) : diff > 0 ? (

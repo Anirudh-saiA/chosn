@@ -4,9 +4,9 @@ import { useState } from 'react';
 import type { PriceOutlook } from '@/lib/catalog';
 
 const LOOK = {
-  buy_now: { label: 'Buy now', pill: 'bg-[#1F8A4C] text-white', ring: 'border-[#1F8A4C]/40' },
-  wait: { label: 'Wait', pill: 'bg-[#D97706] text-white', ring: 'border-[#D97706]/40' },
-  fair: { label: 'Fair price', pill: 'bg-[#14213D] text-white', ring: 'border-text/15' },
+  buy_now: { label: 'Buy now', pill: 'bg-[#0A6B44] text-white', ring: 'border-[#0A6B44]/40' },
+  wait: { label: 'Wait', pill: 'bg-[#9A5A00] text-white', ring: 'border-[#9A5A00]/40' },
+  fair: { label: 'Fair price', pill: 'bg-[#0A0A0A] text-white', ring: 'border-text/15' },
   unclear: { label: 'Too early to say', pill: 'bg-text/10 text-text', ring: 'border-text/15' },
 } as const;
 const CONF = { low: 'Low confidence', medium: 'Medium confidence', high: 'High confidence' } as const;
@@ -38,7 +38,7 @@ export function PriceOutlookCard({ outlook }: { outlook: PriceOutlook | null }) 
               <li key={f.label} className="flex gap-3 text-sm">
                 <span
                   aria-hidden
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold text-white ${f.effect === 'buy' ? 'bg-[#1F8A4C]' : f.effect === 'wait' ? 'bg-[#D97706]' : 'bg-text/30'}`}
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold text-white ${f.effect === 'buy' ? 'bg-[#0A6B44]' : f.effect === 'wait' ? 'bg-[#9A5A00]' : 'bg-text/30'}`}
                 >
                   {f.effect === 'buy' ? '+' : f.effect === 'wait' ? '−' : 'i'}
                 </span>

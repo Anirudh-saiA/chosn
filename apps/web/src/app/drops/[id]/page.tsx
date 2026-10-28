@@ -13,7 +13,6 @@ import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt'
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
 import { PageShell } from '@/components/ui/PageShell';
 import { Reveal } from '@/components/fx/Reveal';
-import { paletteFor } from '@/lib/sneaker/palette';
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { listPosts } from '@/lib/community';
@@ -86,7 +85,6 @@ export default async function DropDetailPage({ params }: PageProps) {
 
   const iso = releaseInstant(drop.releaseDate, drop.releaseTime, drop.releaseTimezone);
   const realImage = resolveSneakerImage(sneaker.primaryImageUrl);
-  const palette = paletteFor(sneaker.colorway, sneaker.brand);
   const releaseDateLabel = new Date(`${drop.releaseDate}T00:00:00`).toLocaleDateString('en-IN', {
     weekday: 'short',
     day: 'numeric',
@@ -118,7 +116,7 @@ export default async function DropDetailPage({ params }: PageProps) {
               <div
                 aria-hidden
                 className="absolute inset-0"
-                style={{ background: `radial-gradient(55% 60% at 50% 60%, ${palette.glow}55, transparent 75%)` }}
+                style={{ background: '#F5F5F5' }}
               />
               <div aria-hidden className="grid-lines absolute inset-0 opacity-40" />
               {realImage ? (

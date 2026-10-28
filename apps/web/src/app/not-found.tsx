@@ -19,23 +19,22 @@ export default function NotFound() {
         <div className="relative mt-4 w-full">
           <p
             aria-hidden
-            className="text-outline select-none font-display text-[clamp(9rem,32vw,24rem)] font-bold leading-[0.8] tracking-tighter"
+            className="text-outline select-none font-display text-[clamp(7rem,30vw,22rem)] font-extrabold leading-[0.8] tracking-tighter"
           >
             404
           </p>
           <div className="pointer-events-none absolute inset-x-0 top-1/2 mx-auto w-[min(30rem,64%)] -translate-y-1/2">
             <div className="animate-float">
-            <div aria-hidden className="absolute inset-x-6 top-1/2 h-24 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(255,168,0,.35),transparent)] blur-2xl" />
-            <SneakerArt colorway="Bred" brand="Jordan" className="relative h-auto w-full -rotate-6 drop-shadow-[0_30px_40px_rgba(0,0,0,.65)]" />
+            <SneakerArt colorway="Bred" brand="Jordan" className="relative h-auto w-full -rotate-6 drop-shadow-[0_18px_20px_rgba(0,0,0,.22)]" />
             </div>
           </div>
         </div>
 
         <Reveal delay={0.1}>
-          <h1 className="mt-14 font-display text-[clamp(1.9rem,4.5vw,3rem)] font-bold leading-[1.02] tracking-tight text-text">
-            We found the shoe. <span className="text-brass-gradient">Not the page.</span>
+          <h1 className="mt-12 font-display text-[clamp(1.6rem,4.5vw,3rem)] font-bold leading-[1.02] tracking-tight text-text">
+            We found the shoe. <span className="text-brass">Not the page.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-[52ch] text-lg text-text-soft">
+          <p className="mx-auto mt-4 max-w-[52ch] text-base sm:text-lg text-text-soft">
             This link is out of stock everywhere we check — zero retailers, zero resellers. It may have moved, or it never
             dropped at all.
           </p>

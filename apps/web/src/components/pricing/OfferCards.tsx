@@ -127,7 +127,7 @@ export function OfferCards({
           <ol className="mt-5 space-y-4">
             {guide.steps.map((s, i) => (
               <li key={s.title} className="flex gap-4">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#14213D] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0A0A0A] font-mono text-[0.72rem] font-bold text-white">{i + 1}</span>
                 <div>
                   <p className="text-[1.02rem] font-semibold leading-snug text-text">{s.title}</p>
                   {s.lines.map((l) => (
@@ -165,7 +165,7 @@ export function OfferCards({
                   type="button"
                   aria-pressed={sortBy === id}
                   onClick={() => setSortBy(id)}
-                  className={`min-h-[44px] px-3.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors ${sortBy === id ? 'bg-[#14213D] text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
+                  className={`min-h-[44px] px-3.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors ${sortBy === id ? 'bg-[#0A0A0A] text-white' : 'text-text-soft hover:bg-text/5 hover:text-text'}`}
                 >
                   {label}
                 </button>

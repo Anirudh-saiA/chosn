@@ -20,7 +20,7 @@ const RANGES = [
   { label: '90D', days: 90 },
   { label: 'All', days: 730 },
 ] as const;
-const STORE_COLORS = ['#D97E00', '#2F63C8', '#3E8E5A', '#7E57C2', '#D62F2F', '#0F8B8D'];
+const STORE_COLORS = ['#9A5A00', '#2F63C8', '#3E8E5A', '#7E57C2', '#D62F2F', '#0F8B8D'];
 
 const dayMs = (d: string) => Date.parse(`${d}T00:00:00Z`);
 const label = (d: string) => new Date(dayMs(d)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });

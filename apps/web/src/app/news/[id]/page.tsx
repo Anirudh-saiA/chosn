@@ -62,7 +62,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
         <header className="mx-auto max-w-[68ch] border-t-[3px] border-double border-[#0A0A0A] pt-5">
           <div className="flex flex-wrap items-center gap-3 font-mono text-[0.68rem] font-bold uppercase tracking-[0.16em]">
             {article.isBreaking && <BreakingPill />}
-            {article.category ? <span className="text-[#B3121F]">{CATEGORY_LABEL[article.category]}</span> : null}
+            {article.category ? <span className="text-[#0A0A0A]">{CATEGORY_LABEL[article.category]}</span> : null}
             {(article.brands ?? []).slice(0, 3).map((b) => (
               <span key={b} className="text-[#0A0A0A]/55">{b}</span>
             ))}

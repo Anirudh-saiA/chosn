@@ -18,7 +18,7 @@ export function CompareTray() {
       <div
         role="region"
         aria-label="Sneakers selected to compare"
-        className="pointer-events-auto flex w-full max-w-[44rem] items-center gap-3 rounded-2xl bg-[#14213D] p-2.5 pl-3 text-white shadow-[0_18px_50px_-12px_rgba(20,33,61,0.55)]"
+        className="pointer-events-auto flex w-full max-w-[44rem] items-center gap-3 rounded-2xl bg-[#0A0A0A] p-2.5 pl-3 text-white shadow-[0_18px_50px_-12px_rgba(10,10,10,0.55)]"
       >
         <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
           {items.map((item) => (
@@ -27,14 +27,14 @@ export function CompareTray() {
                 {item.imageUrl ? (
                   <img referrerPolicy="no-referrer" src={item.imageUrl} alt={`${item.brand} ${item.model}`} className="h-full w-full object-contain p-1" />
                 ) : (
-                  <span className="grid h-full w-full place-items-center font-mono text-[0.55rem] text-[#14213D]/60">{item.brand}</span>
+                  <span className="grid h-full w-full place-items-center font-mono text-[0.55rem] text-[#0A0A0A]/60">{item.brand}</span>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => remove(item.styleCode)}
                 aria-label={`Remove ${item.brand} ${item.model} from compare`}
-                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-white text-[#14213D] shadow"
+                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-white text-[#0A0A0A] shadow"
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>
@@ -52,7 +52,7 @@ export function CompareTray() {
         <Link
           href={items.length < 2 ? '/sneakers' : href}
           className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-xl px-4 font-mono text-[0.74rem] font-bold uppercase tracking-[0.12em] transition-colors ${
-            items.length < 2 ? 'bg-white/15 text-white/70' : 'bg-white text-[#14213D] hover:bg-[#F1F7FB]'
+            items.length < 2 ? 'bg-white/15 text-white/70' : 'bg-white text-[#0A0A0A] hover:bg-[#FAFAFA]'
           }`}
         >
           {items.length < 2 ? 'Add one more' : `Compare ${items.length}`}

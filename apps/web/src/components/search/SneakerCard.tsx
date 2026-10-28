@@ -45,9 +45,9 @@ const MAX_TILES = 5;
 
 type Verdict = 'buy_now' | 'wait' | 'fair' | 'unclear';
 const VERDICT_LOOK: Record<Verdict, { label: string; cls: string; tip: string }> = {
-  buy_now: { label: 'Buy now', cls: 'bg-[#1F8A4C] text-white', tip: 'Good price to buy now for this size' },
-  wait: { label: 'Wait', cls: 'bg-[#D97706] text-white', tip: 'Worth waiting: the price is above its usual level' },
-  fair: { label: 'Fair price', cls: 'bg-[#14213D] text-white', tip: 'A fair price: no strong reason to rush or wait' },
+  buy_now: { label: 'Buy now', cls: 'bg-[#0A6B44] text-white', tip: 'Good price to buy now for this size' },
+  wait: { label: 'Wait', cls: 'bg-[#9A5A00] text-white', tip: 'Worth waiting: the price is above its usual level' },
+  fair: { label: 'Fair price', cls: 'bg-[#0A0A0A] text-white', tip: 'A fair price: no strong reason to rush or wait' },
   unclear: { label: 'Too early', cls: 'bg-[#0A0A0A]/10 text-[#0A0A0A]/60', tip: 'Not enough price history to call it yet' },
 };
 
@@ -228,7 +228,7 @@ export function SneakerCard({ item, stores = {} }: SneakerCardProps) {
             <span className="text-[0.8rem] font-bold text-[#0A0A0A]/60 sm:text-[0.95rem]">Sold out in UK {formatSize(size)}</span>
           )}
           {was && <span className="text-[0.8rem] tabular-nums text-[#0A0A0A]/60 line-through">{formatInr(was)}</span>}
-          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#1B7A34]">{pct}% off</span>}
+          {pct >= 1 && <span className="rounded-full bg-[#E3F5E7] px-2 py-0.5 text-[0.68rem] font-bold uppercase text-[#0A6B44]">{pct}% off</span>}
         </div>
       </div>
 

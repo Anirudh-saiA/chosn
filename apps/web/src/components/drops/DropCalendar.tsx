@@ -186,13 +186,13 @@ export function DropCalendar({
                         whileTap={reduce ? undefined : { scale: 0.96 }}
                         transition={{ type: 'spring', stiffness: 420, damping: 24 }}
                         className={cx(
-                          'relative flex h-11 w-11 items-center justify-center rounded-full bg-[#FFD84A] font-mono text-[0.85rem] font-semibold text-[#0A0A0A] transition-colors hover:bg-[#FFC400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:h-12 sm:w-12',
-                          isToday && 'ring-2 ring-text',
+                          'relative flex h-11 w-11 items-center justify-center rounded-full bg-[#0A0A0A] font-mono text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] focus-visible:ring-offset-2 sm:h-12 sm:w-12',
+                          isToday && 'ring-2 ring-[#9A5A00] ring-offset-2',
                         )}
                       >
                         {day}
                         {list.length > 1 && (
-                          <span aria-hidden className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-1 font-mono text-[0.55rem] text-white">
+                          <span aria-hidden className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-[#9A5A00] px-1 font-mono text-[0.55rem] text-white">
                             {list.length}
                           </span>
                         )}

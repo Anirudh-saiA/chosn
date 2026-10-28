@@ -46,7 +46,7 @@ function Credit({ item }: { item: NewsListItem }) {
 function Kicker({ item }: { item: NewsListItem }) {
   return (
     <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55">
-      {item.category ? <span className="text-[#B3121F]">{CATEGORY_LABEL[item.category]}</span> : null}
+      {item.category ? <span className="text-[#0A0A0A]">{CATEGORY_LABEL[item.category]}</span> : null}
       {item.category ? ' · ' : ''}
       {item.source} · <time dateTime={item.publishedAt}>{relativeTime(item.publishedAt)}</time>
     </p>
@@ -181,7 +181,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
               }}
               className={cx(
                 'min-h-[34px] rounded-full px-3.5 font-mono text-[0.72rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice',
-                filter === f.value ? 'bg-[#14213D] text-white' : 'text-[#0A0A0A]/60 hover:text-[#0A0A0A]',
+                filter === f.value ? 'bg-[#0A0A0A] text-white' : 'text-[#0A0A0A]/60 hover:text-[#0A0A0A]',
               )}
             >
               {f.label}
@@ -262,7 +262,7 @@ export function NewsFront({ items, sourceCount }: { items: NewsListItem[]; sourc
 
           {more > 0 && (
             <div className="mt-8 flex justify-center">
-              <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#14213D] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#14213D] hover:bg-[#EAF3FA]">
+              <button type="button" onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-[#0A0A0A] bg-white px-7 py-3 font-display text-lg uppercase tracking-[0.06em] text-[#0A0A0A] hover:bg-[#FFFFFF]">
                 More stories ({more} left)
               </button>
             </div>

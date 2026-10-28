@@ -17,7 +17,7 @@ export function FeedbackReminder() {
       <p className="text-sm font-bold text-text">Did your {p.shoeName} arrive?</p>
       <p className="mt-1 text-xs text-text-muted">You clicked through to {p.storeName}. Two quick questions help other shoppers.</p>
       <div className="mt-3 flex items-center gap-3">
-        <Link href={`/how-did-it-go?${q}`} className="rounded-full bg-[#14213D] px-4 py-2 text-xs font-bold text-white">Answer</Link>
+        <Link href={`/how-did-it-go?${q}`} className="rounded-full bg-[#0A0A0A] px-4 py-2 text-xs font-bold text-white">Answer</Link>
         <button type="button" onClick={() => { forgetPurchase(p.styleCode, p.store); setP(null); }} className="text-xs font-semibold text-text-muted underline">No thanks</button>
       </div>
     </div>

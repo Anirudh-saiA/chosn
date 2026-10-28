@@ -27,7 +27,7 @@ export function SneakerTile({ item, priority = false }: { item: SearchResultItem
           <div
             aria-hidden
             className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-100"
-            style={{ background: `radial-gradient(60% 60% at 50% 62%, ${palette.glow}55, transparent 72%)` }}
+            style={{ background: '#F5F5F5' }}
           />
           <div aria-hidden className="grid-lines !opacity-40" />
           <SneakerArt

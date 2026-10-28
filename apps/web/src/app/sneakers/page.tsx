@@ -44,9 +44,9 @@ export default async function SneakersBrowsePage({ searchParams }: PageProps) {
 
   return (
     <PageShell width="full" plain>
-      <header className="mb-6 border-b-2 border-[#0A0A0A] pb-8">
+      <header className="mb-6 border-b border-[#0A0A0A]/15 pb-8">
         <Reveal delay={0.05}>
-          <h1 className="font-display text-[clamp(4.5rem,15vw,12rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">Compare.</h1>
+          <h1 className="font-display text-[clamp(2.75rem,11vw,7rem)] leading-[0.95] tracking-[-0.035em] text-[#0A0A0A]">Compare.</h1>
         </Reveal>
         <div className="mt-6">
           <ScrollHighlight

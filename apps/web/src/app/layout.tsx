@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Anton, Caveat, Cormorant_Garamond, JetBrains_Mono, Manrope } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { WatchSync } from '@/components/watch/WatchSync';
@@ -8,44 +8,12 @@ import { SmoothScroll } from '@/components/fx/SmoothScroll';
 import { MonitoringProvider } from '@/lib/monitoring';
 import './globals.css';
 
-// next/font self-hosts these at build time — served from our own domain.
-// Obsidian Luxe: Cormorant Garamond (couture display serif) for headlines,
-// Manrope for UI/body, JetBrains Mono for every number.
-const display = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['300', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-// Tall, heavy condensed caps (the Futura Condensed Extra Bold look athletic brands use) for the hero tagline.
-const impact = Anton({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-impact',
-  display: 'swap',
-});
-
-// Handwriting for the doodle annotations on the landing page's price comparison.
-const hand = Caveat({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-  variable: '--font-hand',
-  display: 'swap',
-});
-
-const sans = Manrope({
+// next/font self-hosts Inter at build time, served from our own domain. One family for the whole site (brand rule).
+// The old --font-display / --font-impact / --font-hand variables are kept as aliases of it in globals.css.
+const sans = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
-  display: 'swap',
-});
-
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -56,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#CDE6F8',
+  themeColor: '#FFFFFF',
   colorScheme: 'light',
 };
 
@@ -65,12 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${display.variable} ${impact.variable} ${sans.variable} ${mono.variable} ${hand.variable}`}
+      className={`${sans.variable}`}
     >
       <body className="grain">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-brass focus:px-4 focus:py-2 focus:font-sans focus:text-ui-label focus:font-semibold focus:text-vault"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-black focus:px-4 focus:py-3 focus:font-sans focus:text-ui-label focus:font-semibold focus:text-white"
         >
           Skip to content
         </a>

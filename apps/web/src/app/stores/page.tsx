@@ -82,7 +82,7 @@ export default async function StoresPage() {
                     {s.deliveryMinDays !== null && s.deliveryMaxDays !== null && ` · delivery ${s.deliveryMinDays === s.deliveryMaxDays ? s.deliveryMinDays : `${s.deliveryMinDays}–${s.deliveryMaxDays}`} days`}
                   </p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-text/10" aria-hidden>
-                    <div className="h-full rounded-full bg-[#D97E00]" style={{ width: `${Math.max(2, s.sharePct)}%` }} />
+                    <div className="h-full rounded-full bg-[#9A5A00]" style={{ width: `${Math.max(2, s.sharePct)}%` }} />
                   </div>
                 </div>
                 <p className={`col-span-2 text-[0.8rem] sm:col-span-1 sm:text-right ${stale ? 'font-semibold text-[#B4452A]' : 'text-text-soft'}`}>

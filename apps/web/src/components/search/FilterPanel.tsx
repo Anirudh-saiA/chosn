@@ -56,7 +56,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 export function CheckRow({ checked, onChange, label, count }: { checked: boolean; onChange: () => void; label: string; count?: number }) {
   return (
     <label className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
-      <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#14213D]" />
+      <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0A0A0A]" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {count !== undefined && <span className="font-mono text-[0.72rem] tabular-nums text-text-faint">{count}</span>}
     </label>
@@ -212,7 +212,7 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
           { v: '4', label: 'At 4 or more stores' },
         ].map((o) => (
           <label key={o.v} className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
-            <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#14213D]" />
+            <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#0A0A0A]" />
             {o.label}
           </label>
         ))}
@@ -271,7 +271,7 @@ export function FilterDrawer({ facets, total }: { facets: SearchFacets; total: n
               <FilterPanel facets={facets} total={total} />
             </div>
             <div className="border-t border-text/10 p-4">
-              <button type="button" onClick={() => setOpen(false)} className="min-h-[48px] w-full rounded-full bg-[#14213D] font-mono text-[0.78rem] font-bold uppercase tracking-[0.14em] text-white">
+              <button type="button" onClick={() => setOpen(false)} className="min-h-[48px] w-full rounded-full bg-[#0A0A0A] font-mono text-[0.78rem] font-bold uppercase tracking-[0.14em] text-white">
                 Show {total.toLocaleString('en-IN')} sneakers
               </button>
             </div>

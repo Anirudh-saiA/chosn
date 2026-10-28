@@ -65,7 +65,7 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
                     <p className="mt-2 text-[0.85rem] font-bold opacity-85">{s.colourway}</p>
                   </div>
                   {p?.signal && (
-                    <span className="rounded-full bg-white px-3 py-1 font-mono text-[0.68rem] font-extrabold tracking-wider text-[#14213D] shadow-sm">
+                    <span className="rounded-full bg-white px-3 py-1 font-mono text-[0.68rem] font-extrabold tracking-wider text-[#0A0A0A] shadow-sm">
                       {p.signal === 'buy' ? 'BUY' : 'WAIT'}
                     </span>
                   )}

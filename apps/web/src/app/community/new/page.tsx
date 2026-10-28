@@ -452,7 +452,7 @@ function NewPostForm() {
                     <div
                       className="flex h-16 w-24 shrink-0 items-center justify-center border border-text/[0.06]"
                       style={{
-                        background: `radial-gradient(75% 90% at 50% 45%, ${paletteFor(selected.colorway, selected.brand).glow}38, transparent 80%), #0A0F0C`,
+                        background: '#F5F5F5',
                       }}
                     >
                       <SneakerArt colorway={selected.colorway} brand={selected.brand} className="h-full w-full p-1" />
@@ -518,7 +518,7 @@ function NewPostForm() {
                             >
                               <span
                                 className="flex h-11 w-16 shrink-0 items-center justify-center border border-text/[0.06]"
-                                style={{ background: `radial-gradient(80% 90% at 50% 45%, ${p.glow}38, transparent 80%), #0A0F0C` }}
+                                style={{ background: '#F5F5F5' }}
                               >
                                 <SneakerArt colorway={r.colorway} brand={r.brand} palette={p} className="h-full w-full p-0.5" />
                               </span>

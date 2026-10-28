@@ -110,7 +110,7 @@ export function AlertsInbox({ flash }: { flash?: string }) {
         ) : (
           <form onSubmit={saveEmail} className="mt-2 flex flex-wrap gap-2">
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="min-w-[14rem] flex-1 rounded-lg border border-text/20 px-3 py-2 text-sm" aria-label="E-mail address" />
-            <button type="submit" className="rounded-full bg-[#14213D] px-5 py-2 text-sm font-bold text-white">
+            <button type="submit" className="rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-bold text-white">
               Send confirmation
             </button>
           </form>
