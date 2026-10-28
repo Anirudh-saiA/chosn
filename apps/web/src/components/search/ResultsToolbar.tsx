@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import { formatInr, type SearchFacets } from '@/lib/catalog';
 import { COLOR_SWATCH, SORT_OPTIONS, splitList } from '@/lib/search-filters';
+import { SelectMenu } from '@/components/ui/SelectMenu';
 import { FilterBar } from './FilterBar';
 import { SizePicker } from './SizePicker';
 import { FilterDrawer, useFilterParams } from './FilterPanel';
@@ -43,20 +44,12 @@ export function ResultsToolbar({ total, facets }: { total: number; facets: Searc
             <strong className="font-extrabold text-text">{total.toLocaleString('en-IN')}</strong> {total === 1 ? 'sneaker' : 'sneakers'}
           </p>
         </div>
-        <label className="flex items-center gap-2 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-text-soft">
-          Sort
-          <select
-            value={get('sort') ?? ''}
-            onChange={(e) => set({ sort: e.target.value || null })}
-            className="h-11 cursor-pointer rounded-full border border-text/20 bg-white px-4 font-mono text-[0.78rem] normal-case tracking-normal text-text outline-none focus:border-text"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-text-soft" aria-hidden>
+            Sort
+          </span>
+          <SelectMenu label="Sort" value={get('sort') ?? ''} options={SORT_OPTIONS} onChange={(v) => set({ sort: v || null })} />
+        </div>
       </div>
 
       {chips.length > 0 && (
