@@ -35,7 +35,7 @@ export function EmptyState({ query, size, params = {} }: EmptyStateProps) {
               UK {fmt(x)}
             </Link>
           ))}
-          <Link href={link(params, null)} className="rounded-full bg-[#14213D] px-5 py-2 font-mono text-sm font-bold text-white">
+          <Link href={link(params, null)} className="rounded-full bg-[#0A0A0A] px-5 py-2 font-mono text-sm font-bold text-white">
             Any size
           </Link>
         </div>

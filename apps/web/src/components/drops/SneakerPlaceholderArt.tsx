@@ -37,7 +37,7 @@ export function SneakerPlaceholderArt({
       <div
         aria-hidden
         className="absolute inset-0"
-        style={{ background: `radial-gradient(60% 70% at 50% 65%, ${p.glow}50, transparent 75%)` }}
+        style={{ background: '#F5F5F5' }}
       />
       <SneakerArt
         colorway={colorway}

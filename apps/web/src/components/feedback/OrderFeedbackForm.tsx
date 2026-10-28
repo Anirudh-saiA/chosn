@@ -29,7 +29,7 @@ function Choice({ value, current, onPick, children }: { value: string; current: 
       type="button"
       onClick={() => onPick(value)}
       aria-pressed={on}
-      className={`rounded-full border px-4 py-2 text-sm font-semibold ${on ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
+      className={`rounded-full border px-4 py-2 text-sm font-semibold ${on ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white' : 'border-text/20 bg-white text-text hover:border-[#0A0A0A]'}`}
     >
       {children}
     </button>
@@ -174,7 +174,7 @@ export function OrderFeedbackForm({ styleCode, store, storeName, shoeName, size,
                   type="button"
                   onClick={() => toggle(v)}
                   aria-pressed={problems.includes(v)}
-                  className={`rounded-full border px-4 py-2 text-sm font-semibold ${problems.includes(v) ? 'border-[#14213D] bg-[#14213D] text-white' : 'border-text/20 bg-white text-text hover:border-[#14213D]'}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold ${problems.includes(v) ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white' : 'border-text/20 bg-white text-text hover:border-[#0A0A0A]'}`}
                 >
                   {l}
                 </button>
@@ -204,7 +204,7 @@ export function OrderFeedbackForm({ styleCode, store, storeName, shoeName, size,
       </div>
 
       {state === 'error' ? <p role="alert" className="text-sm text-red-700">Could not send. Please try again in a moment.</p> : null}
-      <button type="submit" disabled={!ready || state === 'sending'} className="rounded-full bg-[#14213D] px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
+      <button type="submit" disabled={!ready || state === 'sending'} className="rounded-full bg-[#0A0A0A] px-6 py-3 text-sm font-bold text-white disabled:opacity-40">
         {state === 'sending' ? 'Sending…' : 'Send answer'}
       </button>
     </form>

@@ -32,7 +32,7 @@ export function LegalLayout({
     <PageShell width="6xl">
       <PageHeader eyebrow={eyebrow} title={title} description={lede} className="!mb-8 lg:!mb-12">
         {updated && (
-          <p className="border border-text/10 bg-vault-raised/60 px-3 py-2 font-mono text-meta uppercase tracking-[0.14em] text-text-soft">
+          <p className="border border-text/10 bg-vault-raised/60 px-3 py-2 font-mono text-meta uppercase tracking-[0.14em] text-text-soft rounded-[20px]">
             Updated <span className="text-text">{updated}</span>
           </p>
         )}

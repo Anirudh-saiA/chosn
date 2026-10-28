@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
   if (status === 'done') {
     return (
       <div className="flex flex-col items-start gap-4">
-        <span className="flex h-12 w-12 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal">
+        <span className="flex h-12 w-12 items-center justify-center border border-signal/40 bg-signal/10 text-signal shadow-glow-signal rounded-full">
           <MailCheck aria-hidden className="h-6 w-6" />
         </span>
         <p role="status" className="max-w-[46ch] text-body text-text-soft">

@@ -43,7 +43,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           <p className="mx-auto mt-2 max-w-md text-text-soft">
             Open any sneaker and press <strong>Compare</strong>, or use the <strong>+</strong> on a card. Pick two to four, then come back here.
           </p>
-          <Link href="/sneakers" className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-[#14213D] px-6 font-mono text-[0.74rem] font-bold uppercase tracking-[0.14em] text-white">
+          <Link href="/sneakers" className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-[#0A0A0A] px-6 font-mono text-[0.74rem] font-bold uppercase tracking-[0.14em] text-white">
             Browse sneakers
           </Link>
         </div>

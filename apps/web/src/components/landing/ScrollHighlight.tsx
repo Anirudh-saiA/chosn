@@ -59,10 +59,10 @@ export function ScrollHighlight({
     };
   }, [triggerAt]);
 
-  const mark = 'rounded bg-transparent px-1.5 text-[#14213D] transition-[background-size,color] duration-[900ms] ease-out [background-image:linear-gradient(#FFD84A,#FFD84A)] [background-position:left] [background-repeat:no-repeat] [background-size:0%_100%] [box-decoration-break:clone]';
+  const mark = 'rounded bg-transparent px-1.5 text-[#0A0A0A] transition-[background-size,color] duration-[900ms] ease-out [background-image:linear-gradient(#E6E6E6,#E6E6E6)] [background-position:left] [background-repeat:no-repeat] [background-size:0%_100%] [box-decoration-break:clone]';
 
   return (
-    <p ref={root} className={`${textClass} font-extrabold tracking-tight text-[#14213D]`}>
+    <p ref={root} className={`${textClass} font-extrabold tracking-tight text-[#0A0A0A]`}>
       {before}{' '}
       <mark ref={a} className={mark}>
         {first}

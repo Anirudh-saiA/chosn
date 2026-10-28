@@ -26,7 +26,7 @@ function ShoeOnColour({ shoe, className = '', size = 'w-[88%]', glass = true }: 
 }
 
 const eyebrow = 'font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em]';
-const bigTitle = 'font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]';
+const bigTitle = 'font-display text-[clamp(2.25rem,6vw,5rem)] leading-[1] tracking-[-0.03em]';
 
 /* ---------------------------------------------------------------- compare tiles */
 
@@ -65,7 +65,7 @@ export function CompareTiles({ ids, prices }: { ids: string[]; prices: Record<st
                     <p className="mt-2 text-[0.85rem] font-bold opacity-85">{s.colourway}</p>
                   </div>
                   {p?.signal && (
-                    <span className="rounded-full bg-white px-3 py-1 font-mono text-[0.68rem] font-extrabold tracking-wider text-[#14213D] shadow-sm">
+                    <span className="rounded-full bg-white px-3 py-1 font-mono text-[0.68rem] font-extrabold tracking-wider text-[#0A0A0A] shadow-sm">
                       {p.signal === 'buy' ? 'BUY' : 'WAIT'}
                     </span>
                   )}

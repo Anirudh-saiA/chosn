@@ -50,7 +50,7 @@ const EMPTY: Form = {
   region: 'india', status: 'upcoming', confirmation: 'confirmed', indiaStatus: 'unknown', sourceName: '', sourceUrl: '', imageUrl: '', buyLabel: '', buyUrl: '', story: '',
 };
 
-const input = 'w-full border-2 border-[#0A0A0A] bg-white px-3 py-2 text-[0.95rem] text-[#0A0A0A]';
+const input = 'w-full border-2 border-[#0A0A0A] bg-white px-3 py-2 text-[0.95rem] text-[#0A0A0A] rounded-[20px]';
 const label = 'flex flex-col gap-1 font-mono text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/70';
 const btn = 'rounded-full border-2 border-[#0A0A0A] px-5 py-2 font-display text-[0.95rem] uppercase tracking-[0.14em] transition-colors disabled:opacity-40';
 
@@ -152,10 +152,10 @@ export function DropsAdmin({ apiToken }: { apiToken: string }) {
         <button type="button" className={`${btn} bg-[#0A0A0A] text-white`} onClick={() => setForm({ ...EMPTY })}>Add a drop</button>
         <span className="font-mono text-xs text-[#0A0A0A]/60">{rows.length} shown</span>
       </div>
-      {message && <p role="status" className="border-2 border-[#0A0A0A] bg-white px-4 py-3 text-[0.95rem] font-bold">{message}</p>}
+      {message && <p role="status" className="border-2 border-[#0A0A0A] bg-white px-4 py-3 text-[0.95rem] font-bold rounded-[20px]">{message}</p>}
 
       {form && (
-        <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-4 border-2 border-[#0A0A0A] bg-white p-5 sm:grid-cols-2">
+        <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-4 border-2 border-[#0A0A0A] bg-white p-5 sm:grid-cols-2 rounded-[20px]">
           <h2 className="font-display text-2xl uppercase sm:col-span-2">{form.id ? 'Edit drop' : 'New drop'}</h2>
           <label className={label}>Brand<input required className={input} value={form.brand} onChange={(e) => set('brand', e.target.value)} /></label>
           <label className={label}>Model<input required className={input} value={form.model} onChange={(e) => set('model', e.target.value)} /></label>
@@ -183,7 +183,7 @@ export function DropsAdmin({ apiToken }: { apiToken: string }) {
         </form>
       )}
 
-      <div className="overflow-x-auto border-2 border-[#0A0A0A] bg-white">
+      <div className="overflow-x-auto border-2 border-[#0A0A0A] bg-white rounded-[20px]">
         <table className="w-full min-w-[720px] text-left text-[0.9rem]">
           <thead className="border-b-2 border-[#0A0A0A] font-mono text-[0.65rem] uppercase tracking-[0.14em]">
             <tr><th className="p-3">Date</th><th className="p-3">Drop</th><th className="p-3">Firmness</th><th className="p-3">Status</th><th className="p-3">Public</th><th className="p-3" /></tr>

@@ -13,7 +13,6 @@ import { SneakerPlaceholderArt } from '@/components/drops/SneakerPlaceholderArt'
 import { SneakerViewer } from '@/components/ui/SneakerViewer';
 import { PageShell } from '@/components/ui/PageShell';
 import { Reveal } from '@/components/fx/Reveal';
-import { paletteFor } from '@/lib/sneaker/palette';
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, MapPin, MessageSquare, Newspaper, Tag } from 'lucide-react';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { listPosts } from '@/lib/community';
@@ -86,7 +85,6 @@ export default async function DropDetailPage({ params }: PageProps) {
 
   const iso = releaseInstant(drop.releaseDate, drop.releaseTime, drop.releaseTimezone);
   const realImage = resolveSneakerImage(sneaker.primaryImageUrl);
-  const palette = paletteFor(sneaker.colorway, sneaker.brand);
   const releaseDateLabel = new Date(`${drop.releaseDate}T00:00:00`).toLocaleDateString('en-IN', {
     weekday: 'short',
     day: 'numeric',
@@ -118,7 +116,7 @@ export default async function DropDetailPage({ params }: PageProps) {
               <div
                 aria-hidden
                 className="absolute inset-0"
-                style={{ background: `radial-gradient(55% 60% at 50% 60%, ${palette.glow}55, transparent 75%)` }}
+                style={{ background: '#F5F5F5' }}
               />
               <div aria-hidden className="grid-lines absolute inset-0 opacity-40" />
               {realImage ? (
@@ -168,7 +166,7 @@ export default async function DropDetailPage({ params }: PageProps) {
             )}
 
             <Reveal delay={0.12}>
-              <dl className="grid grid-cols-2 gap-px border border-text/[0.08] bg-text/[0.08]">
+              <dl className="grid grid-cols-2 gap-px border border-text/[0.08] bg-text/[0.08] rounded-[20px] overflow-hidden">
                 {specs.map(({ icon: Icon, label, value }) => (
                   <div key={label} className="bg-vault-raised p-4">
                     <dt className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
@@ -259,7 +257,7 @@ export default async function DropDetailPage({ params }: PageProps) {
                       >
                         <span className="group-hover:text-brass-bright">{n.title}</span>
                         {n.isBreaking && (
-                          <span className="inline-flex shrink-0 items-center gap-1.5 border border-rust/50 bg-rust/10 px-2 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-wider text-rust">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 border border-rust/50 bg-rust/10 px-2 py-0.5 font-mono text-[0.65rem] font-semibold uppercase tracking-wider text-rust rounded-full">
                             <span className="live-dot !h-1.5 !w-1.5" aria-hidden /> Breaking
                           </span>
                         )}

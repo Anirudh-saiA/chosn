@@ -51,7 +51,7 @@ export function CompareToggle({
       disabled={blocked}
       aria-pressed={added}
       title={label}
-      className={`inline-flex min-h-[40px] items-center gap-2 rounded-full border px-4 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.14em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.14em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         added ? 'border-text bg-text text-white' : 'border-text/25 bg-white text-text hover:border-text'
       } ${className}`}
     >

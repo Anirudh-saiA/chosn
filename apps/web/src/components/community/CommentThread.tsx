@@ -44,14 +44,14 @@ export function CommentThread({ postId, initialComments }: { postId: string; ini
         <h2 id={`${fieldId}-h`} className="font-display text-2xl font-bold text-text">
           Discussion
         </h2>
-        <span className="border border-text/15 px-2 py-0.5 font-mono text-meta text-text-soft">
+        <span className="border border-text/15 px-2 py-0.5 font-mono text-meta text-text-soft rounded-[20px]">
           {comments.length} comment{comments.length === 1 ? '' : 's'}
         </span>
       </div>
 
       {comments.length === 0 ? (
         <div className="panel mt-5 flex items-center gap-4 p-6">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
             <MessageSquare className="h-5 w-5" aria-hidden />
           </span>
           <p className="text-text-soft">No replies yet. Add the first take.</p>
@@ -100,7 +100,7 @@ export function CommentThread({ postId, initialComments }: { postId: string; ini
             placeholder="What's your take?"
             rows={3}
             maxLength={MAX}
-            className="mt-3 w-full border border-text/15 bg-vault-deep/70 px-4 py-3 text-body text-text outline-none transition-all placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)]"
+            className="mt-3 w-full border border-text/15 bg-vault-deep/70 px-4 py-3 text-body text-text outline-none transition-all placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)] rounded-[20px]"
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <span className="font-mono text-meta text-text-soft">

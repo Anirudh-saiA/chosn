@@ -15,7 +15,7 @@ export function RaffleNotice({ raffle }: { raffle: RaffleInfo }) {
     <div className="ticks relative overflow-hidden border border-brass/40 bg-gradient-to-br from-brass/[0.14] via-vault-raised to-vault-raised p-6 sm:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brass/20 blur-3xl" />
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-brass/40 bg-brass/10 text-brass-bright">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-brass/40 bg-brass/10 text-brass-bright rounded-full">
           <Ticket className="h-5 w-5" aria-hidden />
         </span>
         <div className="flex-1">

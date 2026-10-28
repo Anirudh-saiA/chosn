@@ -11,7 +11,7 @@ export function WishlistView() {
   return (
     <div>
       <p className="eyebrow">Saved on this device</p>
-      <h1 className="mt-3 font-display text-[clamp(3rem,7vw,5.5rem)] leading-[0.92] text-[#0A0A0A]">Wishlist.</h1>
+      <h1 className="mt-3 font-display text-[clamp(2.25rem,7vw,4.5rem)] leading-[0.98] text-[#0A0A0A]">Wishlist.</h1>
 
       <p className="mt-3 max-w-xl text-meta text-text-soft">
         We watch the size you saved. When it comes back, drops in price or reaches your target you will see it on the bell, and by e-mail if you add one in{' '}

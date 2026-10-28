@@ -80,7 +80,7 @@ export default async function CommunityFeedPage() {
               <ul className="mt-4 flex flex-col gap-4">
                 {PILLARS.map((p) => (
                   <li key={p.title} className="flex gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-brass/30 bg-brass/[0.07] text-brass-bright rounded-full">
                       <p.icon className="h-4 w-4" aria-hidden />
                     </span>
                     <div>

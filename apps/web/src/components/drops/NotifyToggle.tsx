@@ -134,7 +134,7 @@ function ToggleChip({
       disabled={pending}
       onClick={onClick}
       className={
-        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-left font-mono text-[0.7rem] font-semibold leading-tight transition-colors duration-200 ease-chosn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60 sm:min-h-[36px] ' +
+        'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-left font-mono text-[0.7rem] font-semibold leading-tight transition-colors duration-200 ease-chosn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60 sm:min-h-[44px] ' +
         (on
           ? 'border-brass-bright/60 bg-brass/15 text-brass-bright'
           : 'border-text/[0.15] text-text-soft hover:border-brass/50 hover:text-text')

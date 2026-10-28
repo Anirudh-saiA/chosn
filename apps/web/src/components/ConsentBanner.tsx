@@ -53,16 +53,16 @@ export function ConsentBanner() {
         LOCAL_HERO_IMAGE ? 'bottom-11 sm:bottom-12' : 'bottom-3 sm:bottom-4'
       }`}
     >
-      <div className="glass ticks p-3 shadow-lift sm:p-5">
+      <div className="rounded-[24px] border border-text/15 bg-white p-4 shadow-[0_16px_40px_-20px_rgba(0,0,0,0.35)] sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="hidden h-8 w-8 shrink-0 items-center justify-center border border-brass/30 sm:flex bg-brass/[0.07] text-brass-bright">
+          <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-text/15 sm:flex bg-text/5 text-text">
             <Cookie aria-hidden className="h-4 w-4" />
           </span>
           <p className="text-[0.8rem] leading-snug text-text-soft sm:text-data-inline sm:leading-relaxed">
             We&apos;d like to use PostHog analytics to understand which parts of CHOSN people
             actually use. It&apos;s off unless you turn it on, and nothing here needs it to
             work.{' '}
-            <Link href="/privacy" className="link-underline text-brass-bright">
+            <Link href="/privacy" className="font-semibold text-text underline underline-offset-4">
               Privacy Policy
             </Link>
           </p>

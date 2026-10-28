@@ -23,7 +23,7 @@ function dayChip(date: string): string {
 function Until({ iso }: { iso: string }) {
   const c = useCountdown(iso);
   if (!c) return null;
-  if (c.done) return <span className="font-bold text-[#1F8A4C]">Releasing now</span>;
+  if (c.done) return <span className="font-bold text-[#0A6B44]">Releasing now</span>;
   const pad = (n: number) => String(n).padStart(2, '0');
   return (
     <span className="tabular-nums" title="Time until release">
@@ -34,8 +34,8 @@ function Until({ iso }: { iso: string }) {
 }
 
 const STATUS: Record<DropListItem['status'], { label: string; cls: string }> = {
-  live: { label: 'Live now', cls: 'bg-[#1F8A4C] text-white' },
-  upcoming: { label: 'Upcoming', cls: 'bg-[#14213D] text-white' },
+  live: { label: 'Live now', cls: 'bg-[#0A6B44] text-white' },
+  upcoming: { label: 'Upcoming', cls: 'bg-[#0A0A0A] text-white' },
   sold_out: { label: 'Released', cls: 'bg-[#0A0A0A]/10 text-[#0A0A0A]/60' },
 };
 

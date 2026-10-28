@@ -61,14 +61,14 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
 ];
 
 const FIELD =
-  'w-full border border-text/15 bg-vault-deep/70 px-4 py-3 font-sans text-body text-text outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)]';
+  'w-full border border-text/15 bg-vault-deep/70 px-4 py-3 font-sans text-body text-text outline-none transition-all duration-200 placeholder:text-text-faint hover:border-text/30 focus-visible:border-ice focus-visible:shadow-[0_0_0_3px_rgba(143,214,255,.18)] rounded-[20px]';
 const FIELD_ERR = 'border-rust/70 hover:border-rust focus-visible:border-rust';
 
 function Step({ n, title, children }: { n: string; title: string; children: ReactNode }) {
   return (
     <section className="panel p-5 sm:p-6">
       <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center border border-brass/40 bg-brass/10 font-mono text-ui-label font-bold text-brass-bright">
+        <span className="flex h-8 w-8 items-center justify-center border border-brass/40 bg-brass/10 font-mono text-ui-label font-bold text-brass-bright rounded-full">
           {n}
         </span>
         <h2 className="font-display text-xl font-bold text-text">{title}</h2>
@@ -448,11 +448,11 @@ function NewPostForm() {
                   Sneaker
                 </label>
                 {selected ? (
-                  <div className="flex items-center gap-4 border border-brass/40 bg-brass/[0.05] p-3">
+                  <div className="flex items-center gap-4 border border-brass/40 bg-brass/[0.05] p-3 rounded-[20px]">
                     <div
-                      className="flex h-16 w-24 shrink-0 items-center justify-center border border-text/[0.06]"
+                      className="flex h-16 w-24 shrink-0 items-center justify-center border border-text/[0.06] rounded-[20px]"
                       style={{
-                        background: `radial-gradient(75% 90% at 50% 45%, ${paletteFor(selected.colorway, selected.brand).glow}38, transparent 80%), #0A0F0C`,
+                        background: '#F5F5F5',
                       }}
                     >
                       <SneakerArt colorway={selected.colorway} brand={selected.brand} className="h-full w-full p-1" />
@@ -467,7 +467,7 @@ function NewPostForm() {
                     <button
                       type="button"
                       onClick={() => setSelected(null)}
-                      className="inline-flex min-h-11 items-center gap-1.5 border border-text/15 px-3 font-mono text-meta text-text-soft hover:border-brass/60 hover:text-text"
+                      className="inline-flex min-h-11 items-center gap-1.5 border border-text/15 px-3 font-mono text-meta text-text-soft hover:border-brass/60 hover:text-text rounded-full"
                     >
                       Change
                     </button>
@@ -497,7 +497,7 @@ function NewPostForm() {
                         id={`${uid}-listbox`}
                         role="listbox"
                         aria-label="Sneaker results"
-                        className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto border border-text/15 bg-vault-raised shadow-lift"
+                        className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto border border-text/15 bg-vault-raised shadow-lift rounded-[20px]"
                       >
                         {results.map((r, i) => {
                           const p = paletteFor(r.colorway, r.brand);
@@ -517,8 +517,8 @@ function NewPostForm() {
                               }`}
                             >
                               <span
-                                className="flex h-11 w-16 shrink-0 items-center justify-center border border-text/[0.06]"
-                                style={{ background: `radial-gradient(80% 90% at 50% 45%, ${p.glow}38, transparent 80%), #0A0F0C` }}
+                                className="flex h-11 w-16 shrink-0 items-center justify-center border border-text/[0.06] rounded-full"
+                                style={{ background: '#F5F5F5' }}
                               >
                                 <SneakerArt colorway={r.colorway} brand={r.brand} palette={p} className="h-full w-full p-0.5" />
                               </span>
@@ -552,7 +552,7 @@ function NewPostForm() {
                   Drop
                 </label>
                 {presetDropEventId ? (
-                  <p className="border border-brass/40 bg-brass/[0.05] px-4 py-3 text-body text-text">Talking about this drop</p>
+                  <p className="border border-brass/40 bg-brass/[0.05] px-4 py-3 text-body text-text rounded-[20px]">Talking about this drop</p>
                 ) : (
                   <select
                     id={`${uid}-drop`}
@@ -622,10 +622,10 @@ function NewPostForm() {
                   Every Cop or Drop is a fixed two-way poll. Voters pick a side and the split updates live.
                 </p>
                 <div className="grid grid-cols-2 gap-3" aria-label="Poll options">
-                  <div className="flex items-center justify-center gap-2 border border-signal/35 bg-signal/[0.05] py-3 font-sans text-ui-label font-semibold uppercase tracking-[0.08em] text-signal">
+                  <div className="flex items-center justify-center gap-2 border border-signal/35 bg-signal/[0.05] py-3 font-sans text-ui-label font-semibold uppercase tracking-[0.08em] text-signal rounded-[20px]">
                     <ThumbsUp className="h-4 w-4" aria-hidden /> Cop
                   </div>
-                  <div className="flex items-center justify-center gap-2 border border-rust/35 bg-rust/[0.05] py-3 font-sans text-ui-label font-semibold uppercase tracking-[0.08em] text-rust">
+                  <div className="flex items-center justify-center gap-2 border border-rust/35 bg-rust/[0.05] py-3 font-sans text-ui-label font-semibold uppercase tracking-[0.08em] text-rust rounded-[20px]">
                     <ThumbsDown className="h-4 w-4" aria-hidden /> Drop
                   </div>
                 </div>
@@ -656,7 +656,7 @@ function NewPostForm() {
                         type="button"
                         onClick={() => removeChecklistItem(i)}
                         aria-label={`Remove checklist item ${i + 1}`}
-                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center border border-text/15 text-text-soft hover:border-rust/60 hover:text-rust"
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center border border-text/15 text-text-soft hover:border-rust/60 hover:text-rust rounded-full"
                       >
                         <X className="h-4 w-4" aria-hidden />
                       </button>

@@ -75,7 +75,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
 
           <div className="relative z-10 mx-auto flex min-h-[30rem] max-w-2xl flex-col justify-center p-8 text-center lg:p-14">
             <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.24em] opacity-90">Be first in</p>
-            <h2 id="join-h" className="mt-3 font-display text-[clamp(3rem,6vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.01em]">
+            <h2 id="join-h" className="mt-3 font-display text-[clamp(2.25rem,6vw,5rem)] leading-[1] tracking-[-0.03em]">
               join the waitlist.
             </h2>
             <p className="mx-auto mt-5 max-w-md text-[1.02rem] font-semibold leading-relaxed opacity-90">
@@ -83,7 +83,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
             </p>
 
             {joined ? (
-              <p role="status" className="mt-8 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 text-[0.95rem] font-extrabold text-[#14213D]">
+              <p role="status" className="mt-8 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 text-[0.95rem] font-extrabold text-[#0A0A0A]">
                 <Check className="h-5 w-5" aria-hidden />
                 {status === 'joined' ? "You're on the list — we'll email you." : "You're already on the list."}
               </p>
@@ -102,7 +102,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#0A0A0A] outline-none placeholder:text-[#0A0A0A]/50 focus:ring-4 focus:ring-white/40"
                 />
                 <label htmlFor={emailId} className="sr-only">
                   Email address
@@ -118,7 +118,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-describedby={status === 'error' ? statusId : undefined}
                   aria-invalid={status === 'error'}
-                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#0A0A0A] outline-none placeholder:text-[#0A0A0A]/50 focus:ring-4 focus:ring-white/40"
                 />
                 <label htmlFor={phoneId} className="sr-only">
                   Phone number (optional)
@@ -131,7 +131,7 @@ export function SubscribeBand({ shoeId }: { shoeId: string }) {
                   placeholder="Phone (optional)"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#14213D] outline-none placeholder:text-[#14213D]/50 focus:ring-4 focus:ring-white/40"
+                  className="min-w-0 rounded-full bg-white px-6 py-4 font-sans text-[0.95rem] font-bold text-[#0A0A0A] outline-none placeholder:text-[#0A0A0A]/50 focus:ring-4 focus:ring-white/40"
                 />
                 <button
                   type="submit"

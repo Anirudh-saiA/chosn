@@ -13,7 +13,7 @@ const EASE = [0.76, 0, 0.24, 1] as const;
 const GATE_H = 'calc(100svh - 4rem)'; // the whole window under the 4rem header
 
 const LOOK: Record<Kind, { bg: string; fg: string; title: string; sub: string; hover: string; img: string }> = {
-  drops: { bg: '#14213D', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1B2C52', img: '/images/drops-shelf.jpg' },
+  drops: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'Drops', sub: 'Calendar, upcoming releases and new arrivals', hover: '#1A1A1A', img: '/images/drops-shelf.jpg' },
   news: { bg: '#0A0A0A', fg: '#FFFFFF', title: 'News', sub: 'Stories, reports and what just went live', hover: '#1A1A1A', img: '/images/news-stack.jpg' },
 };
 
@@ -26,7 +26,7 @@ function Title({ kind }: { kind: Kind }) {
   const l = LOOK[kind];
   return (
     <span className="pointer-events-none flex flex-col items-center px-4 text-center" style={{ color: l.fg }}>
-      <span className="font-display text-[clamp(4.5rem,15vw,14rem)] uppercase leading-[0.85] tracking-[0.01em] [text-shadow:0_4px_40px_rgba(0,0,0,0.55)]">{l.title}</span>
+      <span className="font-display text-[clamp(3.5rem,13vw,12rem)] leading-[0.9] tracking-[-0.04em]">{l.title}</span>
       <span className="mt-4 max-w-[22rem] font-mono text-[0.72rem] font-bold uppercase tracking-[0.2em] opacity-90 [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">{l.sub}</span>
     </span>
   );
@@ -38,7 +38,7 @@ function Face({ kind }: { kind: Kind }) {
   return (
     <span className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ background: l.bg }}>
       <img src={l.img} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-      <span className={`absolute inset-0 ${kind === 'news' ? 'bg-[#0A0A0A]/30' : 'bg-[#14213D]/25'}`} />
+      <span className={`absolute inset-0 ${kind === 'news' ? 'bg-[#0A0A0A]/30' : 'bg-[#0A0A0A]/25'}`} />
       <span className="relative flex w-full items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">
         <Title kind={kind} />
       </span>
@@ -142,11 +142,11 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
       {/* The opened section */}
       {underneath !== 'gate' ? (
         <div className={`mx-auto w-full max-w-[80rem] px-5 pb-10 pt-3 sm:px-8 lg:pb-14 lg:pt-4 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#0A0A0A] pb-3">
-            <button type="button" onClick={() => close(true)} className="inline-flex items-center gap-2 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#0A0A0A]/15 pb-3">
+            <button type="button" onClick={() => close(true)} className="inline-flex min-h-[44px] items-center gap-2 rounded-full pr-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
               <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
             </button>
-            <div role="tablist" aria-label="Section" className="inline-flex overflow-hidden rounded-full border border-[#14213D]">
+            <div role="tablist" aria-label="Section" className="inline-flex max-w-full overflow-hidden rounded-full border border-[#0A0A0A]">
               {(['drops', 'news'] as const).map((k) => (
                 <button
                   key={k}
@@ -154,12 +154,12 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   role="tab"
                   aria-selected={view === k}
                   onClick={() => view !== k && swap(k)}
-                  className={`px-6 py-2 font-display text-lg uppercase tracking-[0.06em] ${view === k ? 'bg-[#14213D] text-white' : 'bg-white text-[#14213D] hover:bg-[#EAF3FA]'}`}
+                  className={`min-h-[44px] rounded-full px-5 font-sans text-[0.95rem] font-bold tracking-tight sm:px-6 ${view === k ? 'bg-[#0A0A0A] text-white' : 'bg-white text-[#0A0A0A] hover:bg-[#F0F0F0]'}`}
                 >
                   {LOOK[k].title}
                 </button>
               ))}
-              <a href="/magazine" className="border-l border-[#14213D] bg-[#C8102E] px-6 py-2 font-display text-lg uppercase tracking-[0.06em] text-white hover:bg-[#A60C24]">
+              <a href="/magazine" className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 font-sans text-[0.95rem] font-bold tracking-tight text-[#0A0A0A] hover:bg-[#F0F0F0] sm:px-6">
                 Magazine
               </a>
             </div>
@@ -190,7 +190,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
                   disabled={anim !== null}
                   onClick={() => open(k)}
                   aria-label={`Open ${LOOK[k].title}`}
-                  className="group relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden transition-colors duration-300"
+                  className="group relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-none transition-colors duration-300"
                   style={{ background: LOOK[k].bg }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = LOOK[k].hover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = LOOK[k].bg)}

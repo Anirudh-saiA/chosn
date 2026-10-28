@@ -7,7 +7,7 @@ export function ComingSoonView({ name, blurb }: { name: string; blurb: string })
     <PageShell width="5xl" plain>
       <div className="flex min-h-[58vh] flex-col items-center justify-center text-center">
         <p className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#0A0A0A]/60">{name}</p>
-        <h1 className="mt-4 font-display text-[clamp(4rem,13vw,10rem)] uppercase leading-[0.85] tracking-[0.01em] text-[#0A0A0A]">
+        <h1 className="mt-4 font-display text-[clamp(2.75rem,11vw,7rem)] leading-[0.95] tracking-[-0.035em] text-[#0A0A0A]">
           Coming
           <br />
           soon.

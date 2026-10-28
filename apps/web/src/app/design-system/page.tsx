@@ -240,7 +240,7 @@ export default function DesignSystemPage() {
       </Section>
 
       <Section id="surfaces" eyebrow="04 · Surfaces" title="Depth without drop shadows">
-        <div className="relative isolate overflow-hidden border border-text/10 bg-vault-deep p-6 sm:p-10">
+        <div className="relative isolate overflow-hidden border border-text/10 bg-vault-deep p-6 sm:p-10 rounded-[20px]">
           <div aria-hidden className="aurora" />
           <div aria-hidden className="grid-lines" />
           <div className="relative z-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

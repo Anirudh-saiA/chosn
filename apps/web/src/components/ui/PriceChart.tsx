@@ -202,7 +202,7 @@ export function PriceChart({
       </svg>
 
       <div
-        className="pointer-events-none absolute top-2 border border-text/15 bg-vault-deep/90 px-2.5 py-1.5 font-mono text-meta shadow-lift backdrop-blur"
+        className="pointer-events-none absolute top-2 border border-text/15 bg-vault-deep/90 px-2.5 py-1.5 font-mono text-meta shadow-lift backdrop-blur rounded-[20px]"
         style={{ left: `clamp(0px, calc(${(cp[0] / W) * 100}% - 52px), calc(100% - 112px))` }}
       >
         <span className="block text-text-faint">{cur.label}</span>

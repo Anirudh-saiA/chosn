@@ -193,7 +193,7 @@ export function ChatRoom({ room }: ChatRoomProps) {
           <label htmlFor={`chat-${room.id}`} className="sr-only">
             Chat message
           </label>
-          <div className="flex min-w-0 flex-1 items-center gap-2 border border-text/15 bg-vault-recessed px-3 transition-colors focus-within:border-ice focus-within:shadow-[0_0_0_3px_rgba(143,214,255,.18)]">
+          <div className="flex min-w-0 flex-1 items-center gap-2 border border-text/15 bg-vault-recessed px-3 transition-colors focus-within:border-ice focus-within:shadow-[0_0_0_3px_rgba(143,214,255,.18)] rounded-[20px]">
             <span aria-hidden className="font-mono text-brass">
               &gt;
             </span>
@@ -212,7 +212,7 @@ export function ChatRoom({ room }: ChatRoomProps) {
             type="submit"
             disabled={!draft.trim() || !connected}
             aria-label="Send message"
-            className="inline-flex min-h-11 items-center justify-center gap-2 border border-brass-bright/40 bg-brass-gradient px-4 font-sans text-ui-label font-semibold text-vault-deep transition-all hover:shadow-glow-brass disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none"
+            className="inline-flex min-h-11 items-center justify-center gap-2 border border-brass-bright/40 bg-brass-gradient px-4 font-sans text-ui-label font-semibold text-vault-deep transition-all hover:shadow-glow-brass disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none rounded-[20px]"
           >
             <Send className="h-4 w-4" aria-hidden />
             <span className="hidden sm:inline">Send</span>

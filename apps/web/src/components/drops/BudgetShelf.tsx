@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Inter } from 'next/font/google';
 import { ArrowUpRight, Copy } from 'lucide-react';
 import { fetchBudget, type BudgetItem, type BudgetOffer } from '@/lib/budget';
 import { formatInr, formatSize } from '@/lib/catalog';
 
-// Pure black and white, Inter, no gradients (founder rule, 2026-10-27). The font is scoped to this block.
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
+// Pure black and white, Inter, no gradients (founder rule, 2026-10-27). Inter now comes from the root layout.
 
 const BANDS = [5000, 10000, 15000, 20000] as const;
 type Band = (typeof BANDS)[number];
@@ -58,7 +56,7 @@ function CopyCode({ code }: { code: string }) {
         }
       }}
       aria-label={`Copy code ${code}`}
-      className="relative inline-flex items-center gap-1.5 rounded-md border border-dashed border-black px-2 py-0.5 font-semibold tracking-wide text-black before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:bg-black hover:text-white"
+      className="relative inline-flex items-center gap-1.5 rounded-full border border-dashed border-black px-2.5 py-0.5 font-semibold tracking-wide text-black before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] hover:bg-black hover:text-white"
     >
       {code} <Copy className="h-3 w-3" aria-hidden /> {done && <span className="text-[0.7rem] font-medium">copied</span>}
     </button>
@@ -69,7 +67,7 @@ function OfferLine({ o }: { o: BudgetOffer }) {
   const seen = shortDate(o.seenAt);
   return (
     <li className="text-[0.86rem] leading-snug text-black">
-      <span className="mr-2 inline-block rounded border border-black px-1.5 py-px text-[0.66rem] font-semibold uppercase tracking-wider">{KIND_LABEL[o.kind] ?? 'Offer'}</span>
+      <span className="mr-2 inline-block rounded-full border border-black px-2 py-px text-[0.66rem] font-semibold uppercase tracking-wider">{KIND_LABEL[o.kind] ?? 'Offer'}</span>
       {o.text}
       {o.code && (
         <span className="ml-2 align-middle">
@@ -98,7 +96,7 @@ function Row({ item, rank }: { item: BudgetItem; rank: number }) {
         <span className="w-6 shrink-0 pt-1 text-[1.1rem] font-extrabold tabular-nums text-black sm:w-8" aria-label={`Number ${rank}`}>
           {rank}
         </span>
-        <Link href={href} className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-black/15 bg-white sm:h-24 sm:w-24">
+        <Link href={href} className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-black/15 bg-white sm:h-24 sm:w-24">
           {item.primaryImageUrl ? <img src={item.primaryImageUrl} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-contain p-1.5" /> : null}
           <span className="sr-only">{item.brand} {item.model}</span>
         </Link>
@@ -131,7 +129,7 @@ function Row({ item, rank }: { item: BudgetItem; rank: number }) {
         </a>
       </div>
 
-      <div className="mt-3 rounded-xl border border-black/15 p-3.5 sm:ml-[3.25rem]">
+      <div className="mt-3 rounded-2xl border border-black/15 bg-[#FAFAFA] p-3.5 sm:ml-[3.25rem]">
         <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-black/65">Coupons and offers at {item.store.name}</p>
         {item.offers.length === 0 ? (
           <p className="mt-1.5 text-[0.86rem] text-black/80">This store lists no coupons or offers for this shoe right now.</p>
@@ -159,7 +157,7 @@ function Row({ item, rank }: { item: BudgetItem; rank: number }) {
         )}
         <p className="mt-2 text-[0.72rem] text-black/65">
           Offers are as the store lists them and can change at checkout. We do not work out a price after the offer.{' '}
-          <Link href={href} className="font-semibold text-black underline underline-offset-4">
+          <Link href={href} className="whitespace-nowrap font-semibold text-black underline underline-offset-4">
             Compare all stores
           </Link>
         </p>
@@ -222,7 +220,7 @@ export function BudgetShelf() {
   };
 
   return (
-    <section aria-labelledby="budget-h" className={`${inter.className} mx-auto w-full max-w-3xl rounded-2xl border border-black bg-white p-5 text-black sm:p-7`}>
+    <section aria-labelledby="budget-h" className={`font-sans mx-auto w-full max-w-3xl rounded-[24px] border border-black/20 bg-white p-4 sm:rounded-[28px] text-black sm:p-7`}>
       <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-black/65">Coupons and offers included</p>
       <h2 id="budget-h" className="mt-1 text-[clamp(1.6rem,4vw,2.2rem)] font-extrabold leading-tight tracking-tight">
         Shop by budget
@@ -248,7 +246,7 @@ export function BudgetShelf() {
               tabIndex={on ? 0 : -1}
               onClick={() => setBand(b)}
               onKeyDown={(e) => onKey(e, i)}
-              className={`min-h-[52px] rounded-xl border border-black px-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+              className={`min-h-[56px] rounded-2xl border border-black/25 px-3.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
                 on ? 'bg-black text-white' : 'bg-white text-black hover:bg-black/5'
               }`}
             >
@@ -263,10 +261,21 @@ export function BudgetShelf() {
         {failed ? (
           <p className="py-8 text-center text-[0.92rem] text-black/80">Could not load this budget right now. Please try again in a moment.</p>
         ) : items === null ? (
-          <p className="py-8 text-center text-[0.92rem] text-black/65">
-            Loading pairs under {formatInr(band)}…
-            {slow ? <span className="mt-1 block text-[0.8rem]">This is taking longer than usual. You can wait or try another tab.</span> : null}
-          </p>
+          <div role="status" className="py-2">
+            <p className="sr-only">Loading pairs under {formatInr(band)}</p>
+            {[0, 1, 2].map((n) => (
+              <div key={n} aria-hidden className="flex gap-3 border-b border-black/10 py-5 last:border-b-0 sm:gap-4">
+                <div className="skeleton h-5 w-6 shrink-0 rounded-full" />
+                <div className="skeleton h-20 w-20 shrink-0 rounded-xl sm:h-24 sm:w-24" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="skeleton h-3 w-16 rounded-full" />
+                  <div className="skeleton h-4 w-3/4 rounded-full" />
+                  <div className="skeleton h-7 w-28 rounded-full" />
+                </div>
+              </div>
+            ))}
+            {slow ? <p className="pt-3 text-center text-[0.8rem] text-black/65">This is taking longer than usual. You can wait or try another tab.</p> : null}
+          </div>
         ) : items.length === 0 ? (
           <p className="py-8 text-center text-[0.92rem] text-black/80">No pair sold at two or more stores is in stock under {formatInr(band)} right now.</p>
         ) : (

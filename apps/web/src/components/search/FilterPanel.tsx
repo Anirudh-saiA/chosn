@@ -55,8 +55,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 export function CheckRow({ checked, onChange, label, count }: { checked: boolean; onChange: () => void; label: string; count?: number }) {
   return (
-    <label className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
-      <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#14213D]" />
+    <label className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.92rem] text-text hover:text-text">
+      <input type="checkbox" checked={checked} onChange={onChange} className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0A0A0A]" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {count !== undefined && <span className="font-mono text-[0.72rem] tabular-nums text-text-faint">{count}</span>}
     </label>
@@ -211,8 +211,8 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
           { v: '3', label: 'At 3 or more stores' },
           { v: '4', label: 'At 4 or more stores' },
         ].map((o) => (
-          <label key={o.v} className="flex min-h-[34px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
-            <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#14213D]" />
+          <label key={o.v} className="flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.92rem] text-text">
+            <input type="radio" name="min-stores" checked={minStores === o.v} onChange={() => set({ minStores: o.v || null })} className="h-4 w-4 cursor-pointer accent-[#0A0A0A]" />
             {o.label}
           </label>
         ))}
@@ -260,7 +260,7 @@ export function FilterDrawer({ facets, total }: { facets: SearchFacets; total: n
 
       {open && (
         <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Filters">
-          <button type="button" aria-label="Close filters" className="absolute inset-0 bg-[#0A0A0A]/50" onClick={() => setOpen(false)} />
+          <button type="button" aria-label="Close filters" className="absolute inset-0 rounded-none bg-[#0A0A0A]/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-end px-4 pt-3">
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full border border-text/15">
@@ -271,7 +271,7 @@ export function FilterDrawer({ facets, total }: { facets: SearchFacets; total: n
               <FilterPanel facets={facets} total={total} />
             </div>
             <div className="border-t border-text/10 p-4">
-              <button type="button" onClick={() => setOpen(false)} className="min-h-[48px] w-full rounded-full bg-[#14213D] font-mono text-[0.78rem] font-bold uppercase tracking-[0.14em] text-white">
+              <button type="button" onClick={() => setOpen(false)} className="min-h-[48px] w-full rounded-full bg-[#0A0A0A] font-mono text-[0.78rem] font-bold uppercase tracking-[0.14em] text-white">
                 Show {total.toLocaleString('en-IN')} sneakers
               </button>
             </div>
