@@ -164,6 +164,16 @@ def export_day_row(failed):
     DATA_RUN_LOG.write_text(NL.join(kept).rstrip(NL) + NL + row + NL, encoding="utf-8")
     log(f"data-run log row written for {date}")
     fill_popular_daily()
+    refresh_tracked()
+
+
+def refresh_tracked():
+    """Refresh which shoes the site shows (top brand, 2+ stores). Best effort: a failure never fails the nightly."""
+    try:
+        p = subprocess.run([NODE, "--env-file=.env", "dist/scripts/refresh-tracked.js"], cwd=ROOT / "apps" / "api", capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+        log("   " + ((p.stdout or p.stderr or "").strip().splitlines() or ["no output"])[-1][:200])
+    except Exception as e:
+        log(f"   tracked refresh skipped: {e}")
 
 
 def fill_popular_daily():
