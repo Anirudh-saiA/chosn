@@ -56,7 +56,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
             first="how firm its date is"
             between=" and "
             second="where it came from"
-            after="— US drops are priced in US dollars."
+            after="— India first, with shoes from other countries marked by country."
             textClass="max-w-3xl text-[clamp(1.2rem,2.3vw,1.75rem)] leading-[1.4]"
             triggerAt={0.9}
           />
