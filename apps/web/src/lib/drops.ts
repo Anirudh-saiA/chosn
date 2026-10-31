@@ -78,6 +78,8 @@ export interface DropListItem {
   regions: string[];
   retailPrice: string | null;
   currency: string;
+  /** Stored retailer links, as entered; use officialLinks() in drop-region.ts before showing any. */
+  purchaseLinks?: unknown;
   sneaker: DropSneakerSummary;
 }
 

@@ -43,6 +43,8 @@ export interface DropListItem {
   retailPrice: string | null;
   currency: string;
   sneaker: DropSneakerSummary;
+  /** Stored retailer links as entered (the web page keeps only https links on official domains). Present on the list, absent elsewhere. */
+  purchaseLinks?: unknown;
 }
 
 export interface StoreListing {
@@ -114,7 +116,7 @@ export class DropsService {
     const where = sql`WHERE ${sql.join(conditions, sql` AND `)}`;
 
     const { rows } = await this.db.execute(sql`
-      SELECT ${sql.raw(COLS)}
+      SELECT ${sql.raw(COLS)}, de.purchase_links
       FROM drop_events de
       JOIN sneakers s ON s.id = de.sneaker_id
       ${where}
@@ -288,6 +290,7 @@ function rowToListItem(row: Record<string, unknown>, inStores: boolean): DropLis
     regions,
     retailPrice: (row.retail_price as string) ?? null,
     currency: String(row.currency),
+    ...(row.purchase_links !== undefined ? { purchaseLinks: row.purchase_links } : {}),
     sneaker: {
       styleCode: String(row.style_code),
       brand: String(row.brand),
