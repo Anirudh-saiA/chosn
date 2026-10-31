@@ -686,7 +686,7 @@ export class CatalogService {
         JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
         JOIN sneakers s ON s.id = v.sneaker_id
         WHERE ps.is_latest = true AND ps.in_stock = true AND ps.compare_at_price IS NOT NULL
-          AND s.footwear_type = 'sneaker'
+          AND s.footwear_type = 'sneaker' AND s.tracked
           AND ps.listing_url NOT LIKE '%FIXTURE%'
           AND ps.price >= 500
           AND ps.compare_at_price >= ps.price * 1.15 AND ps.compare_at_price <= ps.price * 2 -- up to 50% off: beyond that a "was" price is rarely believable
@@ -759,7 +759,7 @@ export class CatalogService {
                row_number() OVER (PARTITION BY ${model(sql`s.brand`, sql`s.model`)}
                                   ORDER BY ${keys(sql`COALESCE(sc.score, 0)`, sql`st.store_count`, sql`st.min_price`)}) AS rn
         FROM catalog_stats_mv st
-        JOIN sneakers s ON s.id = st.sneaker_id AND s.footwear_type = 'sneaker'
+        JOIN sneakers s ON s.id = st.sneaker_id AND s.footwear_type = 'sneaker' AND s.tracked
         LEFT JOIN score sc ON sc.style_code = s.style_code
         WHERE st.min_price <= ${max} AND st.min_price >= ${Math.max(min - 500, 0)} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
       ),
@@ -774,7 +774,7 @@ export class CatalogService {
                ps.shipping_cost, ps.listing_url, ps.fetched_at,
                effective_price_inr(ps.price, ps.shipping_cost, ps.currency) AS eff
         FROM cand
-        JOIN sneakers s ON s.id = cand.sneaker_id AND s.footwear_type = 'sneaker'
+        JOIN sneakers s ON s.id = cand.sneaker_id AND s.footwear_type = 'sneaker' AND s.tracked
         JOIN sneaker_variants v ON v.sneaker_id = s.id
         JOIN price_snapshots ps ON ps.sneaker_variant_id = v.id
         JOIN retailers r ON r.id = ps.retailer_id
@@ -834,7 +834,7 @@ export class CatalogService {
         JOIN sneaker_variants v ON v.id = c.sneaker_variant_id
         JOIN sneakers s ON s.id = v.sneaker_id
         JOIN retailers rt ON rt.id = c.best_retailer_id
-        WHERE s.footwear_type = 'sneaker'
+        WHERE s.footwear_type = 'sneaker' AND s.tracked
           AND c.best_retailer_id = p.best_retailer_id -- the same store cut its price (not a cheaper store showing up)
           AND c.best_price_inr < p.best_price_inr * (1 - ${minPct}::numeric / 100)
           AND c.best_price_inr > p.best_price_inr * 0.5 -- a fall of more than half in a day is far more likely a data slip than a real cut
@@ -878,7 +878,7 @@ export class CatalogService {
       JOIN price_snapshots ps ON ps.retailer_id = r.id AND ps.is_latest = true AND ps.in_stock = true AND ps.listing_url NOT LIKE '%FIXTURE%'
       JOIN sneaker_variants v ON v.id = ps.sneaker_variant_id
       JOIN sneakers s ON s.id = v.sneaker_id
-      WHERE r.status = 'active' AND s.footwear_type = 'sneaker'
+      WHERE r.status = 'active' AND s.footwear_type = 'sneaker' AND s.tracked
       GROUP BY r.id
       ORDER BY shoes DESC
     `);
@@ -988,7 +988,7 @@ export class CatalogService {
       : sql`LEFT JOIN LATERAL (SELECT NULL::date AS new_at) nw ON true`;
 
     // Slides, sandals and boots are hidden from every public list (migration 0050); the views behind `st` and `dv` leave them out too.
-    const baseConditions = [sql`s.footwear_type = 'sneaker'`];
+    const baseConditions = [sql`s.footwear_type = 'sneaker' AND s.tracked`];
     if (tsQuery) {
       // Words match as prefixes ("nik dun" finds Nike Dunk); a style code (has a digit) also matches by its start.
       baseConditions.push(
@@ -1122,7 +1122,7 @@ export class CatalogService {
                                     'p98', percentile_cont(0.98) WITHIN GROUP (ORDER BY min_price))
              FROM base WHERE min_price IS NOT NULL) AS price
       `),
-      this.db.execute(sql`SELECT brand FROM sneakers WHERE footwear_type = 'sneaker' GROUP BY brand ORDER BY lower(brand), brand`),
+      this.db.execute(sql`SELECT brand FROM sneakers WHERE footwear_type = 'sneaker' AND tracked GROUP BY brand ORDER BY lower(brand), brand`),
       this.searchCommunityPosts(params.q),
     ]);
 
@@ -1210,7 +1210,7 @@ export class CatalogService {
                  + ts_rank(s.search_vector, t.q)) AS score
         FROM sneakers s, t
         WHERE s.id <> t.id
-          AND s.footwear_type = 'sneaker'
+          AND s.footwear_type = 'sneaker' AND s.tracked
           AND lower(s.brand) = t.brand
           AND s.search_vector @@ t.q
         ORDER BY score DESC, s.style_code
@@ -1314,7 +1314,7 @@ export class CatalogService {
                                 AND ps.listing_url NOT LIKE '%FIXTURE%'
         WHERE v.sneaker_id = s.id
       ) bp ON true
-      WHERE s.id = t.id OR (bp.price IS NOT NULL AND s.footwear_type = 'sneaker')
+      WHERE s.id = t.id OR (bp.price IS NOT NULL AND s.footwear_type = 'sneaker' AND s.tracked)
       ORDER BY (s.id = t.id) DESC, bp.price ASC NULLS LAST, s.colorway
       LIMIT 60
     `);
@@ -1454,7 +1454,7 @@ export class CatalogService {
       SELECT DISTINCT s.style_code, v.size
       FROM sneaker_variants v
       JOIN sneakers s ON s.id = v.sneaker_id
-      WHERE s.footwear_type = 'sneaker'
+      WHERE s.footwear_type = 'sneaker' AND s.tracked
         AND EXISTS (SELECT 1 FROM retailer_product_mappings rpm WHERE rpm.sneaker_id = s.id)
       ORDER BY s.style_code, v.size
     `);

@@ -108,6 +108,8 @@ export const sneakers = pgTable(
     footwearType: footwearTypeEnum('footwear_type').notNull().default('sneaker'),
     /** true = a person set footwear_type; the rule never overrides it. */
     footwearTypeManual: boolean('footwear_type_manual').notNull().default(false),
+    /** true = shown on the site: top brand, sneaker, on sale at 2+ stores (refresh-tracked.ts, nightly). */
+    tracked: boolean('tracked').notNull().default(false),
     // search_vector (tsvector, GENERATED ALWAYS ... STORED) also exists
     // physically — see 0005_sneaker_search.sql. Not modeled here:
     // CatalogService only ever reaches it through `@@ to_tsquery(...)`
