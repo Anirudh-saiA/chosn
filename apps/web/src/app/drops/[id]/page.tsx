@@ -172,7 +172,7 @@ export default async function DropDetailPage({ params }: PageProps) {
                     <dt className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-text-faint">
                       <Icon className="h-3 w-3 text-brass" aria-hidden /> {label}
                     </dt>
-                    <dd className="mt-1.5 font-mono text-data-inline text-text">{value}</dd>
+                    <dd className="mt-1.5 font-mono text-data-inline font-bold text-text">{value}</dd>
                   </div>
                 ))}
               </dl>
