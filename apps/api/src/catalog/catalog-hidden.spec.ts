@@ -136,7 +136,7 @@ describe('/catalog/budget ranking, one card per model, delivery', () => {
     const ctl = new CatalogController(catalog as never);
     const out = await ctl.budget({ max: 10000, limit: 10, sort: 'trending', days: 3 });
     expect(out).toEqual({ max: 10000, sort: 'trending', ranking: 'stores', days: 3, items: [] });
-    expect(calls[0]).toEqual([10000, 10, 'trending', 3]);
+    expect(calls[0]).toEqual([10000, 10, 'trending', 3, undefined]);
     expect((await ctl.budget({})).days).toBeNull();
   });
 });

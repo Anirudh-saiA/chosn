@@ -62,7 +62,7 @@ export class CatalogController {
   @Get('budget')
   async budget(@Query() q: BudgetQueryDto): Promise<{ max: number; sort: string; ranking: BudgetRanking; days: number | null; items: BudgetItem[] }> {
     const sort = q.sort ?? 'cheapest';
-    const { ranking, items } = await this.catalog.budget(q.max, q.limit, sort, q.days);
+    const { ranking, items } = await this.catalog.budget(q.max, q.limit, sort, q.days, q.min);
     return { max: q.max ?? 5000, sort, ranking, days: sort === 'trending' ? clampTrendingDays(q.days) : null, items };
   }
 

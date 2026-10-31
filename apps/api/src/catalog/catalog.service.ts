@@ -724,16 +724,18 @@ export class CatalogService {
    * store's own cadence), and a known rupee price (price plus shipping, via effective_price_inr). Prices under Rs 500 are ignored as junk, as in discounts().
    * Offers are the store's own, with their source and date; none are made up. Slides, sandals and boots are never listed.
    */
-  budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest', daysIn?: number): Promise<{ ranking: BudgetRanking; items: BudgetItem[] }> {
+  budget(maxIn?: number, limitIn?: number, sort: BudgetSort = 'cheapest', daysIn?: number, minIn?: number): Promise<{ ranking: BudgetRanking; items: BudgetItem[] }> {
     const { max, limit } = clampBudgetParams(maxIn, limitIn);
     const days = clampTrendingDays(daysIn);
-    return this.budgetCache.get(`${max}|${limit}|${sort}|${sort === 'trending' ? days : 0}`, async () => {
-      const items = await this.loadBudget(max, limit, sort, days);
+    // A band: only shoes whose cheapest offer is at least `min` (so Under 15,000 can show the 10,000 to 15,000 pairs, not the same cheap ones as Under 10,000).
+    const min = Number.isFinite(minIn) && minIn! > 0 ? Math.min(Math.floor(minIn!), max) : 0;
+    return this.budgetCache.get(`${max}|${limit}|${sort}|${sort === 'trending' ? days : 0}|${min}`, async () => {
+      const items = await this.loadBudget(max, limit, sort, days, min);
       return { ranking: budgetRanking(sort, items), items };
     });
   }
 
-  private async loadBudget(max: number, limit: number, sort: BudgetSort, days: number): Promise<BudgetItem[]> {
+  private async loadBudget(max: number, limit: number, sort: BudgetSort, days: number, min = 0): Promise<BudgetItem[]> {
     const ranked = sort !== 'cheapest';
     const trending = sort === 'trending';
     // One ordering for the shortlist and the final list. Each argument is the column to read in that place (score, store count, price).
@@ -759,7 +761,7 @@ export class CatalogService {
         FROM catalog_stats_mv st
         JOIN sneakers s ON s.id = st.sneaker_id AND s.footwear_type = 'sneaker'
         LEFT JOIN score sc ON sc.style_code = s.style_code
-        WHERE st.min_price <= ${max} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+        WHERE st.min_price <= ${max} AND st.min_price >= ${Math.max(min - 500, 0)} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
       ),
       cand AS (
         SELECT sneaker_id FROM cand0 WHERE rn <= 3
@@ -792,7 +794,7 @@ export class CatalogService {
         FROM cheapest c
         JOIN stores st USING (sid)
         LEFT JOIN score sc ON sc.style_code = c.style_code
-        WHERE ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
+        WHERE c.eff >= ${min} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
       ),
       one_per_model AS (
         SELECT scored.*, row_number() OVER (PARTITION BY grp ORDER BY ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, style_code) AS rn

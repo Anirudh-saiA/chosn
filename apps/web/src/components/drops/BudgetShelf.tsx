@@ -197,7 +197,7 @@ export function BudgetShelf() {
     setItems(cached ?? null);
     if (cached) return;
     const slowTimer = setTimeout(() => live && setSlow(true), 10000);
-    fetchBudget(band, RANKING, TOP)
+    fetchBudget(band, RANKING, TOP, undefined, BANDS[BANDS.indexOf(band) - 1] ?? 0)
       .then((list) => {
         listCache.set(band, list);
         if (live) setItems(list);
