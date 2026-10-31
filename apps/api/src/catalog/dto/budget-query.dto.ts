@@ -11,6 +11,14 @@ export class BudgetQueryDto {
   @Max(BUDGET_LIMITS.maxMax)
   max?: number;
 
+  /** Lowest price of a band (optional): with min=10000&max=15000 only shoes whose cheapest offer is 10,000 to 15,000. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(BUDGET_LIMITS.maxMax)
+  min?: number;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

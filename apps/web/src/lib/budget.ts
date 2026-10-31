@@ -35,8 +35,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
  * ranking by each day's views and Buy clicks, only RANKING in BudgetShelf.tsx changes.
  * The API can return the same model in several colourways; we ask for more than we need and keep the first of each model.
  */
-export async function fetchBudget(max: number, sort: string, want: number, init?: RequestInit): Promise<BudgetItem[]> {
-  const res = await fetch(`${API_URL}/catalog/budget?max=${max}&sort=${encodeURIComponent(sort)}&limit=${Math.min(want * 3, 48)}`, init);
+export async function fetchBudget(max: number, sort: string, want: number, init?: RequestInit, min = 0): Promise<BudgetItem[]> {
+  const res = await fetch(`${API_URL}/catalog/budget?max=${max}&sort=${encodeURIComponent(sort)}&limit=${Math.min(want * 3, 48)}${min > 0 ? `&min=${min}` : ''}`, init);
   if (!res.ok) throw new Error(`budget fetch failed: ${res.status}`);
   const body = (await res.json()) as { items: BudgetItem[] };
   const seen = new Set<string>();
