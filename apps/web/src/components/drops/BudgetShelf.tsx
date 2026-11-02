@@ -197,7 +197,10 @@ export function BudgetShelf() {
     setItems(cached ?? null);
     if (cached) return;
     const slowTimer = setTimeout(() => live && setSlow(true), 10000);
-    fetchBudget(band, RANKING, TOP, undefined, BANDS[BANDS.indexOf(band) - 1] ?? 0)
+    const load = () => fetchBudget(band, RANKING, TOP, undefined, BANDS[BANDS.indexOf(band) - 1] ?? 0);
+    // One quiet retry after 3 seconds: a brief gap while the server restarts should not show an error.
+    load()
+      .catch(() => new Promise<BudgetItem[]>((resolve, reject) => setTimeout(() => (live ? load().then(resolve, reject) : reject(new Error('left'))), 3000)))
       .then((list) => {
         listCache.set(band, list);
         if (live) setItems(list);
