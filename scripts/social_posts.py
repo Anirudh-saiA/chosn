@@ -10,6 +10,7 @@ Two posts a day (about 09:00 and 19:00 IST), each within 280 characters as X cou
   drops    new releases from our drop calendar, with retail price and how firm each date is
   collab   the latest collab story (headline + credit only) with a question
   news     the latest unexpected story (headline + credit only) with a question
+  offer    an offer a brand's own site states, for stores we do not scrape (office/social/offers.md; only items checked within 3 days)
   random   a culture or retail prompt from office/social/random.md
   controversy, fact, legit   sourced items from office/social/controversies.md, trivia.md and authenticity.md (real-versus-fake basics)
   market   our own market numbers: the same pair at two prices, new listings, markdowns by store
@@ -35,6 +36,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FACTS = ROOT / "office" / "social" / "facts"
 POSTS = ROOT / "office" / "social" / "posts"
 RANDOM = ROOT / "office" / "social" / "random.md"
+OFFERS = ROOT / "office" / "social" / "offers.md"
 BANKS = {"controversy": ROOT / "office" / "social" / "controversies.md", "fact": ROOT / "office" / "social" / "trivia.md", "legit": ROOT / "office" / "social" / "authenticity.md"}
 PG = ["docker", "exec", "chosn-postgres-1", "psql", "-U", "postgres", "-d", "chosn_dev", "-At", "-F", "|", "-c"]
 SITE = os.environ.get("SOCIAL_SITE_URL", "").rstrip("/")
@@ -46,8 +48,8 @@ CONF = {"confirmed": "Confirmed", "reported": "Reported", "unconfirmed": "Unconf
 STORES = ("Myntra", "Superkicks", "Puma India", "VegNonVeg")  # active retail stores only; Ajio, Flipkart and END. Clothing are pending_integration and hold test rows
 NOFIX = "ps.listing_url not like '%FIXTURE%'"  # the price tables contain test rows whose listing_url says FIXTURE
 SLOTS = {0: ("market", "fact"), 1: ("drops", "sale"), 2: ("controversy", "wearing"), 3: ("collab", "reality"),
-         4: ("sale", "market"), 5: ("news", "legit"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
-FALLBACK = {"morning": ("fact", "legit", "market", "reality", "random", "drops"), "evening": ("fact", "legit", "market", "random", "question", "reality")}
+         4: ("offer", "market"), 5: ("news", "legit"), 6: ("controversy", "random")}  # weekday (Monday = 0) -> (morning, evening)
+FALLBACK = {"morning": ("offer", "fact", "legit", "market", "reality", "random", "drops"), "evening": ("offer", "fact", "legit", "market", "random", "question", "reality")}
 NEWS_ASK = "What would you want to know about the materials and the price before buying? Reply and we will check the spec."
 CULTURE_ASK = "Does this change how you buy or wear sneakers, or is it noise? Tell us why."
 COLLAB_ASK = "Beyond the logo, what would this collab have to change in the shoe for you to pay more?"
@@ -244,6 +246,36 @@ def k_random(day, ctx):
     return None
 
 
+def k_offer(day, ctx):
+    """An offer from a brand's own page (offers.md), only if someone read the page within the last 3 days."""
+    if not OFFERS.exists():
+        return None
+    d = datetime.date.fromisoformat(day)
+    items, cur = [], None
+    for ln in OFFERS.read_text(encoding="utf-8").splitlines():
+        if ln.startswith("@item "):
+            iid, _, conf = ln[6:].partition("|")
+            cur = {"id": f"offer:{iid.strip()}", "conf": conf.strip() or "Reported", "checked": "", "text": "", "sources": []}
+            items.append(cur)
+        elif cur is not None and ln.startswith("checked:"):
+            cur["checked"] = ln.split(":", 1)[1].strip()
+        elif cur is not None and ln.startswith("text:"):
+            cur["text"] = ln.split(":", 1)[1].strip()
+        elif cur is not None and ln.startswith("sources:"):
+            cur["sources"] = [s.strip() for s in ln.split(":", 1)[1].split(" ; ") if s.strip()]
+    for it in items:
+        try:
+            age = (d - datetime.date.fromisoformat(it["checked"])).days
+        except ValueError:
+            continue
+        if it["id"] in ctx["used"] or not it["text"] or not 0 <= age <= 3 or x_len(it["text"]) > LIMIT:
+            continue
+        return {"label": "offer from a brand's own site (not in our price data)", "text": it["text"], "conf": it["conf"], "ids": [it["id"]],
+                "sources": it["sources"], "note": f"page read {it['checked']}: open it and confirm the offer is still live and read the terms before posting",
+                "slug": "", "title": "the offer"}
+    return None
+
+
 def k_sale(day, ctx):
     stores = ",".join(f"'{s}'" for s in STORES)
     rows = q(f"""select distinct on (s.id, r.id) s.brand||' '||s.model||' '||s.colorway, r.name, ps.price::int, ps.compare_at_price::int,
@@ -436,11 +468,11 @@ def k_wearing(day, ctx):
     return None
 
 
-KINDS = {"reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
+KINDS = {"offer": k_offer, "reality": k_reality, "question": k_question, "random": k_random, "sale": k_sale, "drops": k_drops,
          "news": k_news, "controversy": k_bank("controversy"), "fact": k_bank("fact"), "legit": k_bank("legit"), "market": k_market, "wearing": k_wearing, "collab": lambda day, ctx: k_news(day, ctx, True)}
 
 
-TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory", "legit": "#LegitCheck",
+TAGS = {"drops": "#SneakerReleases", "sale": "#SneakerDeals", "offer": "#SneakerDeals", "market": "#SneakerPrices", "controversy": "#SneakerNews", "fact": "#SneakerHistory", "legit": "#LegitCheck",
         "news": "#SneakerNews", "collab": "#SneakerCollab", "wearing": "#SneakerCommunity", "random": "#SneakerCulture", "question": "#SneakerCommunity"}
 
 
