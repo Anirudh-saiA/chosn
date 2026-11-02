@@ -179,7 +179,7 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
       </Section>
 
       <Section title="Colour">
-        <ul className="grid grid-cols-6 gap-2.5">
+        <ul className="grid grid-cols-5 gap-x-1 gap-y-3 sm:grid-cols-6">
           {facets.colors.map((c) => {
             const swatch = COLOR_SWATCH[c.value];
             if (!swatch) return null;
@@ -192,10 +192,15 @@ export function FilterPanel({ facets, total }: { facets: SearchFacets; total: nu
                   aria-label={`${swatch.label} (${c.count})`}
                   title={`${swatch.label} · ${c.count}`}
                   onClick={() => set({ color: toggleInList(get('color'), c.value) || null })}
-                  className={`relative grid h-9 w-9 place-items-center rounded-full border-2 transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${on ? 'border-text' : 'border-text/15'}`}
-                  style={{ backgroundColor: swatch.hex }}
+                  className="group flex w-full flex-col items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  {on && <Check className="h-4 w-4" style={{ color: ['white', 'beige', 'yellow', 'pink'].includes(c.value) ? '#111' : '#fff' }} aria-hidden />}
+                  <span
+                    className={`relative grid h-9 w-9 place-items-center rounded-full border-2 transition-transform group-hover:scale-110 ${on ? 'border-text' : 'border-text/15'}`}
+                    style={{ background: swatch.hex }}
+                  >
+                    {on && <Check className="h-4 w-4" style={{ color: ['white', 'cream', 'silver', 'beige', 'yellow', 'pink'].includes(c.value) ? '#111' : '#fff' }} aria-hidden />}
+                  </span>
+                  <span className={`text-[0.62rem] leading-none ${on ? 'font-bold text-text' : 'font-medium text-text/65'}`}>{swatch.label}</span>
                 </button>
               </li>
             );

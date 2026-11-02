@@ -5,17 +5,25 @@
  */
 export const COLOR_FAMILIES: Record<string, string[]> = {
   black: ['black', 'noir', 'onyx', 'jet', 'obsidian'],
-  white: ['white', 'sail', 'ivory', 'cream', 'coconut milk', 'summit', 'bone', 'pearl', 'phantom', 'chalk'],
-  grey: ['grey', 'gray', 'silver', 'smoke', 'slate', 'charcoal', 'graphite', 'concrete', 'cement', 'fog', 'iron', 'platinum'],
+  white: ['white', 'sail', 'summit', 'pearl', 'phantom'],
+  cream: ['cream', 'ivory', 'coconut milk', 'bone', 'chalk'],
+  grey: ['grey', 'gray', 'smoke', 'slate', 'charcoal', 'graphite', 'concrete', 'cement', 'fog', 'iron'],
+  silver: ['silver', 'platinum'],
   brown: ['brown', 'mocha', 'chocolate', 'cacao', 'espresso', 'coffee', 'russet', 'baroque', 'cinnamon', 'bronze'],
   beige: ['beige', 'sand', 'tan', 'khaki', 'oat', 'oatmeal', 'stone', 'taupe', 'camel', 'wheat', 'linen', 'birch', 'natural', 'gum'],
-  red: ['red', 'crimson', 'burgundy', 'maroon', 'scarlet', 'infrared', 'cherry', 'bred', 'wine', 'cardinal'],
+  red: ['red', 'crimson', 'scarlet', 'infrared', 'cherry', 'bred', 'cardinal'],
+  maroon: ['maroon', 'burgundy', 'wine'],
   orange: ['orange', 'amber', 'rust', 'coral', 'ember', 'sunset'],
-  yellow: ['yellow', 'gold', 'lemon', 'citrus', 'mustard', 'curry', 'butter', 'lime'],
-  green: ['green', 'olive', 'sage', 'mint', 'volt', 'spruce', 'forest', 'emerald', 'teal', 'jade', 'moss', 'fir'],
-  blue: ['blue', 'navy', 'royal', 'indigo', 'denim', 'cobalt', 'sky', 'aqua', 'marine', 'midnight'],
+  yellow: ['yellow', 'lemon', 'citrus', 'mustard', 'curry', 'butter', 'lime'],
+  gold: ['gold'],
+  green: ['green', 'mint', 'volt', 'spruce', 'forest', 'emerald', 'fir'],
+  olive: ['olive', 'sage', 'moss'],
+  teal: ['teal', 'jade'],
+  blue: ['blue', 'royal', 'indigo', 'denim', 'cobalt', 'sky', 'aqua', 'marine'],
+  navy: ['navy', 'midnight'],
   purple: ['purple', 'violet', 'lilac', 'lavender', 'plum', 'mauve', 'thistle', 'grape', 'orchid'],
   pink: ['pink', 'rose', 'blush', 'magenta', 'fuchsia', 'rosewood', 'salmon'],
+  multi: ['multi', 'multicolor', 'multicolour', 'multicolored'],
 };
 
 /** Postgres regex (`~`) matching any of a family's words as whole words; null for an unknown family. */
