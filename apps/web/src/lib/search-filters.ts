@@ -17,16 +17,24 @@ export const SORT_OPTIONS = [
 export const COLOR_SWATCH: Record<string, { label: string; hex: string }> = {
   black: { label: 'Black', hex: '#111111' },
   white: { label: 'White', hex: '#FFFFFF' },
+  cream: { label: 'Cream', hex: '#F3EBD3' },
   grey: { label: 'Grey', hex: '#9CA3AF' },
+  silver: { label: 'Silver', hex: '#C9CCD1' },
   brown: { label: 'Brown', hex: '#7B5238' },
   beige: { label: 'Beige', hex: '#D9C7A3' },
   red: { label: 'Red', hex: '#D62F2F' },
+  maroon: { label: 'Maroon', hex: '#7A1F2B' },
   orange: { label: 'Orange', hex: '#F28C28' },
   yellow: { label: 'Yellow', hex: '#F2D13C' },
+  gold: { label: 'Gold', hex: '#C9A227' },
   green: { label: 'Green', hex: '#3E8E5A' },
+  olive: { label: 'Olive', hex: '#6B7339' },
+  teal: { label: 'Teal', hex: '#1F8A8A' },
   blue: { label: 'Blue', hex: '#2F63C8' },
+  navy: { label: 'Navy', hex: '#1B2A55' },
   purple: { label: 'Purple', hex: '#7E57C2' },
   pink: { label: 'Pink', hex: '#F08CB4' },
+  multi: { label: 'Multi', hex: 'conic-gradient(#D62F2F, #F2D13C, #3E8E5A, #2F63C8, #7E57C2, #D62F2F)' },
 };
 
 export const PRICE_PRESETS = [

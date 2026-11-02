@@ -95,7 +95,7 @@ export function FilterBar({ facets }: { facets: SearchFacets }) {
       </Dropdown>
 
       <Dropdown label="Colour" count={colors.length} width="w-80">
-        <ul className="grid grid-cols-6 gap-x-1 gap-y-3">
+        <ul className="grid grid-cols-5 gap-x-1 gap-y-3">
           {facets.colors.map((c) => {
             const swatch = COLOR_SWATCH[c.value];
             if (!swatch) return null;
@@ -112,9 +112,9 @@ export function FilterBar({ facets }: { facets: SearchFacets }) {
                 >
                   <span
                     className={`relative grid h-9 w-9 place-items-center rounded-full border-2 transition-transform group-hover:scale-110 ${on ? 'border-[#0A0A0A]' : 'border-[#0A0A0A]/15'}`}
-                    style={{ backgroundColor: swatch.hex }}
+                    style={{ background: swatch.hex }}
                   >
-                    {on && <Check className="h-4 w-4" style={{ color: ['white', 'beige', 'yellow', 'pink'].includes(c.value) ? '#111' : '#fff' }} aria-hidden />}
+                    {on && <Check className="h-4 w-4" style={{ color: ['white', 'cream', 'silver', 'beige', 'yellow', 'pink'].includes(c.value) ? '#111' : '#fff' }} aria-hidden />}
                   </span>
                   <span className={`text-[0.62rem] leading-none ${on ? 'font-bold text-[#0A0A0A]' : 'font-medium text-[#0A0A0A]/65'}`}>{swatch.label}</span>
                 </button>
