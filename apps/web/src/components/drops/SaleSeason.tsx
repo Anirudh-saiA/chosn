@@ -53,11 +53,23 @@ function SeenAt({ stores }: { stores: ReturnType<typeof seenAt> }) {
   );
 }
 
+interface OfferRow { store: string; logo: string | null; text: string; url: string | null; label: string; date: string; order: number; at: string }
+
+/** One list, in order: season sales first, then other sales and standing offers, then coupons; newest first within each. */
+function offerRows(sales: StoreSale[], others: OtherSite[]): OfferRow[] {
+  const rows: OfferRow[] = [
+    ...others.map((o) => ({ store: o.store, logo: o.logo, text: o.text, url: o.url, label: o.seasonal ? 'Sale' : 'Offer', date: fmt(o.checkedOn), order: o.seasonal ? 0 : 1, at: o.checkedOn })),
+    ...sales.map((o) => ({ store: o.store, logo: o.logo, text: o.text, url: o.url, label: o.kind === 'coupon' ? 'Coupon' : 'Sale', date: o.seenAt ? fmt(o.seenAt) : '', order: o.kind === 'coupon' ? 2 : 0, at: o.seenAt ?? '' })),
+  ];
+  return rows.sort((a, b) => a.order - b.order || b.at.localeCompare(a.at) || a.store.localeCompare(b.store));
+}
+
 /** Sale seasons on now or coming up, and the sales stores show right now. Season dates are the usual ones; each store sets its own. */
 export async function SaleSeason() {
   const data = await load();
   if (!data || (data.seasons.length === 0 && data.storeSales.length === 0 && data.otherSites.length === 0)) return null;
   // A season is listed only when a store is really running it: no store, no card.
+  const rows = offerRows(data.storeSales, data.otherSites);
   const withStores = data.seasons.map((s) => ({ s, stores: seenAt(s, data.storeSales, data.otherSites) })).filter((x) => x.stores.length > 0);
   return (
     <section aria-labelledby="sale-h" className="mb-8 rounded-[2rem] border border-[#0A0A0A]/10 bg-white p-6 sm:p-8">
@@ -75,57 +87,32 @@ export async function SaleSeason() {
           ))}
         </ul>
       ) : null}
-      {data.storeSales.length > 0 ? (
+      {rows.length > 0 ? (
         <div className="mt-6">
-          <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">Live at stores</h3>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {data.storeSales.map((o, i) => {
-              const body = (
+          <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">Offers at stores</h3>
+          <ul className="mt-3 divide-y divide-[#0A0A0A]/10 overflow-hidden rounded-3xl border border-[#0A0A0A]/10">
+            {rows.map((o) => {
+              const inner = (
                 <>
-                  <span className="flex items-center gap-3">
-                    <Logo src={o.logo} name={o.store} />
-                    <span className="min-w-0 flex-1 font-display text-base font-bold text-text">{o.store}</span>
-                    <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.kind === 'coupon' ? 'Coupon' : 'Sale'}</span>
+                  <Logo src={o.logo} name={o.store} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-text">{o.text}</span>
+                    <span className="block truncate text-xs text-text-soft">{o.store} · {o.label} · {o.date}</span>
                   </span>
-                  <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
-                  {o.conditions ? <span className="mt-1 block text-xs text-text-soft">{o.conditions}</span> : null}
-                  {o.url ? <span className="mt-3 inline-flex items-center gap-1 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-text">Go to {o.store} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></span> : null}
+                  {o.url ? <ArrowUpRight className="h-4 w-4 shrink-0 text-text" aria-hidden /> : null}
                 </>
               );
-              const box = 'block rounded-3xl border border-[#0A0A0A]/10 px-5 py-4';
+              const cls = 'flex items-center gap-3 px-4 py-3';
               return (
-                <li key={`${o.store}-${i}`}>
+                <li key={`${o.store}-${o.text}`}>
                   {o.url ? (
-                    <a href={o.url} target="_blank" rel="noopener noreferrer" className={`${box} transition-colors hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]`}>{body}</a>
+                    <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`${o.store}: ${o.text}. Opens the store`} className={`${cls} transition-colors hover:bg-[#0A0A0A]/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]`}>{inner}</a>
                   ) : (
-                    <div className={box}>{body}</div>
+                    <div className={cls}>{inner}</div>
                   )}
                 </li>
               );
             })}
-          </ul>
-        </div>
-      ) : null}
-      {data.otherSites.length > 0 ? (
-        <div className="mt-6">
-          <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">Read on the stores&apos; own sites</h3>
-          <p className="mt-1 text-xs text-text-soft">The offer is what the store itself shows, read on the date given. "Not tracked" means we do not track that store&apos;s prices.</p>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {data.otherSites.map((o) => (
-              <li key={o.store}>
-                <a href={o.url} target="_blank" rel="noopener noreferrer" className="block rounded-3xl border border-[#0A0A0A]/10 px-5 py-4 transition-colors hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]">
-                  <span className="flex items-center gap-3">
-                    <Logo src={o.logo} name={o.store} />
-                    <span className="min-w-0 flex-1 font-display text-base font-bold text-text">{o.store}</span>
-                    <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.tracked ? 'Tracked here' : 'Not tracked'}</span>
-                  </span>
-                  <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
-                  {o.conditions ? <span className="mt-1 block text-xs text-text-soft">{o.conditions}</span> : null}
-                  <span className="mt-1 block text-xs text-text-soft">Checked {fmt(o.checkedOn)} on the store&apos;s own site</span>
-                  <span className="mt-3 inline-flex items-center gap-1 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-text">Go to {o.store} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></span>
-                </a>
-              </li>
-            ))}
           </ul>
         </div>
       ) : null}
