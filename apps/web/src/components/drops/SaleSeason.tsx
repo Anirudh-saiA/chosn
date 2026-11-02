@@ -18,6 +18,31 @@ async function load(): Promise<{ seasons: Season[]; storeSales: StoreSale[]; oth
   }
 }
 
+/** Where the season is happening: the stores whose own page or banner we read showing a sale today. A season that has not started has none yet. */
+function SeenAt({ season, sales, others }: { season: Season; sales: StoreSale[]; others: OtherSite[] }) {
+  if (season.state !== 'now') return <p className="mt-3 text-xs text-text-soft">No store has announced it yet.</p>;
+  const seen = new Map<string, string | null>();
+  for (const o of others) seen.set(o.store, o.url);
+  for (const o of sales) if (o.kind === 'sale') seen.set(o.store, o.url);
+  if (seen.size === 0) return <p className="mt-3 text-xs text-text-soft">We have not seen a store banner for it yet.</p>;
+  return (
+    <div className="mt-3">
+      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text-soft">Seen at</p>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {[...seen].map(([store, url]) => (
+          <li key={store}>
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-[#0A0A0A]/20 px-3 py-1 text-xs font-semibold text-text transition-colors hover:border-[#0A0A0A]">{store} <ArrowUpRight className="h-3 w-3" aria-hidden /></a>
+            ) : (
+              <span className="inline-flex rounded-full border border-[#0A0A0A]/20 px-3 py-1 text-xs font-semibold text-text">{store}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Sale seasons on now or coming up, and the sales stores show right now. Season dates are the usual ones; each store sets its own. */
 export async function SaleSeason() {
   const data = await load();
@@ -35,6 +60,7 @@ export async function SaleSeason() {
               </span>
               <p className="mt-3 font-display text-lg font-bold text-text">{s.name}</p>
               <p className="mt-0.5 font-mono text-data-inline font-bold text-text">{range(s)}</p>
+              <SeenAt season={s} sales={data.storeSales} others={data.otherSites} />
             </li>
           ))}
         </ul>
