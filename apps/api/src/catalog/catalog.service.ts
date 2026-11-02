@@ -811,12 +811,12 @@ export class CatalogService {
   /** Sales and coupons the stores themselves showed in the last 3 weeks (retailers.offers, refreshed nightly), newest first. */
   async liveStoreSales(): Promise<StoreSale[]> {
     const { rows } = await this.db.execute(sql`
-      SELECT r.name AS store, o->>'text' AS text, o->>'kind' AS kind, o->>'url' AS url, o->>'seenAt' AS seen_at, o->>'conditions' AS conditions
+      SELECT r.name AS store, r.logo_url AS logo, o->>'text' AS text, o->>'kind' AS kind, o->>'url' AS url, o->>'seenAt' AS seen_at, o->>'conditions' AS conditions
       FROM retailers r, jsonb_array_elements(r.offers) o
       WHERE r.status = 'active' AND o->>'kind' IN ('sale', 'coupon')
         AND (o->>'seenAt')::date >= (now() AT TIME ZONE 'Asia/Kolkata')::date - 21
       ORDER BY (o->>'seenAt') DESC, r.name LIMIT 12`);
-    return (rows as Array<Record<string, string | null>>).map((x) => ({ store: x.store ?? '', text: x.text ?? '', kind: x.kind ?? 'sale', url: x.url ?? null, seenAt: x.seen_at ?? null, conditions: x.conditions ?? null }));
+    return (rows as Array<Record<string, string | null>>).map((x) => ({ store: x.store ?? '', logo: x.logo ?? null, text: x.text ?? '', kind: x.kind ?? 'sale', url: x.url ?? null, seenAt: x.seen_at ?? null, conditions: x.conditions ?? null }));
   }
 
   private dropsCache = new Map<string, { at: number; value: PriceDrop[] }>();
@@ -1566,4 +1566,4 @@ function buildPrefixTsQuery(q: string): string | null {
   return tokens.map((t) => `${t}:*`).join(' & ');
 }
 
-export interface StoreSale { store: string; text: string; kind: string; url: string | null; seenAt: string | null; conditions: string | null }
+export interface StoreSale { store: string; logo: string | null; text: string; kind: string; url: string | null; seenAt: string | null; conditions: string | null }

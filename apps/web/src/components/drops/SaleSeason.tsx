@@ -3,8 +3,8 @@ import { ArrowUpRight } from 'lucide-react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 interface Season { name: string; start: string; end: string; state: 'now' | 'soon'; daysToStart: number }
-interface OtherSite { store: string; tracked: boolean; text: string; conditions: string | null; url: string; checkedOn: string }
-interface StoreSale { store: string; text: string; kind: string; url: string | null; seenAt: string | null; conditions: string | null }
+interface OtherSite { store: string; logo: string | null; tracked: boolean; seasonal: boolean; text: string; conditions: string | null; url: string; checkedOn: string }
+interface StoreSale { store: string; logo: string | null; text: string; kind: string; url: string | null; seenAt: string | null; conditions: string | null }
 
 const fmt = (iso: string) => new Date(`${iso}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
 const range = (s: Season) => (s.start === s.end ? fmt(s.start) : `${fmt(s.start)} to ${fmt(s.end)}`);
@@ -18,11 +18,17 @@ async function load(): Promise<{ seasons: Season[]; storeSales: StoreSale[]; oth
   }
 }
 
+/** The store's own logo in its own colours, in a white rounded tile. */
+function Logo({ src, name }: { src: string | null; name: string }) {
+  if (!src) return null;
+  return <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#0A0A0A]/10 bg-white p-1.5"><img src={src} alt={name} className="max-h-full max-w-full object-contain" loading="lazy" /></span>;
+}
+
 /** Where the season is happening: the stores whose own page or banner we read showing a sale today. A season that has not started has none yet. */
 function SeenAt({ season, sales, others }: { season: Season; sales: StoreSale[]; others: OtherSite[] }) {
   if (season.state !== 'now') return <p className="mt-3 text-xs text-text-soft">No store has announced it yet.</p>;
   const seen = new Map<string, string | null>();
-  for (const o of others) seen.set(o.store, o.url);
+  for (const o of others) if (o.seasonal) seen.set(o.store, o.url);
   for (const o of sales) if (o.kind === 'sale') seen.set(o.store, o.url);
   if (seen.size === 0) return <p className="mt-3 text-xs text-text-soft">We have not seen a store banner for it yet.</p>;
   return (
@@ -72,8 +78,9 @@ export async function SaleSeason() {
             {data.storeSales.map((o, i) => {
               const body = (
                 <>
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="font-display text-base font-bold text-text">{o.store}</span>
+                  <span className="flex items-center gap-3">
+                    <Logo src={o.logo} name={o.store} />
+                    <span className="min-w-0 flex-1 font-display text-base font-bold text-text">{o.store}</span>
                     <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.kind === 'coupon' ? 'Coupon' : 'Sale'}</span>
                   </span>
                   <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
@@ -103,8 +110,9 @@ export async function SaleSeason() {
             {data.otherSites.map((o) => (
               <li key={o.store}>
                 <a href={o.url} target="_blank" rel="noopener noreferrer" className="block rounded-3xl border border-[#0A0A0A]/10 px-5 py-4 transition-colors hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]">
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="font-display text-base font-bold text-text">{o.store}</span>
+                  <span className="flex items-center gap-3">
+                    <Logo src={o.logo} name={o.store} />
+                    <span className="min-w-0 flex-1 font-display text-base font-bold text-text">{o.store}</span>
                     <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.tracked ? 'Tracked here' : 'Not tracked'}</span>
                   </span>
                   <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
