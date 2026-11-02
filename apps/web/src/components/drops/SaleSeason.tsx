@@ -24,28 +24,32 @@ function Logo({ src, name }: { src: string | null; name: string }) {
   return <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#0A0A0A]/10 bg-white p-1.5"><img src={src} alt={name} className="max-h-full max-w-full object-contain" loading="lazy" /></span>;
 }
 
-/** Where the season is happening: the stores whose own page or banner we read showing a sale today. A season that has not started has none yet. */
-function SeenAt({ season, sales, others }: { season: Season; sales: StoreSale[]; others: OtherSite[] }) {
-  if (season.state !== 'now') return <p className="mt-3 text-xs text-text-soft">No store has announced it yet.</p>;
-  const seen = new Map<string, string | null>();
-  for (const o of others) if (o.seasonal) seen.set(o.store, o.url);
-  for (const o of sales) if (o.kind === 'sale') seen.set(o.store, o.url);
-  if (seen.size === 0) return <p className="mt-3 text-xs text-text-soft">We have not seen a store banner for it yet.</p>;
+/** The stores whose own page or banner we read showing a sale today, for a season that is on now. Empty when there are none. */
+function seenAt(season: Season, sales: StoreSale[], others: OtherSite[]): Array<{ store: string; url: string | null; logo: string | null }> {
+  if (season.state !== 'now') return [];
+  const seen = new Map<string, { store: string; url: string | null; logo: string | null }>();
+  for (const o of others) if (o.seasonal) seen.set(o.store, { store: o.store, url: o.url, logo: o.logo });
+  for (const o of sales) if (o.kind === 'sale') seen.set(o.store, { store: o.store, url: o.url, logo: o.logo });
+  return [...seen.values()];
+}
+
+/** Only the logos of the stores that have the season's sale; each opens its store. */
+function SeenAt({ stores }: { stores: ReturnType<typeof seenAt> }) {
   return (
-    <div className="mt-3">
-      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text-soft">Seen at</p>
-      <ul className="mt-1.5 flex flex-wrap gap-1.5">
-        {[...seen].map(([store, url]) => (
-          <li key={store}>
-            {url ? (
-              <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-[#0A0A0A]/20 px-3 py-1 text-xs font-semibold text-text transition-colors hover:border-[#0A0A0A]">{store} <ArrowUpRight className="h-3 w-3" aria-hidden /></a>
+    <ul className="mt-3 flex flex-wrap gap-2" aria-label="Stores with this sale">
+      {stores.map((o) => {
+        const tile = <Logo src={o.logo} name={o.store} />;
+        return (
+          <li key={o.store}>
+            {o.url ? (
+              <a href={o.url} target="_blank" rel="noopener noreferrer" title={o.store} aria-label={`${o.store}, opens the store`} className="block rounded-2xl transition-shadow hover:ring-2 hover:ring-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]">{tile}</a>
             ) : (
-              <span className="inline-flex rounded-full border border-[#0A0A0A]/20 px-3 py-1 text-xs font-semibold text-text">{store}</span>
+              <span title={o.store}>{tile}</span>
             )}
           </li>
-        ))}
-      </ul>
-    </div>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -53,20 +57,20 @@ function SeenAt({ season, sales, others }: { season: Season; sales: StoreSale[];
 export async function SaleSeason() {
   const data = await load();
   if (!data || (data.seasons.length === 0 && data.storeSales.length === 0 && data.otherSites.length === 0)) return null;
+  // A season is listed only when a store is really running it: no store, no card.
+  const withStores = data.seasons.map((s) => ({ s, stores: seenAt(s, data.storeSales, data.otherSites) })).filter((x) => x.stores.length > 0);
   return (
     <section aria-labelledby="sale-h" className="mb-8 rounded-[2rem] border border-[#0A0A0A]/10 bg-white p-6 sm:p-8">
       <h2 id="sale-h" className="font-display text-2xl font-bold text-text">Offer season</h2>
       <p className="mt-1 text-sm text-text-soft">Sales shoppers in India plan around. Dates are the usual ones; each store sets its own, so check the store before you buy.</p>
-      {data.seasons.length > 0 ? (
+      {withStores.length > 0 ? (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.seasons.map((s) => (
+          {withStores.map(({ s, stores }) => (
             <li key={s.name} className="rounded-3xl border border-[#0A0A0A]/10 p-4">
-              <span className={`inline-block rounded-full px-3 py-1 font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] ${s.state === 'now' ? 'bg-[#0A0A0A] text-white' : 'border border-[#0A0A0A]/20 text-text'}`}>
-                {s.state === 'now' ? 'On now' : `In ${s.daysToStart} day${s.daysToStart === 1 ? '' : 's'}`}
-              </span>
+              <span className="inline-block rounded-full bg-[#0A0A0A] px-3 py-1 font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white">On now</span>
               <p className="mt-3 font-display text-lg font-bold text-text">{s.name}</p>
               <p className="mt-0.5 font-mono text-data-inline font-bold text-text">{range(s)}</p>
-              <SeenAt season={s} sales={data.storeSales} others={data.otherSites} />
+              <SeenAt stores={stores} />
             </li>
           ))}
         </ul>
