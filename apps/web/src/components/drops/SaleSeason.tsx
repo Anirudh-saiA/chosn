@@ -41,13 +41,30 @@ export async function SaleSeason() {
       {data.storeSales.length > 0 ? (
         <div className="mt-6">
           <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">Live at stores</h3>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {data.storeSales.map((o, i) => (
-              <li key={`${o.store}-${i}`} className="flex items-start justify-between gap-3 rounded-2xl border border-[#0A0A0A]/10 px-4 py-3 text-sm">
-                <span><b className="font-semibold text-text">{o.store}</b> <span className="text-text-soft">{o.text}</span></span>
-                {o.url ? <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`${o.store} offer, opens the store`} className="shrink-0 text-text"><ArrowUpRight className="h-4 w-4" aria-hidden /></a> : null}
-              </li>
-            ))}
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            {data.storeSales.map((o, i) => {
+              const body = (
+                <>
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-display text-base font-bold text-text">{o.store}</span>
+                    <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.kind === 'coupon' ? 'Coupon' : 'Sale'}</span>
+                  </span>
+                  <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
+                  {o.conditions ? <span className="mt-1 block text-xs text-text-soft">{o.conditions}</span> : null}
+                  {o.url ? <span className="mt-3 inline-flex items-center gap-1 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-text">Go to {o.store} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></span> : null}
+                </>
+              );
+              const box = 'block rounded-3xl border border-[#0A0A0A]/10 px-5 py-4';
+              return (
+                <li key={`${o.store}-${i}`}>
+                  {o.url ? (
+                    <a href={o.url} target="_blank" rel="noopener noreferrer" className={`${box} transition-colors hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]`}>{body}</a>
+                  ) : (
+                    <div className={box}>{body}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
