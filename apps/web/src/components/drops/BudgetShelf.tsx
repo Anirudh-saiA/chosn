@@ -99,7 +99,7 @@ export function BudgetShelf() {
   };
 
   return (
-    <section aria-labelledby="budget-h" className={`font-sans mx-auto w-full max-w-6xl rounded-[2rem] border border-black/20 bg-white p-4 text-black sm:p-7`}>
+    <section aria-labelledby="budget-h" className={`font-sans w-full rounded-[2rem] border border-black/20 bg-white p-4 text-black sm:p-7`}>
       <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-black/65">Cheapest in stock</p>
       <h2 id="budget-h" className="mt-1 text-[clamp(1.6rem,4vw,2.2rem)] font-extrabold leading-tight tracking-tight">
         Shop by budget

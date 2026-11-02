@@ -210,7 +210,7 @@ export function Masthead({ overlay = false }: { overlay?: boolean } = {}) {
         }`}
       >
         <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-6 px-5 sm:px-8">
-          <Logo />
+          <Logo lockup className="!text-[0.95rem]" />
 
           <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
             {NAV.map((item) => {

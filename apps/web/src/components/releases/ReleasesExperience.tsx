@@ -141,7 +141,7 @@ export function ReleasesExperience({ initial, drops, news, footer }: { initial: 
 
       {/* The opened section */}
       {underneath !== 'gate' ? (
-        <div className={`mx-auto w-full max-w-[80rem] px-5 pb-10 pt-3 sm:px-8 lg:pb-14 lg:pt-4 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
+        <div className={`mx-auto w-full max-w-none px-5 pb-10 pt-3 sm:px-8 xl:px-12 lg:pb-14 lg:pt-4 ${anim ? 'absolute inset-x-0 top-0 h-full overflow-hidden' : ''}`}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#0A0A0A]/15 pb-3">
             <button type="button" onClick={() => close(true)} className="inline-flex min-h-[44px] items-center gap-2 rounded-full pr-3 font-mono text-[0.72rem] font-bold uppercase tracking-[0.16em] text-text hover:opacity-60">
               <ArrowLeft className="h-4 w-4" aria-hidden /> Releases
