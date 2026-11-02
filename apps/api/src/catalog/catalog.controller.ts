@@ -15,7 +15,7 @@ import {
 import { clampTrendingDays, type BudgetItem, type BudgetRanking } from './budget';
 import { BudgetQueryDto } from './dto/budget-query.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { saleSeasons, type SaleSeason } from './sale-season';
+import { otherSiteOffers, saleSeasons, type OtherSiteOffer, type SaleSeason } from './sale-season';
 import type { StoreSale } from './catalog.service';
 
 /**
@@ -70,8 +70,8 @@ export class CatalogController {
 
   /** GET /catalog/sale-season: the sale seasons on now or starting within 30 days, plus the sales and coupons stores show right now. */
   @Get('sale-season')
-  async saleSeason(): Promise<{ seasons: SaleSeason[]; storeSales: StoreSale[] }> {
-    return { seasons: saleSeasons(new Date()), storeSales: await this.catalog.liveStoreSales() };
+  async saleSeason(): Promise<{ seasons: SaleSeason[]; storeSales: StoreSale[]; otherSites: OtherSiteOffer[] }> {
+    return { seasons: saleSeasons(new Date()), storeSales: await this.catalog.liveStoreSales(), otherSites: otherSiteOffers(new Date()) };
   }
 
   /** "Crazy falls": the biggest recorded price falls since the previous recorded day. */

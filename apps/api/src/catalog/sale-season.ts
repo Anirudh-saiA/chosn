@@ -37,3 +37,21 @@ export function saleSeasons(today: Date, lookAheadDays = 30): SaleSeason[] {
   }
   return out;
 }
+
+/**
+ * Offers on websites we do not scrape. Add an entry only after reading the offer on the store's own page, and set checkedOn to that day.
+ * An entry is shown for 7 days after checkedOn and then disappears by itself, so a stale offer is never shown as live.
+ */
+export interface OtherSiteOffer { store: string; text: string; conditions: string | null; url: string; checkedOn: string }
+
+const OTHER_SITES: OtherSiteOffer[] = [
+  { store: 'adidas India', text: 'Diwali Sale: Buy 2, get 60% off', conditions: 'Terms are on the adidas site; also 10% off when you sign up', url: 'https://www.adidas.co.in/', checkedOn: '2026-11-02' },
+];
+
+export function otherSiteOffers(today: Date, maxAgeDays = 7): OtherSiteOffer[] {
+  const t = Date.parse(`${istDay(today)}T00:00:00Z`);
+  return OTHER_SITES.filter((o) => {
+    const age = Math.round((t - Date.parse(`${o.checkedOn}T00:00:00Z`)) / DAY);
+    return age >= 0 && age <= maxAgeDays;
+  });
+}
