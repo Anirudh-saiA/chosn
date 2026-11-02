@@ -5,6 +5,7 @@ import { NewsFront } from '@/components/news/NewsFront';
 import { ScrollHighlight } from '@/components/landing/ScrollHighlight';
 import { DropsExplorer } from '@/components/drops/DropsExplorer';
 import { BudgetShelf } from '@/components/drops/BudgetShelf';
+import { SaleSeason } from '@/components/drops/SaleSeason';
 import { SubscriptionsProvider } from '@/components/drops/subscriptions-context';
 import { ReleasesExperience } from '@/components/releases/ReleasesExperience';
 import { SneakerCard } from '@/components/search/SneakerCard';
@@ -67,6 +68,7 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
           </a>
           <span className="text-text-soft">Downloads a calendar file (.ics) that opens in Google, Apple or Outlook calendar.</span>
         </p>
+        <SaleSeason />
         <DropLiveProvider>
           <SubscriptionsProvider>
             <DropsExplorer drops={drops} />
