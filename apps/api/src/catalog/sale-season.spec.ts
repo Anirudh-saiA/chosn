@@ -13,3 +13,11 @@ describe('saleSeasons', () => {
     expect(s.find((x) => x.name === 'Republic Day sales')).toBeUndefined();
   });
 });
+
+import { otherSiteOffers } from './sale-season';
+describe('otherSiteOffers', () => {
+  it('shows a checked offer for 7 days, then hides it', () => {
+    expect(otherSiteOffers(new Date('2026-11-05T06:00:00Z')).map((o) => o.store)).toContain('adidas India');
+    expect(otherSiteOffers(new Date('2026-11-20T06:00:00Z'))).toHaveLength(0);
+  });
+});
