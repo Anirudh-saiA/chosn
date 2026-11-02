@@ -20,7 +20,6 @@ import { fetchNewsList } from '@/lib/news';
 // The news list is read fresh on every visit (cache: no-store below), so a story that came online a minute ago is already here; drops and the landed list keep short caches.
 
 const LANDED_DAYS = 14;
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 async function loadLanded(): Promise<SearchResponse | null> {
   try {
@@ -62,12 +61,6 @@ export default async function ReleasesPage({ searchParams }: { searchParams: Pro
             triggerAt={0.9}
           />
         </div>
-        <p className="mb-6 flex flex-wrap items-center gap-3 text-sm">
-          <a href={`${API_URL}/drops/calendar.ics`} className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#0A0A0A] px-6 py-2.5 font-sans text-[0.95rem] font-semibold text-white transition-colors hover:bg-[#333]">
-            Add every drop to your calendar
-          </a>
-          <span className="text-text-soft">Downloads a calendar file (.ics) that opens in Google, Apple or Outlook calendar.</span>
-        </p>
         <SaleSeason />
         <DropLiveProvider>
           <SubscriptionsProvider>
