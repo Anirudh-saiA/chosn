@@ -35,6 +35,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dbconn import psql
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TODAY = datetime.date.today().isoformat()
@@ -167,8 +168,31 @@ def export_day_row(failed):
     refresh_tracked()
 
 
+FULL_RUN = False
+
+
+def keep_tracked_only(path):
+    """Founder rule (3 Nov): save prices only for the tracked shoes (the ones the site shows), not the whole store catalogues.
+    Rewrites the file to just those style codes. A --full run keeps everything and re-picks the tracked list."""
+    wanted = {r[0].strip().lower() for r in psql("select style_code from sneakers where tracked")}
+    if not wanted:
+        log("tracked list is empty: keeping every row")
+        return
+    rows = read_rows(path)
+    kept = [r for r in rows if (r.get("style_code") or "").strip().lower() in wanted]
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(kept)
+    log(f"tracked shoes only: kept {len(kept)} of {len(rows)} rows ({len(wanted)} tracked shoes)")
+
+
 def refresh_tracked():
-    """Refresh which shoes the site shows (top brand, 2+ stores). Best effort: a failure never fails the nightly."""
+    """Refresh which shoes the site shows (top brand, 2+ stores). Best effort: a failure never fails the nightly.
+    Only on a --full run: a tracked-only import has no data for other shoes, so the list must not be re-picked from it."""
+    if not FULL_RUN:
+        log("   tracked list kept as it is (re-picked on a --full run)")
+        return
     try:
         p = subprocess.run([NODE, "--env-file=.env", "dist/scripts/refresh-tracked.js"], cwd=ROOT / "apps" / "api", capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
         log("   " + ((p.stdout or p.stderr or "").strip().splitlines() or ["no output"])[-1][:200])
@@ -210,6 +234,7 @@ def main():
     ap.add_argument("--skip-mainstreet", action="store_true", help="leave Mainstreet Marketplace out")
     ap.add_argument("--skip-myntra", action="store_true", help="leave Myntra out (it is the slowest step)")
     ap.add_argument("--midday", action="store_true", help="second daily shift: Superkicks, Crepdog, Limited Edt and Gully Labs only; prices, new arrivals, wishlist alerts")
+    ap.add_argument("--full", action="store_true", help="import every shoe and re-pick the tracked list (default: save prices only for the tracked shoes)")
     ap.add_argument("--reuse", action="store_true", help="reuse today's already-scraped files instead of scraping again")
     args = ap.parse_args()
     if args.midday:
@@ -349,6 +374,11 @@ def main():
         log("Nothing was imported. Look at the scrape, or re-run with --force if the drop is real.")
         write_summary(status="safety_stopped", problems=problems, minutes=round((time.time() - started) / 60, 1))
         return 2
+
+    global FULL_RUN
+    FULL_RUN = args.full
+    if not args.full:
+        keep_tracked_only(clean)
 
     api = ROOT / "apps" / "api"
     run("Build API", [NPM, "run", "build"], cwd=api)
