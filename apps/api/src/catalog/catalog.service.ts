@@ -796,12 +796,13 @@ export class CatalogService {
         LEFT JOIN score sc ON sc.style_code = c.style_code
         WHERE c.eff >= ${min} AND ${ranked ? sql`st.store_count >= ${POPULAR_MIN_STORES}` : sql`true`}
       ),
+      -- Best colourway of each model first; a thin band (Under 5k) is topped up with a model's next colourways (3 at most) so the shelf is not nearly empty.
       one_per_model AS (
         SELECT scored.*, row_number() OVER (PARTITION BY grp ORDER BY ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, style_code) AS rn
         FROM scored
       )
-      SELECT * FROM one_per_model WHERE rn = 1
-      ORDER BY ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, brand, model, style_code
+      SELECT * FROM one_per_model WHERE rn <= 3
+      ORDER BY (rn = 1) DESC, ${keys(sql`trend_score`, sql`store_count`, sql`eff`)}, brand, model, style_code
       LIMIT ${limit}
     `);
     return (rows as Array<Record<string, unknown>>).map(toBudgetItem);

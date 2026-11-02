@@ -107,13 +107,13 @@ describe('/catalog/budget ranking, one card per model, delivery', () => {
     expect(statements[0]!.sql).not.toMatch(/store_count >= \$/);
   });
 
-  it('collapses colourways: one row per brand + model, in both the shortlist and the result', async () => {
+  it('collapses colourways: one row per brand + model first, other colourways only top up a thin band', async () => {
     const { svc, statements } = recorder();
     await svc.budget(5000, 10, 'trending');
     const sql = statements[0]!.sql;
     expect(sql).toContain("PARTITION BY lower(s.brand) || '|' || regexp_replace(lower(s.model)");
     expect(sql).toContain("PARTITION BY grp");
-    expect(sql).toContain('WHERE rn = 1');
+    expect(sql).toContain('(rn = 1) DESC');
   });
 
   it('returns delivery days and the trend score in each item', async () => {
