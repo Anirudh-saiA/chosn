@@ -39,13 +39,14 @@ export function saleSeasons(today: Date, lookAheadDays = 30): SaleSeason[] {
 }
 
 /**
- * Offers on websites we do not scrape. Add an entry only after reading the offer on the store's own page, and set checkedOn to that day.
+ * Offers read on a store's own page, whether or not we track its prices. Add an entry only after reading the offer on the store's own page, and set checkedOn to that day.
  * An entry is shown for 7 days after checkedOn and then disappears by itself, so a stale offer is never shown as live.
  */
-export interface OtherSiteOffer { store: string; text: string; conditions: string | null; url: string; checkedOn: string }
+export interface OtherSiteOffer { store: string; tracked: boolean; text: string; conditions: string | null; url: string; checkedOn: string }
 
 const OTHER_SITES: OtherSiteOffer[] = [
-  { store: 'adidas India', text: 'Diwali Sale: Buy 2, get 60% off', conditions: 'Terms are on the adidas site; also 10% off when you sign up', url: 'https://www.adidas.co.in/', checkedOn: '2026-11-02' },
+  { store: 'adidas India', tracked: false, text: 'Diwali Sale: Buy 2, get 60% off', conditions: 'Terms are on the adidas site; also 10% off when you sign up', url: 'https://www.adidas.co.in/', checkedOn: '2026-11-02' },
+  { store: 'Mainstreet Marketplace', tracked: true, text: 'Festival Season Sale: up to 32% off selected pairs', conditions: 'A sale section on the home page of the store; the discount differs by pair', url: 'https://marketplace.mainstreet.co.in/', checkedOn: '2026-11-03' },
 ];
 
 export function otherSiteOffers(today: Date, maxAgeDays = 7): OtherSiteOffer[] {

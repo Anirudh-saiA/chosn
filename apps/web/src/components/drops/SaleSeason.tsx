@@ -3,7 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 interface Season { name: string; start: string; end: string; state: 'now' | 'soon'; daysToStart: number }
-interface OtherSite { store: string; text: string; conditions: string | null; url: string; checkedOn: string }
+interface OtherSite { store: string; tracked: boolean; text: string; conditions: string | null; url: string; checkedOn: string }
 interface StoreSale { store: string; text: string; kind: string; url: string | null; seenAt: string | null; conditions: string | null }
 
 const fmt = (iso: string) => new Date(`${iso}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
@@ -97,15 +97,15 @@ export async function SaleSeason() {
       ) : null}
       {data.otherSites.length > 0 ? (
         <div className="mt-6">
-          <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">On other websites</h3>
-          <p className="mt-1 text-xs text-text-soft">We do not track prices on these sites. The offer is what the store itself shows, read on the date given.</p>
+          <h3 className="font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-text-soft">Read on the stores&apos; own sites</h3>
+          <p className="mt-1 text-xs text-text-soft">The offer is what the store itself shows, read on the date given. "Not tracked" means we do not track that store&apos;s prices.</p>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2">
             {data.otherSites.map((o) => (
               <li key={o.store}>
                 <a href={o.url} target="_blank" rel="noopener noreferrer" className="block rounded-3xl border border-[#0A0A0A]/10 px-5 py-4 transition-colors hover:border-[#0A0A0A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A0A0A]">
                   <span className="flex items-center justify-between gap-3">
                     <span className="font-display text-base font-bold text-text">{o.store}</span>
-                    <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">Not tracked</span>
+                    <span className="rounded-full border border-[#0A0A0A]/20 px-2.5 py-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-text">{o.tracked ? 'Tracked here' : 'Not tracked'}</span>
                   </span>
                   <span className="mt-1.5 block text-sm font-semibold text-text">{o.text}</span>
                   {o.conditions ? <span className="mt-1 block text-xs text-text-soft">{o.conditions}</span> : null}
