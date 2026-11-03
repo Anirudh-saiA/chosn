@@ -349,7 +349,18 @@ def main():
     pair_report = RUN_DIR / "pair_report.json"
     # Myntra publishes no style code at all, so every Myntra listing goes through the pairing step like the no-code ones.
     missing = [p for p in (RUN_DIR / "shopify-missing-style-code.csv", RUN_DIR / "vegnonveg-missing-style-code.csv", myntra_csv, mainstreet_csv, limitededt_csv, puma_csv, gully_csv, culture_csv) if p.exists()]
-    run("Pair shoes", [sys.executable, "scripts/pair_products.py", str(merged), *map(str, missing), str(paired), "--report", str(pair_report)])
+    pair_cmd = [sys.executable, "scripts/pair_products.py", str(merged), *map(str, missing), str(paired), "--report", str(pair_report)]
+    if args.only:
+        # A one-store run has no other store to pair with, so Myntra (no style codes) would never meet the tracked shoes.
+        # Hand the pairing the shoes the database already knows.
+        ref = RUN_DIR / "reference.csv"
+        known = psql("select replace(brand,'|',' '), replace(model,'|',' '), replace(coalesce(colorway,''),'|',' '), style_code from sneakers where tracked and style_code not like 'N-%'")
+        with open(ref, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["brand", "model", "colorway", "style_code"])
+            w.writerows(known)
+        pair_cmd += ["--reference", str(ref)]
+    run("Pair shoes", pair_cmd)
 
     clean = RUN_DIR / "clean.csv"
     run("Clean", [sys.executable, "scripts/clean_price_csv.py", str(paired), str(clean)])

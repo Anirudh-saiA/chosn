@@ -1,6 +1,6 @@
 r"""Pair the same shoe across stores by model + colour, like a price-comparison site does.
 
-    python scripts/pair_products.py merged.csv missing1.csv [missing2.csv ...] out.csv [--report report.json]
+    python scripts/pair_products.py merged.csv missing1.csv [missing2.csv ...] out.csv [--report report.json] [--reference known.csv]
 
 Why: the stores do not always give a style code, and Crepdog Crew writes the colour into the model name
 ("adidas Handball Spezial Night Indigo"). The importer keys shoes by style code, so without this step
@@ -97,6 +97,11 @@ def main():
         i = args.index("--report")
         report_path = args[i + 1]
         del args[i : i + 2]
+    reference_path = None
+    if "--reference" in args:
+        i = args.index("--reference")
+        reference_path = args[i + 1]
+        del args[i : i + 2]
     merged_path, out_path = args[0], args[-1]
     missing_paths = args[1:-1]
 
@@ -115,9 +120,17 @@ def main():
             cols = list(extra[0].keys())
     if not rows:
         raise SystemExit("nothing to pair: every input file is empty")
+    # Known coded shoes from the database (a run of one store has no other store to pair with). They only teach the pairing
+    # which code a name belongs to; they are never written to the output.
+    reference = []
+    if reference_path:
+        for r in csv.DictReader(open(reference_path, encoding="utf-8")):
+            r["retailer"] = "Reference"
+            reference.append(r)
     for c in ("delivery_time", "gallery_urls", "compare_at_price"):
         if c not in cols and any(c in r for r in rows):
             cols.append(c)
+    rows = rows + reference
     for r in rows:
         r["style_code"] = (r.get("style_code") or "").strip().upper().replace(" ", "")
         r["brand"] = (r.get("brand") or "").strip()
@@ -221,6 +234,8 @@ def main():
     out_rows, assigned, paired, synthetic = [], 0, 0, 0
     name_fixes = {}
     for r, key, dm, dc in parsed:
+        if r["retailer"] == "Reference":
+            continue
         code = r["style_code"]
         if not code_ok(code):
             if not (key[1] and key[3]):
