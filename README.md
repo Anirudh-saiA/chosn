@@ -4,15 +4,28 @@ Sneaker price-intelligence and community platform. CHOSN compares external
 retailer/reseller prices and routes users out — it never sells, processes
 payments, or holds inventory.
 
-This is the Day 3 infrastructure skeleton: repo, CI/CD, environments, and
-the Day 2 design tokens wired into real components. No feature code yet.
-
 **Production:** https://chosn-web-gamma.vercel.app
 **Production API:** https://chosnapi-production.up.railway.app ([/health](https://chosnapi-production.up.railway.app/health))
 **Staging:** URL pending — see `PROMOTION.md` (Day 27 introduced a real staging tier; the line above used to be mislabeled "Staging" from back when this repo had only one environment)
 
 - [Day 1 — Foundation Spec](docs/chosn-foundation-spec.html)
 - [Day 2 — Design Tokens](docs/chosn-design-tokens.html)
+- [docs/health-checks.md](docs/health-checks.md) — `/health` and `/health/fetch`, and how they're actually used for deploy verification
+- [CHANGELOG.md](CHANGELOG.md) — dated decision log for anything not obvious from a commit message alone
+
+## What's live (Day 36)
+
+- **Price comparison** — a 28-model catalog (see `apps/api/src/retailers/README.md`) mapped across up to 6 retailers, real Market Intelligence signals (current/best/avg30/avg90/trend), auto-refreshed on real fetch cycles
+- **Drops & news** — calendar, live-status WebSocket broadcast, web push (once VAPID keys are set), auto-posted news from drop events
+- **Community** — Price Check, Cop or Drop, and Drop Talk posts, live per-drop chat, reputation scoring, unified search, moderation/trust & safety infrastructure (reporting, blocking, anonymity)
+- **Auth** — Auth.js v5 (email/password + Google OAuth), TOTP 2FA, rate limiting, session revocation
+- **Monitoring** — real Sentry (`chosn-api` + `chosn-web`, separate projects) and PostHog, both confirmed capturing real events as of Day 33
+
+## What's explicitly deferred
+
+- **Legit Check** (community post type: per-post photo checklist, verified via a NSFW classifier) — fully built (Day 26) but **hidden from post creation** as of Day 35/36 behind `NEXT_PUBLIC_FEATURE_LEGIT_CHECK_ENABLED` (default off — see `apps/web/src/lib/feature-flags.ts`). Blocked on setting up real Cloudflare R2 object storage credentials, a deliberately deferred product decision, not a bug. See `docs/community/README.md` for the full technical writeup and `CHANGELOG.md` for the decision history.
+- **Real retailer credentials** — 4 of 6 retailer sources (Flipkart, Myntra, Ajio, END.) still run on fixture data; the affiliate programs were never actually joined (a partnership step, not a code one)
+- **Sentry alert rules / PostHog dashboards** — both platforms are live and receiving real events, but alerting and dashboard scaffolding haven't been configured yet
 
 ## Repo structure
 
@@ -91,28 +104,48 @@ Visit `localhost:3000` for the placeholder home page, or
 
 ## Environment variables
 
+Full detail and setup instructions live as comments in each
+`.env.example` — this table is a reconciled index (Day 36), not a
+duplicate. No secret is ever committed; both files hold placeholders
+only.
+
 **apps/web**
 
 | Variable | Required | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | yes | Points at `apps/api` |
-| `NEXT_PUBLIC_SENTRY_DSN` | no | Errors go nowhere until this is set |
-| `NEXT_PUBLIC_POSTHOG_KEY` | no | Analytics no-op until this is set |
-| `NEXT_PUBLIC_POSTHOG_HOST` | no | Defaults to PostHog Cloud (US) |
-| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | no | Build-time only, for source-map upload |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | no | **Live as of Day 33** — real project, confirmed capturing real events. No-op if unset. |
+| `NEXT_PUBLIC_SENTRY_DSN` | no | **Live as of Day 33** — `chosn-web` project, confirmed working via a real flushed test event. No-op if unset. |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | no | Build-time only, source-map upload. Error reporting itself works without these — just minified stack traces. |
+| `NEXT_PUBLIC_FEATURE_LEGIT_CHECK_ENABLED` | no | **Day 36.** Off by default — see "What's explicitly deferred" above. |
+| `NEXT_PUBLIC_WS_URL` | no | Override for the WebSocket base URL; derived from `NEXT_PUBLIC_API_URL` if unset |
+| `DATABASE_URL` / `REDIS_URL` | yes | Auth.js's adapter + rate limiting — same instances `apps/api` uses |
+| `AUTH_SECRET` / `AUTH_URL` | yes / no | NextAuth's cookie key; `AUTH_URL` only needed where the deployed URL can't be inferred |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no | Google sign-in; email/password works without these |
+| `API_JWT_SECRET` | yes | Must match `apps/api`'s value exactly |
+| `TOTP_ENCRYPTION_KEY` | yes | 2FA secret-at-rest encryption |
+| `RESEND_API_KEY` / `RESEND_FROM` | no | Password reset emails; logs the link instead of sending until set |
 
 **apps/api**
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | `postgresql://...` |
-| `REDIS_URL` | yes | `redis://...` |
-| `SENTRY_DSN` | no | Errors go nowhere until this is set |
-| `WEB_ORIGIN` | yes | CORS allow-list. Comma-separated as of Day 27 (`apps/api/src/common/cors-origins.ts`) — production and staging both allowed at once, e.g. `https://chosn-web-gamma.vercel.app,https://chosn-web-git-develop-*.vercel.app` |
+| `DATABASE_URL` / `REDIS_URL` | yes | `postgresql://...` / `redis://...` |
+| `WEB_ORIGIN` | yes | CORS allow-list, comma-separated (Day 27) — production and staging both at once |
 | `PORT` | no | Defaults to 4000 |
-
-No secret is ever committed — both `.env.example` files above hold
-placeholders only.
+| `PG_POOL_MAX` | no | Defaults to 20 |
+| `SENTRY_DSN` | no | **Live as of before Day 33** — `chosn-api` project, confirmed receiving real errors. No-op if unset. |
+| `RESEND_API_KEY` / `RESEND_FROM` | no | Waitlist confirmation email |
+| `FLIPKART_AFFILIATE_ID` / `_TOKEN` | no | Fixture mode until set — affiliate programme not yet joined |
+| `ADMITAD_ACCESS_TOKEN` / `_WEBSITE_ID` | no | Myntra — fixture mode until set |
+| `INRDEALS_API_TOKEN` / `_PUBLISHER_ID` | no | Ajio — fixture mode until set |
+| `AWIN_API_TOKEN` / `_PUBLISHER_ID` | no | END. Clothing — fixture mode until set |
+| `PRICE_FETCH_SCHEDULE` / `MARKET_INTELLIGENCE_SCHEDULE` / `DROP_SCHEDULER_SCHEDULE` | no | Set to `off` to disable that scheduler |
+| `FETCH_HEALTH_LOG` | no | Set to `off` to silence the hourly pipeline health summary |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | no | Web push; no-op until set |
+| `API_JWT_SECRET` | yes | Must match `apps/web`'s value exactly |
+| `STORAGE_BUCKET` / `STORAGE_ENDPOINT` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_REGION` / `STORAGE_PUBLIC_BASE_URL` | no | Cloudflare R2/S3 for Legit Check photos — **not yet set anywhere** (see "What's explicitly deferred"); missing config disables just that feature (Day 30 fix), doesn't crash the API |
+| `PERSPECTIVE_API_KEY` | no | NSFW/toxicity classifier; every caller treats an unset key as "unavailable," not an error |
 
 ## CI/CD
 
@@ -203,14 +236,13 @@ quota before assuming a second Postgres-with-volume just works.
   applies that itself; `cd`-ing into `apps/web` first doubles the path.
 - `NEXT_PUBLIC_API_URL` on Vercel points at the Railway URL above, not
   `localhost`.
-- Sentry is real as of Day 33 — two separate projects, `chosn-api`
-  (backend, confirmed receiving real errors earlier) and `chosn-web`
-  (frontend, reinstalled this same day after an earlier deliberate
-  removal — see `apps/web/next.config.mjs`'s own comment on that
-  history — and verified with a real flushed test event before this
-  note was written). PostHog remains unconfigured — no key set
-  anywhere. The no-op guards mean that stays harmless, it just doesn't
-  report anything yet.
+- Sentry and PostHog are both real and confirmed working as of Day 33
+  — see "What's live" above. Sentry is two separate projects,
+  `chosn-api` (backend) and `chosn-web` (frontend, reinstalled that
+  same day after an earlier deliberate removal — see
+  `apps/web/next.config.mjs`'s own comment on that history). Neither
+  has alert rules or dashboards configured yet (Day 34) — receiving
+  events isn't the same as being actionable, and that's still open.
 
 ## Verified
 
